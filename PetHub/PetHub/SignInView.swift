@@ -20,25 +20,18 @@ struct SignInView: View {
                 // Background
                 Color(hex: "0D0D0E").ignoresSafeArea()
 
-                .ignoresSafeArea()
+                    .ignoresSafeArea()
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
                         // Headline
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Welcome")
-                                .font(.custom("Georgia", size: 30))
-                                .fontWeight(.light)
-                                .foregroundStyle(Color(hex: "F0EDE6"))
-                            Text("back.")
+                            Text("Welcome back,")
+                            Text("pet parent. 🐾")
                                 .font(.custom("Georgia-Italic", size: 30))
-                                .fontWeight(.light)
                                 .foregroundStyle(Color(hex: "AA9DFF"))
 
-                            Text("Sign in to continue your journey")
-                                .font(.system(size: 11.5, weight: .regular))
-                                .foregroundStyle(Color(hex: "F0EDE6").opacity(0.38))
-                                .padding(.top, 6)
+                            Text("Your pets missed you")
                         }
                         .padding(.bottom, 28)
 
@@ -64,9 +57,11 @@ struct SignInView: View {
                         // Forgot password
                         HStack {
                             Spacer()
-                            Button("Forgot password?") { }
+                            Button("Forgot password?") {}
                                 .font(.system(size: 10.5))
-                                .foregroundStyle(Color(hex: "AA9DFF").opacity(0.55))
+                                .foregroundStyle(
+                                    Color(hex: "AA9DFF").opacity(0.55)
+                                )
                         }
                         .padding(.bottom, 22)
 
@@ -82,7 +77,11 @@ struct SignInView: View {
 
                         // Secondary buttons
                         VStack(spacing: 8) {
-                            AppButton("Sign In with Apple", style: .secondary, icon: "apple.logo") {
+                            AppButton(
+                                "Sign In with Apple",
+                                style: .secondary,
+                                icon: "apple.logo"
+                            ) {
                                 signInWithApple()
                             }
 
@@ -99,13 +98,14 @@ struct SignInView: View {
                         HStack {
                             Spacer()
                             Text("Don't have an account? ")
-                                .foregroundStyle(Color.white.opacity(0.22)).font(.system(size: 11))
-                            NavigationLink(destination: SignUpView()) {
-                                (
-                                     Text("Create one")
-                                        .foregroundStyle(Color(hex: "AA9DFF").opacity(0.7))
-                                )
+                                .foregroundStyle(Color.white.opacity(0.22))
                                 .font(.system(size: 11))
+                            NavigationLink(destination: SignUpView()) {
+                                (Text("Create one")
+                                    .foregroundStyle(
+                                        Color(hex: "AA9DFF").opacity(0.7)
+                                    ))
+                                    .font(.system(size: 11))
                             }
                             Spacer()
                         }

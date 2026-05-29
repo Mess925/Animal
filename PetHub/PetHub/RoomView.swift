@@ -1,0 +1,362 @@
+//
+//  WelcomeView.swift
+//  personal
+//
+//  Created by Han Min Thant on 23/5/26.
+//
+
+import SwiftUI
+
+// MARK: - Tab Enum
+
+enum AppTab {
+    case rooms, activity, profile
+}
+
+// MARK: - Root App Shell (floating tab bar)
+
+struct MainTabView: View {
+    @State private var selectedTab: AppTab = .rooms
+
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            Group {
+                switch selectedTab {
+                case .rooms:    RoomsView()
+                case .activity: ActivityPlaceholderView()
+                case .profile:  ProfilePlaceholderView()
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            FloatingTabBar(selectedTab: $selectedTab)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 28)
+        }
+        .ignoresSafeArea(edges: .bottom)
+        .preferredColorScheme(.dark)
+    }
+}
+
+// MARK: - Floating Tab Bar
+
+struct FloatingTabBar: View {
+    @Binding var selectedTab: AppTab
+
+    var body: some View {
+        HStack(spacing: 0) {
+            TabBarItem(icon: "house.fill",              label: "Rooms",    tab: .rooms,    selected: $selectedTab)
+            TabBarItem(icon: "bolt.fill",               label: "Activity", tab: .activity, selected: $selectedTab)
+            TabBarItem(icon: "person.crop.circle.fill", label: "Profile",  tab: .profile,  selected: $selectedTab)
+        }
+        .padding(.vertical, 12)
+        .padding(.horizontal, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 28)
+                .fill(Color(hex: "1C1C1F").opacity(0.95))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 28)
+                        .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
+                )
+        )
+        .shadow(color: Color.black.opacity(0.5), radius: 24, x: 0, y: 8)
+    }
+}
+
+struct TabBarItem: View {
+    let icon: String
+    let label: String
+    let tab: AppTab
+    @Binding var selected: AppTab
+
+    private var isActive: Bool { selected == tab }
+
+    var body: some View {
+        Button {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                selected = tab
+            }
+        } label: {
+            VStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundStyle(isActive ? Color(hex: "AA9DFF") : Color.white.opacity(0.3))
+                Text(label)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(isActive ? Color(hex: "AA9DFF") : Color.white.opacity(0.3))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 18)
+                    .fill(isActive ? Color(hex: "AA9DFF").opacity(0.12) : Color.clear)
+                    .padding(.horizontal, 4)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Rooms View
+
+struct RoomsView: View {
+    let columns = [
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12)
+    ]
+
+    var body: some View {
+        ZStack {
+            Color(hex: "0D0D0E").ignoresSafeArea()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+
+                    // Header
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Rooms")
+                            .font(.system(size: 28, weight: .semibold))
+                            .foregroundStyle(Color(hex: "F0EDE6"))
+                        Text("4 rooms active")
+                            .font(.system(size: 13))
+                            .foregroundStyle(Color.white.opacity(0.3))
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 20)
+                    .padding(.bottom, 24)
+                    
+                    // Lost & Found
+                    RoomsSectionLabel(title: "Lost & Found")
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 12)
+
+                    LostRoomCard()
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 28)
+
+                    // My Pets
+                    RoomsSectionLabel(title: "My Pets")
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 12)
+
+                    LazyVGrid(columns: columns, spacing: 12) {
+                        PetRoomCard(
+                            name: "Mochi",
+                            breed: "Golden Retriever",
+                            age: "2y",
+                            icon: "dog.fill",
+                            accentHex: "AA9DFF",
+                        )
+                        PetRoomCard(
+                            name: "Luna",
+                            breed: "Persian Cat",
+                            age: "4y",
+                            icon: "cat.fill",
+                            accentHex: "7EC8C8",
+                        )
+                        PetRoomCard(
+                            name: "Kiwi",
+                            breed: "Budgerigar",
+                            age: "1y",
+                            icon: "bird.fill",
+                            accentHex: "F4A84A",
+                        )
+                        AddPetCard()
+                    }
+                    .padding(.horizontal, 16)
+
+                    // Bottom clearance for floating tab bar
+                    Spacer().frame(height: 110)
+                }
+            }
+        }
+    }
+}
+
+
+// MARK: - Section Label
+
+struct RoomsSectionLabel: View {
+    let title: String
+    var body: some View {
+        Text(title.uppercased())
+            .font(.system(size: 10, weight: .medium))
+            .tracking(1.4)
+            .foregroundStyle(Color.white.opacity(0.25))
+    }
+}
+
+// MARK: - Lost Room Card
+
+struct LostRoomCard: View {
+    var body: some View {
+        Button {} label: {
+            HStack(spacing: 14) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 15)
+                        .fill(Color(hex: "E25718").opacity(0.15))
+                        .frame(width: 52, height: 52)
+                    Image(systemName: "mappin.and.ellipse")
+                        .font(.system(size: 22, weight: .medium))
+                        .foregroundStyle(Color(hex: "E25718"))
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Lost Animals")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color(hex: "F0EDE6"))
+                    Text("Community · 12 reports nearby")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color.white.opacity(0.35))
+                }
+
+                Spacer()
+
+                Text("12")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(Color(hex: "E25718"))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Capsule().fill(Color(hex: "E25718").opacity(0.15)))
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.white.opacity(0.2))
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color(hex: "1E1614"))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color(hex: "E25718").opacity(0.2), lineWidth: 0.5)
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Pet Room Card
+
+enum PetRoomStatus { case active, new, away }
+
+struct PetRoomCard: View {
+    let name: String
+    let breed: String
+    let age: String
+    let icon: String
+    let accentHex: String
+
+    private var accent: Color { Color(hex: accentHex) }
+
+
+    var body: some View {
+        Button {} label: {
+            VStack(spacing: 0) {
+
+                // Card face
+                ZStack(alignment: .topTrailing) {
+                    Rectangle()
+                        .fill(accent.opacity(0.12))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 140)
+
+                    Image(systemName: icon)
+                        .font(.system(size: 52))
+                        .foregroundStyle(accent.opacity(0.85))
+                        .frame(maxWidth: .infinity, maxHeight: 140)
+
+//                    // Status badge
+//                    Text(statusLabel)
+//                        .font(.system(size: 10, weight: .medium))
+//                        .foregroundStyle(statusColor)
+//                        .padding(.horizontal, 8)
+//                        .padding(.vertical, 4)
+//                        .background(Capsule().fill(statusColor.opacity(0.15)))
+//                        .padding(10)
+                }
+
+                // Footer
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(name)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color(hex: "F0EDE6"))
+                    Text("\(breed) · \(age)")
+                        .font(.system(size: 10))
+                        .foregroundStyle(Color.white.opacity(0.4))
+                        .lineLimit(1)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 11)
+                .background(Color(hex: "161618"))
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(Color.white.opacity(0.07), lineWidth: 0.5)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Add Pet Ghost Card
+
+struct AddPetCard: View {
+    var body: some View {
+        Button {} label: {
+            VStack(spacing: 8) {
+                Image(systemName: "plus")
+                    .font(.system(size: 26, weight: .light))
+                    .foregroundStyle(Color.white.opacity(0.2))
+                Text("Add pet")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.white.opacity(0.2))
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 185)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color.white.opacity(0.03))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .strokeBorder(
+                                style: StrokeStyle(lineWidth: 1, dash: [5, 4])
+                            )
+                            .foregroundStyle(Color.white.opacity(0.1))
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Placeholder Views
+
+struct ActivityPlaceholderView: View {
+    var body: some View {
+        ZStack {
+            Color(hex: "0D0D0E").ignoresSafeArea()
+            Text("Activity")
+                .foregroundStyle(Color(hex: "F0EDE6").opacity(0.4))
+        }
+    }
+}
+
+struct ProfilePlaceholderView: View {
+    var body: some View {
+        ZStack {
+            Color(hex: "0D0D0E").ignoresSafeArea()
+            Text("Profile")
+                .foregroundStyle(Color(hex: "F0EDE6").opacity(0.4))
+        }
+    }
+}
+
+// MARK: - Preview
+
+#Preview {
+    MainTabView()
+}
