@@ -1,8 +1,9 @@
 //
-//  WelcomeView.swift
-//  personal
+//  WelcomeView.swift  (updated)
+//  PetHub
 //
-//  Created by Han Min Thant on 23/5/26.
+//  Changes: PetRoomCard now navigates to RoomView.
+//           Color(hex:) extension included here.
 //
 
 import SwiftUI
@@ -13,7 +14,7 @@ enum AppTab {
     case rooms, activity, profile
 }
 
-// MARK: - Root App Shell (floating tab bar)
+// MARK: - Root App Shell
 
 struct MainTabView: View {
     @State private var selectedTab: AppTab = .rooms
@@ -45,8 +46,8 @@ struct FloatingTabBar: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            TabBarItem(icon: "house.fill",              label: "Rooms",    tab: .rooms,    selected: $selectedTab)
-            TabBarItem(icon: "bolt.fill",               label: "Activity", tab: .activity, selected: $selectedTab)
+            TabBarItem(icon: "house.fill",             label: "Rooms",    tab: .rooms,    selected: $selectedTab)
+            TabBarItem(icon: "bolt.fill",              label: "Activity", tab: .activity, selected: $selectedTab)
             TabBarItem(icon: "person.crop.circle.fill", label: "Profile",  tab: .profile,  selected: $selectedTab)
         }
         .padding(.vertical, 12)
@@ -73,9 +74,7 @@ struct TabBarItem: View {
 
     var body: some View {
         Button {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                selected = tab
-            }
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { selected = tab }
         } label: {
             VStack(spacing: 4) {
                 Image(systemName: icon)
@@ -100,79 +99,74 @@ struct TabBarItem: View {
 // MARK: - Rooms View
 
 struct RoomsView: View {
+    // Sample rooms wired to real model
+    @State private var rooms: [PetRoom] = [.mochi]
+
     let columns = [
         GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12)
+        GridItem(.flexible(), spacing: 12),
     ]
 
     var body: some View {
-        ZStack {
-            Color(hex: "0D0D0E").ignoresSafeArea()
+        NavigationStack {
+            ZStack {
+                Color(hex: "0D0D0E").ignoresSafeArea()
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
 
-                    // Header
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Rooms")
-                            .font(.system(size: 28, weight: .semibold))
-                            .foregroundStyle(Color(hex: "F0EDE6"))
-                        Text("4 rooms active")
-                            .font(.system(size: 13))
-                            .foregroundStyle(Color.white.opacity(0.3))
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 20)
-                    .padding(.bottom, 24)
-                    
-                    // Lost & Found
-                    RoomsSectionLabel(title: "Lost & Found")
+                        // Header
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Rooms")
+                                .font(.system(size: 28, weight: .semibold))
+                                .foregroundStyle(Color(hex: "F0EDE6"))
+                            Text("\(rooms.count) room\(rooms.count == 1 ? "" : "s") active")
+                                .font(.system(size: 13))
+                                .foregroundStyle(Color.white.opacity(0.3))
+                        }
                         .padding(.horizontal, 20)
-                        .padding(.bottom, 12)
+                        .padding(.top, 20)
+                        .padding(.bottom, 24)
 
-                    LostRoomCard()
+                        // Lost & Found
+                        RoomsSectionLabel(title: "Lost & Found")
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 12)
+
+                        LostRoomCard()
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 28)
+
+                        // My Pets
+                        RoomsSectionLabel(title: "My Pets")
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 12)
+
+                        LazyVGrid(columns: columns, spacing: 12) {
+                            ForEach(rooms) { room in
+                                NavigationLink(destination: RoomView(room: room)) {
+                                    PetRoomCard(
+                                        name: room.name,
+                                        breed: room.breed,
+                                        age: room.age,
+                                        icon: room.icon,
+                                        accentHex: room.accentHex
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            AddPetCard()
+                        }
                         .padding(.horizontal, 16)
-                        .padding(.bottom, 28)
 
-                    // My Pets
-                    RoomsSectionLabel(title: "My Pets")
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 12)
-
-                    LazyVGrid(columns: columns, spacing: 12) {
-                        PetRoomCard(
-                            name: "Mochi",
-                            breed: "Golden Retriever",
-                            age: "2y",
-                            icon: "dog.fill",
-                            accentHex: "AA9DFF",
-                        )
-                        PetRoomCard(
-                            name: "Luna",
-                            breed: "Persian Cat",
-                            age: "4y",
-                            icon: "cat.fill",
-                            accentHex: "7EC8C8",
-                        )
-                        PetRoomCard(
-                            name: "Kiwi",
-                            breed: "Budgerigar",
-                            age: "1y",
-                            icon: "bird.fill",
-                            accentHex: "F4A84A",
-                        )
-                        AddPetCard()
+                        Spacer().frame(height: 110)
                     }
-                    .padding(.horizontal, 16)
-
-                    // Bottom clearance for floating tab bar
-                    Spacer().frame(height: 110)
                 }
             }
+            .navigationBarHidden(true)
         }
     }
 }
-
 
 // MARK: - Section Label
 
@@ -239,8 +233,6 @@ struct LostRoomCard: View {
 
 // MARK: - Pet Room Card
 
-enum PetRoomStatus { case active, new, away }
-
 struct PetRoomCard: View {
     let name: String
     let breed: String
@@ -250,68 +242,52 @@ struct PetRoomCard: View {
 
     private var accent: Color { Color(hex: accentHex) }
 
-
     var body: some View {
-        Button {} label: {
-            VStack(spacing: 0) {
-
-                // Card face
-                ZStack(alignment: .topTrailing) {
-                    Rectangle()
-                        .fill(accent.opacity(0.12))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 140)
-
-                    Image(systemName: icon)
-                        .font(.system(size: 52))
-                        .foregroundStyle(accent.opacity(0.85))
-                        .frame(maxWidth: .infinity, maxHeight: 140)
-
-//                    // Status badge
-//                    Text(statusLabel)
-//                        .font(.system(size: 10, weight: .medium))
-//                        .foregroundStyle(statusColor)
-//                        .padding(.horizontal, 8)
-//                        .padding(.vertical, 4)
-//                        .background(Capsule().fill(statusColor.opacity(0.15)))
-//                        .padding(10)
-                }
-
-                // Footer
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(name)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(Color(hex: "F0EDE6"))
-                    Text("\(breed) · \(age)")
-                        .font(.system(size: 10))
-                        .foregroundStyle(Color.white.opacity(0.4))
-                        .lineLimit(1)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 11)
-                .background(Color(hex: "161618"))
+        VStack(spacing: 0) {
+            ZStack {
+                Rectangle()
+                    .fill(accent.opacity(0.12))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 140)
+                Image(systemName: icon)
+                    .font(.system(size: 52))
+                    .foregroundStyle(accent.opacity(0.85))
             }
-            .clipShape(RoundedRectangle(cornerRadius: 20))
-            .overlay(
-                RoundedRectangle(cornerRadius: 20)
-                    .stroke(Color.white.opacity(0.07), lineWidth: 0.5)
-            )
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(name)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Color(hex: "F0EDE6"))
+                Text("\(breed) · \(age)")
+                    .font(.system(size: 10))
+                    .foregroundStyle(Color.white.opacity(0.4))
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 11)
+            .background(Color(hex: "161618"))
         }
-        .buttonStyle(.plain)
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(Color.white.opacity(0.07), lineWidth: 0.5)
+        )
     }
 }
 
 // MARK: - Add Pet Ghost Card
 
 struct AddPetCard: View {
+    @State private var showCreateRoom = false
+
     var body: some View {
-        Button {} label: {
+        Button { showCreateRoom = true } label: {
             VStack(spacing: 8) {
                 Image(systemName: "plus")
                     .font(.system(size: 26, weight: .light))
                     .foregroundStyle(Color.white.opacity(0.2))
-                Text("Add pet")
+                Text("Create Room")
                     .font(.system(size: 12))
                     .foregroundStyle(Color.white.opacity(0.2))
             }
@@ -322,14 +298,13 @@ struct AddPetCard: View {
                     .fill(Color.white.opacity(0.03))
                     .overlay(
                         RoundedRectangle(cornerRadius: 20)
-                            .strokeBorder(
-                                style: StrokeStyle(lineWidth: 1, dash: [5, 4])
-                            )
+                            .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
                             .foregroundStyle(Color.white.opacity(0.1))
                     )
             )
         }
         .buttonStyle(.plain)
+        .sheet(isPresented: $showCreateRoom) { CreateRoomView() }
     }
 }
 
@@ -339,8 +314,7 @@ struct ActivityPlaceholderView: View {
     var body: some View {
         ZStack {
             Color(hex: "0D0D0E").ignoresSafeArea()
-            Text("Activity")
-                .foregroundStyle(Color(hex: "F0EDE6").opacity(0.4))
+            Text("Activity").foregroundStyle(Color(hex: "F0EDE6").opacity(0.4))
         }
     }
 }
@@ -349,14 +323,11 @@ struct ProfilePlaceholderView: View {
     var body: some View {
         ZStack {
             Color(hex: "0D0D0E").ignoresSafeArea()
-            Text("Profile")
-                .foregroundStyle(Color(hex: "F0EDE6").opacity(0.4))
+            Text("Profile").foregroundStyle(Color(hex: "F0EDE6").opacity(0.4))
         }
     }
 }
 
 // MARK: - Preview
 
-#Preview {
-    MainTabView()
-}
+#Preview { MainTabView() }

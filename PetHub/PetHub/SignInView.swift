@@ -66,9 +66,11 @@ struct SignInView: View {
                         .padding(.bottom, 22)
 
                         // Primary CTA
-                        AppButton("Sign In", style: .primary) {
-                            signIn()
-                        }
+                        AppNavButton(
+                            "Sign In",
+                            style: .primary,
+                            destination: MainTabView()
+                        )
                         .padding(.bottom, 12)
 
                         // Divider
@@ -117,13 +119,6 @@ struct SignInView: View {
             }
             .preferredColorScheme(.dark)
         }
-    }
-
-    // MARK: - Actions
-
-    private func signIn() {
-        print("Signing in with \(email)")
-        // Add your auth logic here
     }
 
     private func signInWithApple() {

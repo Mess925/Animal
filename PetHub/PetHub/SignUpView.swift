@@ -59,10 +59,11 @@ struct SignUpView: View {
                         }
                         .padding(.bottom, 10)
 
-                        // Primary CTA
-                        AppButton("Sign Up", style: .primary) {
-                            signUp()
-                        }
+                        AppNavButton(
+                            "Sign Up",
+                            style: .primary,
+                            destination: MainTabView()
+                        )
                         .padding(.top, 12)
                         .padding(.bottom, 12)
 
@@ -112,13 +113,6 @@ struct SignUpView: View {
             }
             .preferredColorScheme(.dark)
         }
-    }
-
-    // MARK: - Actions
-
-    private func signUp() {
-        print("🐾 A new pet parent has joined the family")
-        // Add your auth logic here
     }
 
     private func signUpWithApple() {
