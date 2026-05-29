@@ -7,90 +7,7 @@
 
 import SwiftUI
 
-// MARK: - Authentication Field
-
-struct AuthenticationField: View {
-    let title: String
-    let placeholder: String
-    @Binding var text: String
-    var isSecure: Bool = false
-    @FocusState.Binding var isFocused: Bool
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title.uppercased())
-                .font(.system(size: 9.5, weight: .medium))
-                .tracking(1.2)
-                .foregroundStyle(Color(hex: "AA9DFF").opacity(0.7))
-
-            HStack(spacing: 10) {
-                Image(systemName: isSecure ? "lock" : "envelope")
-                    .font(.system(size: 13))
-                    .foregroundStyle(Color(hex: "AA9DFF").opacity(0.5))
-                    .frame(width: 16)
-
-                Group {
-                    if isSecure {
-                        SecureField(
-                            title,
-                            text: $text,
-                            prompt: Text(placeholder)
-                                .foregroundStyle(Color.white.opacity(0.2))
-                        )
-                    } else {
-                        TextField(
-                            title,
-                            text: $text,
-                            prompt: Text(placeholder)
-                                .foregroundStyle(Color.white.opacity(0.2))
-                        )
-                        .textInputAutocapitalization(.never)
-                        .disableAutocorrection(true)
-                        .keyboardType(.emailAddress)
-                    }
-                }
-                .font(.system(size: 13))
-                .foregroundStyle(isFocused ? Color(hex: "F0EDE6") : Color(hex: "F0EDE6").opacity(0.6))
-            }
-            .focused($isFocused)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 13)
-            .background(Color.white.opacity(0.04))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(
-                        isFocused ? Color(hex: "AA9DFF").opacity(0.5) : Color.white.opacity(0.1),
-                        lineWidth: 0.5
-                    )
-            )
-            .animation(.easeInOut(duration: 0.2), value: isFocused)
-        }
-    }
-}
-
-// MARK: - Divider
-
-struct OrDivider: View {
-    var body: some View {
-        HStack(spacing: 10) {
-            Rectangle()
-                .fill(Color.white.opacity(0.07))
-                .frame(height: 0.5)
-            Text("OR")
-                .font(.system(size: 10, weight: .regular))
-                .tracking(0.5)
-                .foregroundStyle(Color.white.opacity(0.2))
-            Rectangle()
-                .fill(Color.white.opacity(0.07))
-                .frame(height: 0.5)
-        }
-    }
-}
-
-// MARK: - Content View
-
-struct ContentView: View {
+struct SignInView: View {
     @State private var email = ""
     @State private var password = ""
 
@@ -103,32 +20,6 @@ struct ContentView: View {
                 // Background
                 Color(hex: "0D0D0E").ignoresSafeArea()
 
-                // Ambient orbs
-                GeometryReader { geo in
-                    Circle()
-                        .fill(
-                            RadialGradient(
-                                colors: [Color(hex: "8B7EEO").opacity(0.12), Color.clear],
-                                center: .center,
-                                startRadius: 0,
-                                endRadius: 200
-                            )
-                        )
-                        .frame(width: 400, height: 400)
-                        .offset(x: -100, y: -120)
-
-                    Circle()
-                        .fill(
-                            RadialGradient(
-                                colors: [Color(hex: "6450A0").opacity(0.08), Color.clear],
-                                center: .center,
-                                startRadius: 0,
-                                endRadius: 160
-                            )
-                        )
-                        .frame(width: 320, height: 320)
-                        .offset(x: geo.size.width - 80, y: geo.size.height - 180)
-                }
                 .ignoresSafeArea()
 
                 ScrollView {
@@ -207,11 +98,11 @@ struct ContentView: View {
                         // Sign up link
                         HStack {
                             Spacer()
+                            Text("Don't have an account? ")
+                                .foregroundStyle(Color.white.opacity(0.22)).font(.system(size: 11))
                             NavigationLink(destination: SignUpView()) {
                                 (
-                                    Text("Don't have an account? ")
-                                        .foregroundStyle(Color.white.opacity(0.22))
-                                    + Text("Create one")
+                                     Text("Create one")
                                         .foregroundStyle(Color(hex: "AA9DFF").opacity(0.7))
                                 )
                                 .font(.system(size: 11))
@@ -255,19 +146,8 @@ struct EmailSignInView: View {
     }
 }
 
-struct SignUpView: View {
-    var body: some View {
-        ZStack {
-            Color(hex: "0D0D0E").ignoresSafeArea()
-            Text("Sign Up")
-                .foregroundStyle(Color(hex: "F0EDE6"))
-        }
-        .preferredColorScheme(.dark)
-    }
-}
-
 // MARK: - Preview
 
 #Preview {
-    ContentView()
+    SignInView()
 }
