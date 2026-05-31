@@ -1,4 +1,3 @@
-
 //
 //  RoomView.swift
 //  PetHub
@@ -14,8 +13,16 @@ enum RoomTab { case gallery, people, settings }
 
 struct RoomView: View {
     let room: PetRoom
-    @State private var selectedTab: RoomTab = .gallery
+    var initialTab: RoomTab = .gallery
+    @State private var selectedTab: RoomTab
+    @State private var dragOffset: CGFloat = 0
     @Environment(\.dismiss) private var dismiss
+
+    init(room: PetRoom, initialTab: RoomTab = .gallery) {
+        self.room = room
+        self.initialTab = initialTab
+        _selectedTab = State(initialValue: initialTab)
+    }
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -50,7 +57,7 @@ struct RoomView: View {
                     MemberAvatarStack(members: room.members)
                 }
                 .padding(.horizontal, 16)
-                .padding(.top, 56)
+                .padding(.top, 12)
                 .padding(.bottom, 14)
 
                 // Tab bar
@@ -75,6 +82,24 @@ struct RoomView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
+        .offset(x: max(0, dragOffset))
+        .simultaneousGesture(
+            DragGesture()
+                .onChanged { value in
+                    if value.translation.width > 0 && value.translation.width > abs(value.translation.height) {
+                        dragOffset = value.translation.width
+                    }
+                }
+                .onEnded { value in
+                    if value.translation.width > 100 {
+                        dismiss()
+                    } else {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                            dragOffset = 0
+                        }
+                    }
+                }
+        )
         .navigationBarHidden(true)
         .preferredColorScheme(.dark)
     }

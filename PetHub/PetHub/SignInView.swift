@@ -1,6 +1,6 @@
 //
-//  ContentView.swift
-//  personal
+//  SignInView.swift
+//  PetHub
 //
 //  Created by Han Min Thant on 23/5/26.
 //
@@ -13,136 +13,228 @@ struct SignInView: View {
 
     @FocusState private var emailFocused: Bool
     @FocusState private var passwordFocused: Bool
+    
+    var greeting: AttributedString {
+        var text = AttributedString("Good to see you, pet parent. 🐾")
+
+        if let range = text.range(of: "pet parent. 🐾") {
+            text[range].font = .custom("Georgia-Italic", size: 28)
+            text[range].foregroundColor = Color(hex: "AA9DFF")
+        }
+
+        return text
+    }
+
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                // Background
-                Color(hex: "0D0D0E").ignoresSafeArea()
+        ZStack {
+            Color(hex: "0D0D0E").ignoresSafeArea()
 
-                    .ignoresSafeArea()
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
 
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 0) {
-                        // Headline
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Welcome back,")
+                    // Headline
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Welcome back")
+                            .font(.system(size: 13))
+                            .foregroundStyle(Color.white.opacity(0.35))
+
+                        Group {
+                            Text("Good to see you, ") +
                             Text("pet parent. 🐾")
-                                .font(.custom("Georgia-Italic", size: 30))
-                                .foregroundStyle(Color(hex: "AA9DFF"))
-
-                            Text("Your pets missed you")
+                                .font(.custom("Georgia-Italic", size: 28))
+                                .foregroundColor(Color(hex: "AA9DFF"))
                         }
-                        .padding(.bottom, 28)
+                        .font(.system(size: 26, weight: .bold))
+                        .foregroundStyle(Color(hex: "F0EDE6"))
+                        .lineSpacing(2)
 
-                        // Fields
-                        VStack(spacing: 10) {
-                            AuthenticationField(
-                                title: "Email",
-                                placeholder: "Enter your email",
-                                text: $email,
-                                isFocused: $emailFocused
-                            )
-
-                            AuthenticationField(
-                                title: "Password",
-                                placeholder: "Enter your password",
-                                text: $password,
-                                isSecure: true,
-                                isFocused: $passwordFocused
-                            )
-                        }
-                        .padding(.bottom, 10)
-
-                        // Forgot password
-                        HStack {
-                            Spacer()
-                            Button("Forgot password?") {}
-                                .font(.system(size: 10.5))
-                                .foregroundStyle(
-                                    Color(hex: "AA9DFF").opacity(0.55)
-                                )
-                        }
-                        .padding(.bottom, 22)
-
-                        // Primary CTA
-                        AppNavButton(
-                            "Sign In",
-                            style: .primary,
-                            destination: MainTabView()
-                        )
-                        .padding(.bottom, 12)
-
-                        // Divider
-                        OrDivider()
-                            .padding(.bottom, 12)
-
-                        // Secondary buttons
-                        VStack(spacing: 8) {
-                            AppButton(
-                                "Sign In with Apple",
-                                style: .secondary,
-                                icon: "apple.logo"
-                            ) {
-                                signInWithApple()
-                            }
-
-                            AppNavButton(
-                                "Sign In with Email",
-                                style: .secondary,
-                                icon: "envelope",
-                                destination: EmailSignInView()
-                            )
-                        }
-                        .padding(.bottom, 28)
-
-                        // Sign up link
-                        HStack {
-                            Spacer()
-                            Text("Don't have an account? ")
-                                .foregroundStyle(Color.white.opacity(0.22))
-                                .font(.system(size: 11))
-                            NavigationLink(destination: SignUpView()) {
-                                (Text("Create one")
-                                    .foregroundStyle(
-                                        Color(hex: "AA9DFF").opacity(0.7)
-                                    ))
-                                    .font(.system(size: 11))
-                            }
-                            Spacer()
-                        }
+                        Text("Your pets missed you")
+                            .font(.system(size: 12))
+                            .foregroundStyle(Color.white.opacity(0.28))
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.top, 20)
-                    .padding(.bottom, 40)
+                    .padding(.bottom, 32)
+
+                    // Fields
+                    VStack(spacing: 10) {
+                        AuthField(
+                            label: "Email",
+                            placeholder: "Enter your email",
+                            text: $email,
+                            isFocused: $emailFocused,
+                            isSecure: false
+                        )
+                        AuthField(
+                            label: "Password",
+                            placeholder: "Enter your password",
+                            text: $password,
+                            isFocused: $passwordFocused,
+                            isSecure: true
+                        )
+                    }
+                    .padding(.bottom, 10)
+
+                    // Forgot
+                    HStack {
+                        Spacer()
+                        Button("Forgot password?") {}
+                            .font(.system(size: 11))
+                            .foregroundStyle(Color(hex: "AA9DFF").opacity(0.6))
+                    }
+                    .padding(.bottom, 24)
+
+                    // Sign In CTA
+                    NavigationLink(destination: MainTabView()) {
+                        Text("Sign In")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(Color(hex: "1a1630"))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color(hex: "AA9DFF"))
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.bottom, 16)
+
+                    // Divider
+                    AuthDivider()
+                        .padding(.bottom, 16)
+
+                    // Apple
+                    Button {
+                        signInWithApple()
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "apple.logo")
+                                .font(.system(size: 15, weight: .medium))
+                            Text("Continue with Apple")
+                                .font(.system(size: 14, weight: .medium))
+                        }
+                        .foregroundStyle(Color(hex: "F0EDE6"))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 15)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color(hex: "1C1C1F"))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(Color.white.opacity(0.09), lineWidth: 0.5)
+                                )
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.bottom, 32)
+
+                    // Sign up link
+                    HStack(spacing: 4) {
+                        Spacer()
+                        Text("Don't have an account?")
+                            .font(.system(size: 12))
+                            .foregroundStyle(Color.white.opacity(0.25))
+                        NavigationLink(destination: SignUpView()) {
+                            Text("Create one")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(Color(hex: "AA9DFF").opacity(0.75))
+                        }
+                        Spacer()
+                    }
                 }
+                .padding(.horizontal, 24)
+                .padding(.top, 20)
+                .padding(.bottom, 40)
             }
-            .preferredColorScheme(.dark)
         }
+        .navigationBarBackButtonHidden(false)
+        .preferredColorScheme(.dark)
     }
 
     private func signInWithApple() {
         print("Apple Sign In tapped")
-        // Add ASAuthorizationAppleIDProvider logic here
     }
 }
 
-// MARK: - Placeholder Destination Views
-// Replace these with your real views
+// MARK: - Shared Auth Field
 
-struct EmailSignInView: View {
+struct AuthField: View {
+    let label: String
+    let placeholder: String
+    @Binding var text: String
+    var isFocused: FocusState<Bool>.Binding
+    var isSecure: Bool = false
+
     var body: some View {
-        ZStack {
-            Color(hex: "0D0D0E").ignoresSafeArea()
-            Text("Email Sign In")
-                .foregroundStyle(Color(hex: "F0EDE6"))
+        VStack(alignment: .leading, spacing: 6) {
+            Text(label.uppercased())
+                .font(.system(size: 10, weight: .medium))
+                .tracking(1.2)
+                .foregroundStyle(Color.white.opacity(0.28))
+
+            ZStack(alignment: .leading) {
+                if text.isEmpty {
+                    Text(placeholder)
+                        .font(.system(size: 15))
+                        .foregroundStyle(Color.white.opacity(0.2))
+                        .padding(.horizontal, 16)
+                }
+                if isSecure {
+                    SecureField("", text: $text)
+                        .focused(isFocused)
+                        .font(.system(size: 15))
+                        .foregroundStyle(Color(hex: "F0EDE6"))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 14)
+                } else {
+                    TextField("", text: $text)
+                        .focused(isFocused)
+                        .keyboardType(.emailAddress)
+                        .autocapitalization(.none)
+                        .font(.system(size: 15))
+                        .foregroundStyle(Color(hex: "F0EDE6"))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 14)
+                }
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color(hex: "1C1C1F"))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(
+                                isFocused.wrappedValue
+                                ? Color(hex: "AA9DFF").opacity(0.45)
+                                : Color.white.opacity(0.08),
+                                lineWidth: 0.5
+                            )
+                    )
+            )
         }
-        .preferredColorScheme(.dark)
+    }
+}
+
+// MARK: - Or Divider
+
+struct AuthDivider: View {
+    var body: some View {
+        HStack(spacing: 12) {
+            Rectangle()
+                .fill(Color.white.opacity(0.08))
+                .frame(height: 0.5)
+            Text("or")
+                .font(.system(size: 11))
+                .foregroundStyle(Color.white.opacity(0.22))
+            Rectangle()
+                .fill(Color.white.opacity(0.08))
+                .frame(height: 0.5)
+        }
     }
 }
 
 // MARK: - Preview
 
 #Preview {
-    SignInView()
+    NavigationStack {
+        SignInView()
+    }
 }

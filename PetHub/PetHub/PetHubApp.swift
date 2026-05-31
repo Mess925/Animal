@@ -5,19 +5,27 @@
 //  Created by Han Min Thant on 26/5/26.
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 @main
 struct PetHubApp: App {
+    @AppStorage("hasSeenOnboarding") var hasSeenOnboarding = false
+
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            Item.self
         ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        let modelConfiguration = ModelConfiguration(
+            schema: schema,
+            isStoredInMemoryOnly: false
+        )
 
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            return try ModelContainer(
+                for: schema,
+                configurations: [modelConfiguration]
+            )
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
@@ -25,7 +33,15 @@ struct PetHubApp: App {
 
     var body: some Scene {
         WindowGroup {
-            WelcomeView()
+            let _ = UserDefaults.standard.removeObject(
+                forKey: "hasSeenOnboarding"
+            )
+
+            if hasSeenOnboarding {
+                MainTabView()
+            } else {
+                OnboardingView()
+            }
         }
         .modelContainer(sharedModelContainer)
     }

@@ -6,7 +6,19 @@
 //           Color(hex:) extension included here.
 //
 
+import Combine
 import SwiftUI
+
+// MARK: - Room Store
+
+class RoomStore: ObservableObject {
+    @Published var rooms: [PetRoom] = [.mochi]
+    @Published var isInRoom: Bool = false
+
+    func add(_ room: PetRoom) {
+        rooms.append(room)
+    }
+}
 
 // MARK: - Tab Enum
 
@@ -17,22 +29,30 @@ enum AppTab {
 // MARK: - Root App Shell
 
 struct MainTabView: View {
+    @StateObject private var store = RoomStore()
     @State private var selectedTab: AppTab = .rooms
 
     var body: some View {
         ZStack(alignment: .bottom) {
             Group {
                 switch selectedTab {
-                case .rooms:    RoomsView()
+                case .rooms: RoomsView().environmentObject(store)
                 case .activity: ActivityPlaceholderView()
-                case .profile:  ProfilePlaceholderView()
+                case .profile: ProfilePlaceholderView()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            FloatingTabBar(selectedTab: $selectedTab)
-                .padding(.horizontal, 24)
-                .padding(.bottom, 28)
+            if !store.isInRoom {
+                FloatingTabBar(selectedTab: $selectedTab)
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 28)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .animation(
+                        .spring(response: 0.3, dampingFraction: 0.8),
+                        value: store.isInRoom
+                    )
+            }
         }
         .ignoresSafeArea(edges: .bottom)
         .preferredColorScheme(.dark)
@@ -46,9 +66,24 @@ struct FloatingTabBar: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            TabBarItem(icon: "house.fill",             label: "Rooms",    tab: .rooms,    selected: $selectedTab)
-            TabBarItem(icon: "bolt.fill",              label: "Activity", tab: .activity, selected: $selectedTab)
-            TabBarItem(icon: "person.crop.circle.fill", label: "Profile",  tab: .profile,  selected: $selectedTab)
+            TabBarItem(
+                icon: "house.fill",
+                label: "Rooms",
+                tab: .rooms,
+                selected: $selectedTab
+            )
+            TabBarItem(
+                icon: "bolt.fill",
+                label: "Activity",
+                tab: .activity,
+                selected: $selectedTab
+            )
+            TabBarItem(
+                icon: "person.crop.circle.fill",
+                label: "Profile",
+                tab: .profile,
+                selected: $selectedTab
+            )
         }
         .padding(.vertical, 12)
         .padding(.horizontal, 8)
@@ -74,21 +109,32 @@ struct TabBarItem: View {
 
     var body: some View {
         Button {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { selected = tab }
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                selected = tab
+            }
         } label: {
             VStack(spacing: 4) {
                 Image(systemName: icon)
                     .font(.system(size: 20, weight: .medium))
-                    .foregroundStyle(isActive ? Color(hex: "AA9DFF") : Color.white.opacity(0.3))
+                    .foregroundStyle(
+                        isActive
+                            ? Color(hex: "AA9DFF") : Color.white.opacity(0.3)
+                    )
                 Text(label)
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(isActive ? Color(hex: "AA9DFF") : Color.white.opacity(0.3))
+                    .foregroundStyle(
+                        isActive
+                            ? Color(hex: "AA9DFF") : Color.white.opacity(0.3)
+                    )
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 4)
             .background(
                 RoundedRectangle(cornerRadius: 18)
-                    .fill(isActive ? Color(hex: "AA9DFF").opacity(0.12) : Color.clear)
+                    .fill(
+                        isActive
+                            ? Color(hex: "AA9DFF").opacity(0.12) : Color.clear
+                    )
                     .padding(.horizontal, 4)
             )
         }
@@ -99,8 +145,7 @@ struct TabBarItem: View {
 // MARK: - Rooms View
 
 struct RoomsView: View {
-    // Sample rooms wired to real model
-    @State private var rooms: [PetRoom] = [.mochi]
+    @EnvironmentObject private var store: RoomStore
 
     let columns = [
         GridItem(.flexible(), spacing: 12),
@@ -120,9 +165,11 @@ struct RoomsView: View {
                             Text("Rooms")
                                 .font(.system(size: 28, weight: .semibold))
                                 .foregroundStyle(Color(hex: "F0EDE6"))
-                            Text("\(rooms.count) room\(rooms.count == 1 ? "" : "s") active")
-                                .font(.system(size: 13))
-                                .foregroundStyle(Color.white.opacity(0.3))
+                            Text(
+                                "\(store.rooms.count) room\(store.rooms.count == 1 ? "" : "s") active"
+                            )
+                            .font(.system(size: 13))
+                            .foregroundStyle(Color.white.opacity(0.3))
                         }
                         .padding(.horizontal, 20)
                         .padding(.top, 20)
@@ -143,8 +190,13 @@ struct RoomsView: View {
                             .padding(.bottom, 12)
 
                         LazyVGrid(columns: columns, spacing: 12) {
-                            ForEach(rooms) { room in
-                                NavigationLink(destination: RoomView(room: room)) {
+                            ForEach(store.rooms) { room in
+                                NavigationLink(
+                                    destination:
+                                        RoomView(room: room)
+                                        .onAppear { store.isInRoom = true }
+                                        .onDisappear { store.isInRoom = false }
+                                ) {
                                     PetRoomCard(
                                         name: room.name,
                                         breed: room.breed,
@@ -155,7 +207,7 @@ struct RoomsView: View {
                                 }
                                 .buttonStyle(.plain)
                             }
-                            AddPetCard()
+                            AddPetCard().environmentObject(store)
                         }
                         .padding(.horizontal, 16)
 
@@ -184,7 +236,8 @@ struct RoomsSectionLabel: View {
 
 struct LostRoomCard: View {
     var body: some View {
-        Button {} label: {
+        Button {
+        } label: {
             HStack(spacing: 14) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 15)
@@ -211,7 +264,9 @@ struct LostRoomCard: View {
                     .foregroundStyle(Color(hex: "E25718"))
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
-                    .background(Capsule().fill(Color(hex: "E25718").opacity(0.15)))
+                    .background(
+                        Capsule().fill(Color(hex: "E25718").opacity(0.15))
+                    )
 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 12))
@@ -223,7 +278,10 @@ struct LostRoomCard: View {
                     .fill(Color(hex: "1E1614"))
                     .overlay(
                         RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color(hex: "E25718").opacity(0.2), lineWidth: 0.5)
+                            .stroke(
+                                Color(hex: "E25718").opacity(0.2),
+                                lineWidth: 0.5
+                            )
                     )
             )
         }
@@ -279,10 +337,13 @@ struct PetRoomCard: View {
 // MARK: - Add Pet Ghost Card
 
 struct AddPetCard: View {
+    @EnvironmentObject private var store: RoomStore
     @State private var showCreateRoom = false
 
     var body: some View {
-        Button { showCreateRoom = true } label: {
+        Button {
+            showCreateRoom = true
+        } label: {
             VStack(spacing: 8) {
                 Image(systemName: "plus")
                     .font(.system(size: 26, weight: .light))
@@ -298,13 +359,19 @@ struct AddPetCard: View {
                     .fill(Color.white.opacity(0.03))
                     .overlay(
                         RoundedRectangle(cornerRadius: 20)
-                            .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
+                            .strokeBorder(
+                                style: StrokeStyle(lineWidth: 1, dash: [5, 4])
+                            )
                             .foregroundStyle(Color.white.opacity(0.1))
                     )
             )
         }
         .buttonStyle(.plain)
-        .sheet(isPresented: $showCreateRoom) { CreateRoomView() }
+        .sheet(isPresented: $showCreateRoom) {
+            CreateRoomView { newRoom in
+                store.add(newRoom)
+            }
+        }
     }
 }
 
@@ -312,19 +379,13 @@ struct AddPetCard: View {
 
 struct ActivityPlaceholderView: View {
     var body: some View {
-        ZStack {
-            Color(hex: "0D0D0E").ignoresSafeArea()
-            Text("Activity").foregroundStyle(Color(hex: "F0EDE6").opacity(0.4))
-        }
+        ActivityView()
     }
 }
 
 struct ProfilePlaceholderView: View {
     var body: some View {
-        ZStack {
-            Color(hex: "0D0D0E").ignoresSafeArea()
-            Text("Profile").foregroundStyle(Color(hex: "F0EDE6").opacity(0.4))
-        }
+        ProfileView()
     }
 }
 

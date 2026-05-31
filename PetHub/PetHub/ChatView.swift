@@ -109,7 +109,7 @@ struct ChatView: View {
         let newMsg = Message(
             sender: .me,
             content: .text(trimmed),
-            replyTo: replyingTo,
+//            replyTo: replyingTo,
             isOwn: true
         )
         withAnimation(.easeIn(duration: 0.15)) {

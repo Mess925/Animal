@@ -25,12 +25,20 @@ enum MessageContent: Equatable {
     case photo(String) // emoji placeholder; swap for UIImage/URL later
 }
 
+// Lightweight snapshot used for reply previews — avoids recursive struct
+struct ReplySnapshot {
+    let id: UUID
+    let senderName: String
+    let senderAccentHex: String
+    let content: MessageContent
+}
+
 struct Message: Identifiable {
     let id: UUID
     let sender: Member?        // nil = system message
     let content: MessageContent
     let timestamp: Date
-//    var replyTo: Message?
+    var replyTo: ReplySnapshot?
     var reactions: [String: Int] // emoji → count
     var isOwn: Bool
 
@@ -39,7 +47,7 @@ struct Message: Identifiable {
         sender: Member?,
         content: MessageContent,
         timestamp: Date = Date(),
-        replyTo: Message? = nil,
+        replyTo: ReplySnapshot? = nil,
         reactions: [String: Int] = [:],
         isOwn: Bool = false
     ) {
@@ -47,9 +55,19 @@ struct Message: Identifiable {
         self.sender = sender
         self.content = content
         self.timestamp = timestamp
-//        self.replyTo = replyTo
+        self.replyTo = replyTo
         self.reactions = reactions
         self.isOwn = isOwn
+    }
+
+    // Convenience: snapshot self for use as a reply reference
+    func asSnapshot() -> ReplySnapshot {
+        ReplySnapshot(
+            id: id,
+            senderName: sender?.name ?? "",
+            senderAccentHex: sender?.accentHex ?? "AA9DFF",
+            content: content
+        )
     }
 }
 
@@ -82,7 +100,9 @@ struct PhotoPost: Identifiable {
 
 // MARK: - Pet Room
 
-struct PetRoom: Identifiable {
+struct PetRoom: Identifiable, Hashable {
+    static func == (lhs: PetRoom, rhs: PetRoom) -> Bool { lhs.id == rhs.id }
+    func hash(into hasher: inout Hasher) { hasher.combine(id) }
     let id: UUID
     var name: String
     var breed: String

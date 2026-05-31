@@ -2,14 +2,14 @@
 //  CreateRoom.swift
 //  PetHub
 //
-//  Created by Han Min Thant on 29/5/26.
-//
 
 import Foundation
 import SwiftUI
+import UIKit
 
 struct CreateRoomView: View {
 
+    var onComplete: ((PetRoom) -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
 
     @State private var petName = ""
@@ -17,17 +17,35 @@ struct CreateRoomView: View {
     @State private var breed = ""
     @State private var age = ""
     @State private var bio = ""
+
+    @State private var customPetType = ""
+    @State private var selectedImage: UIImage? = nil
+    @State private var showImagePicker = false
+
     @State private var selectedColor: Color = Color(hex: "AA9DFF")
 
     private let petTypes = ["Dog", "Cat", "Bird", "Rabbit", "Other"]
-    private let roomColors: [Color] = [
-        Color(hex: "AA9DFF"),
-        Color(hex: "FF6B6B"),
-        Color(hex: "4ECDC4"),
-        Color(hex: "FFD166"),
-        Color(hex: "06D6A0"),
-        Color(hex: "F72585"),
+
+    private let roomColors: [(Color, String)] = [
+        (Color(hex: "AA9DFF"), "AA9DFF"),
+        (Color(hex: "FF6B6B"), "FF6B6B"),
+        (Color(hex: "4ECDC4"), "4ECDC4"),
+        (Color(hex: "FFD166"), "FFD166"),
+        (Color(hex: "06D6A0"), "06D6A0"),
+        (Color(hex: "F72585"), "F72585"),
     ]
+
+    private var displayPetType: String {
+        petType == "Other" ? customPetType : petType
+    }
+
+    private var canCreate: Bool {
+        !petName.trimmingCharacters(in: .whitespaces).isEmpty
+            && !breed.trimmingCharacters(in: .whitespaces).isEmpty
+            && !age.trimmingCharacters(in: .whitespaces).isEmpty
+            && (petType != "Other"
+                || !customPetType.trimmingCharacters(in: .whitespaces).isEmpty)
+    }
 
     var body: some View {
         ZStack {
@@ -39,7 +57,6 @@ struct CreateRoomView: View {
 
                     // Header
                     VStack(alignment: .leading, spacing: 8) {
-
                         HStack {
                             Button {
                                 dismiss()
@@ -48,17 +65,12 @@ struct CreateRoomView: View {
                                     Circle()
                                         .fill(Color.white.opacity(0.05))
                                         .frame(width: 38, height: 38)
-
                                     Image(systemName: "chevron.left")
-                                        .font(
-                                            .system(size: 15, weight: .medium)
-                                        )
                                         .foregroundStyle(
                                             Color.white.opacity(0.8)
                                         )
                                 }
                             }
-
                             Spacer()
                         }
 
@@ -72,296 +84,314 @@ struct CreateRoomView: View {
                                 .foregroundStyle(Color.white.opacity(0.35))
                         }
                     }
-                    .padding(.top, 10)
 
-                    // Pet Preview Card
-                    VStack(spacing: 0) {
-
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 24).fill(
-                                selectedColor.opacity(0.12)
-                            )
+                    // Preview Card
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 24)
+                            .fill(selectedColor.opacity(0.12))
                             .frame(height: 220)
 
-                            VStack(spacing: 14) {
+                        VStack(spacing: 14) {
 
-                                ZStack {
-                                    Circle()
-                                        .fill(selectedColor.opacity(0.18))
-                                        .frame(width: 90, height: 90)
+                            ZStack {
+                                Circle()
+                                    .fill(selectedColor.opacity(0.18))
+                                    .frame(width: 90, height: 90)
 
+                                if petType == "Other" {
+                                    if let image = selectedImage {
+                                        Image(uiImage: image)
+                                            .resizable()
+                                            .scaledToFill()
+                                            .frame(width: 90, height: 90)
+                                            .clipShape(Circle())
+                                    } else {
+                                        Image(systemName: "plus")
+                                            .font(.system(size: 28))
+                                            .foregroundStyle(selectedColor)
+                                    }
+                                } else {
                                     Image(systemName: selectedPetIcon)
                                         .font(.system(size: 42))
                                         .foregroundStyle(selectedColor)
                                 }
+                            }
+                            .onTapGesture {
+                                if petType == "Other" {
+                                    showImagePicker = true
+                                }
+                            }
 
-                                VStack(spacing: 4) {
-                                    Text(petName.isEmpty ? "Your Pet" : petName)
-                                        .font(
-                                            .system(size: 20, weight: .semibold)
-                                        )
-                                        .foregroundStyle(Color(hex: "F0EDE6"))
+                            VStack(spacing: 4) {
+                                Text(petName.isEmpty ? "Your Pet" : petName)
+                                    .font(.system(size: 20, weight: .semibold))
+                                    .foregroundStyle(Color(hex: "F0EDE6"))
 
-                                    Text(
-                                        breed.isEmpty
-                                            ? petType
-                                            : "\(breed) · \(petType)"
-                                    )
+                                Text(breedAgePreview)
                                     .font(.system(size: 12))
                                     .foregroundStyle(Color.white.opacity(0.4))
-                                }
                             }
                         }
                     }
 
                     // Form
                     VStack(spacing: 18) {
+
+                        // Colors
                         VStack(alignment: .leading, spacing: 10) {
                             Text("Room Color")
-                                .font(.system(size: 12, weight: .medium))
                                 .foregroundStyle(Color.white.opacity(0.35))
 
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 12) {
-                                    ForEach(roomColors, id: \.self) { color in
-
-                                        let active = color == selectedColor
-
+                                    ForEach(roomColors, id: \.1) { color, _ in
                                         Button {
-                                            withAnimation(
-                                                .spring(response: 0.25)
-                                            ) {
-                                                selectedColor = color
-                                            }
+                                            selectedColor = color
                                         } label: {
                                             Circle()
                                                 .fill(color)
                                                 .frame(width: 28, height: 28)
-                                                .overlay(
-                                                    Circle()
-                                                        .stroke(
-                                                            active
-                                                                ? Color.white
-                                                                    .opacity(
-                                                                        0.8
-                                                                    )
-                                                                : Color.clear,
-                                                            lineWidth: 1.5
-                                                        )
-                                                        .padding(3)
-                                                )
-                                                .scaleEffect(
-                                                    active ? 1.05 : 1.0
-                                                )
                                         }
-                                        .buttonStyle(.plain)
                                     }
                                 }
                             }
                         }
 
+                        // Pet Name
                         CreateRoomInput(
                             title: "Pet Name",
-                            placeholder: "Mochi",
-                            text: $petName
+                            placeholder: "e.g. Mochi",
+                            text: $petName,
+                            isRequired: true
                         )
 
+                        // Pet Type
                         VStack(alignment: .leading, spacing: 10) {
                             Text("Pet Type")
-                                .font(.system(size: 12, weight: .medium))
                                 .foregroundStyle(Color.white.opacity(0.35))
 
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 10) {
                                     ForEach(petTypes, id: \.self) { type in
-
-                                        let active = petType == type
-
                                         Button {
-                                            withAnimation(
-                                                .spring(response: 0.25)
-                                            ) {
-                                                petType = type
+                                            petType = type
+                                            if type != "Other" {
+                                                customPetType = ""
+                                                selectedImage = nil
                                             }
                                         } label: {
                                             Text(type)
-                                                .font(
-                                                    .system(
-                                                        size: 13,
-                                                        weight: .medium
-                                                    )
-                                                )
                                                 .foregroundStyle(
-                                                    active
+                                                    petType == type
                                                         ? Color(hex: "AA9DFF")
-                                                        : Color.white.opacity(
-                                                            0.45
-                                                        )
+                                                        : .white.opacity(0.45)
                                                 )
                                                 .padding(.horizontal, 16)
                                                 .padding(.vertical, 10)
                                                 .background(
-                                                    Capsule()
-                                                        .fill(
-                                                            active
-                                                                ? Color(
-                                                                    hex:
-                                                                        "AA9DFF"
-                                                                ).opacity(0.12)
-                                                                : Color.white
-                                                                    .opacity(
-                                                                        0.04
-                                                                    )
+                                                    Capsule().fill(
+                                                        Color.white.opacity(
+                                                            0.05
                                                         )
+                                                    )
                                                 )
                                         }
-                                        .buttonStyle(.plain)
                                     }
                                 }
                             }
                         }
 
-                        HStack(spacing: 14) {
+                        // Custom type
+                        if petType == "Other" {
+                            CreateRoomInput(
+                                title: "Custom Type",
+                                placeholder: "e.g. Hamster",
+                                text: $customPetType,
+                                isRequired: true
+                            )
+                        }
 
+                        // Breed + Age
+                        HStack(spacing: 14) {
                             CreateRoomInput(
                                 title: "Breed",
-                                placeholder: "Golden Retriever",
-                                text: $breed
+                                placeholder: "e.g. Golden Retriever",
+                                text: $breed,
+                                isRequired: true
                             )
 
                             CreateRoomInput(
                                 title: "Age",
-                                placeholder: "2y",
-                                text: $age
+                                placeholder: "e.g. 2",
+                                text: $age,
+                                isRequired: true,
+                                keyboardType: .numberPad
                             )
                         }
 
+                        // Bio
                         VStack(alignment: .leading, spacing: 10) {
-                            Text("Bio")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundStyle(Color.white.opacity(0.35))
-
+                            HStack {
+                                Text("Bio").font(
+                                    .system(size: 12, weight: .medium)
+                                ).foregroundStyle(Color.white.opacity(0.35))
+                                Text("optional").font(.system(size: 10))
+                                    .foregroundStyle(Color.white.opacity(0.2))
+                            }
                             ZStack(alignment: .topLeading) {
-
                                 if bio.isEmpty {
                                     Text("Tell something about your pet...")
                                         .font(.system(size: 14))
                                         .foregroundStyle(
                                             Color.white.opacity(0.2)
+                                        ).padding(.top, 14).padding(
+                                            .leading,
+                                            16
                                         )
-                                        .padding(.top, 14)
-                                        .padding(.leading, 16)
                                 }
-
-                                TextEditor(text: $bio)
-                                    .scrollContentBackground(.hidden)
-                                    .foregroundStyle(Color(hex: "F0EDE6"))
-                                    .frame(height: 120)
-                                    .padding(12)
-                            }
-                            .background(
-                                RoundedRectangle(cornerRadius: 18)
-                                    .fill(Color(hex: "171719"))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 18)
-                                            .stroke(
-                                                Color.white.opacity(0.06),
-                                                lineWidth: 0.5
-                                            )
+                                TextEditor(text: $bio).scrollContentBackground(
+                                    .hidden
+                                ).foregroundStyle(Color(hex: "F0EDE6")).frame(
+                                    height: 120
+                                ).padding(12)
+                            }.background(
+                                RoundedRectangle(cornerRadius: 18).fill(
+                                    Color(hex: "171719")
+                                ).overlay(
+                                    RoundedRectangle(cornerRadius: 18).stroke(
+                                        Color.white.opacity(0.06),
+                                        lineWidth: 0.5
                                     )
+                                )
                             )
                         }
                     }
 
                     // Create Button
                     Button {
+                        guard canCreate else { return }
+
+                        let newRoom = PetRoom(
+                            id: UUID(),
+                            name: petName,
+                            breed: breed,
+                            age: age,
+                            icon: selectedPetIcon,
+                            accentHex: "AA9DFF",
+                            members: [.me],
+                            photos: [],
+                            groupMessages: [],
+                            dmThreads: []
+                        )
+
+                        dismiss()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            onComplete?(newRoom)
+                        }
 
                     } label: {
-                        HStack {
-                            Spacer()
-
-                            Text("Create Room")
-                                .font(.system(size: 15, weight: .semibold))
-
-                            Spacer()
-                        }
-                        .foregroundStyle(Color.black)
-                        .padding(.vertical, 18)
-                        .background(
-                            RoundedRectangle(cornerRadius: 20)
-                                .fill(Color(hex: "AA9DFF"))
-                        )
+                        Text("Create Room")
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(
+                                canCreate
+                                    ? Color(hex: "AA9DFF")
+                                    : Color.white.opacity(0.1)
+                            )
+                            .foregroundStyle(
+                                canCreate ? .black : .white.opacity(0.3)
+                            )
+                            .cornerRadius(20)
                     }
-                    .buttonStyle(.plain)
-                    .padding(.top, 8)
+                    .disabled(!canCreate)
 
-                    Spacer()
-                        .frame(height: 40)
+                    Spacer().frame(height: 40)
                 }
                 .padding(.horizontal, 20)
             }
         }
-        .preferredColorScheme(.dark)
+        .sheet(isPresented: $showImagePicker) {
+            ImagePicker(image: $selectedImage)
+        }
     }
 
     private var selectedPetIcon: String {
         switch petType {
-        case "Dog":
-            return "dog.fill"
-        case "Cat":
-            return "cat.fill"
-        case "Bird":
-            return "bird.fill"
-        case "Rabbit":
-            return "hare.fill"
-        default:
-            return "pawprint.fill"
+        case "Dog": return "dog.fill"
+        case "Cat": return "cat.fill"
+        case "Bird": return "bird.fill"
+        case "Rabbit": return "hare.fill"
+        default: return "pawprint.fill"
         }
+    }
+
+    private var breedAgePreview: String {
+        let b = breed.isEmpty ? displayPetType : breed
+        let a = age.isEmpty ? "" : " · \(age)"
+        return b + a
     }
 }
 
 // MARK: - Input
 
 struct CreateRoomInput: View {
-
     let title: String
     let placeholder: String
-
     @Binding var text: String
+    var isRequired: Bool = false
+    var keyboardType: UIKeyboardType = .default
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-
-            Text(title)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(Color.white.opacity(0.35))
-
-            TextField(
-                "",
-                text: $text,
-                prompt:
-                    Text(placeholder)
-                    .foregroundStyle(Color.white.opacity(0.2))
-            )
-            .foregroundStyle(Color(hex: "F0EDE6"))
-            .padding(.horizontal, 16)
-            .frame(height: 56)
-            .background(
-                RoundedRectangle(cornerRadius: 18)
-                    .fill(Color(hex: "171719"))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 18)
-                            .stroke(
-                                Color.white.opacity(0.06),
-                                lineWidth: 0.5
-                            )
-                    )
-            )
-        }
+        TextField(title, text: $text)
+            .keyboardType(keyboardType)
+            .padding()
+            .background(Color(hex: "171719"))
+            .cornerRadius(18)
+            .foregroundStyle(.white)
     }
 }
 
-// MARK: - Preview
+// MARK: - Image Picker
+
+struct ImagePicker: UIViewControllerRepresentable {
+    @Binding var image: UIImage?
+
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(
+        _ uiViewController: UIImagePickerController,
+        context: Context
+    ) {}
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    class Coordinator: NSObject, UINavigationControllerDelegate,
+        UIImagePickerControllerDelegate
+    {
+        let parent: ImagePicker
+
+        init(_ parent: ImagePicker) {
+            self.parent = parent
+        }
+
+        func imagePickerController(
+            _ picker: UIImagePickerController,
+            didFinishPickingMediaWithInfo info: [UIImagePickerController
+                .InfoKey: Any]
+        ) {
+            if let img = info[.originalImage] as? UIImage {
+                parent.image = img
+            }
+            picker.dismiss(animated: true)
+        }
+    }
+}
 
 #Preview {
     CreateRoomView()

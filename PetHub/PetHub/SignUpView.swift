@@ -8,119 +8,143 @@
 import SwiftUI
 
 struct SignUpView: View {
+    @State private var name = ""
     @State private var email = ""
     @State private var password = ""
-    @State private var name = ""
 
+    @FocusState private var nameFocused: Bool
     @FocusState private var emailFocused: Bool
     @FocusState private var passwordFocused: Bool
-    @FocusState private var nameFocused: Bool
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                // Background
-                Color(hex: "0D0D0E").ignoresSafeArea()
+        ZStack {
+            Color(hex: "0D0D0E").ignoresSafeArea()
 
-                    .ignoresSafeArea()
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
 
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 0) {
-                        // Headline
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Join the")
+                    // Headline
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("New here?")
+                            .font(.system(size: 13))
+                            .foregroundStyle(Color.white.opacity(0.35))
+
+                        Group {
+                            Text("Join the ") +
                             Text("pack. 🐾")
-                                .font(.custom("Georgia-Italic", size: 30))
-                                .foregroundStyle(Color(hex: "AA9DFF"))
+                                .font(.custom("Georgia-Italic", size: 28))
+                                .foregroundColor(Color(hex: "AA9DFF"))
                         }
-                        .padding(.bottom, 28)
-                        VStack(spacing: 10) {
-                            AuthenticationField(
-                                title: "Name",
-                                placeholder: "Enter your name",
-                                text: $name,
-                                isFocused: $nameFocused
-                            )
+                        .font(.system(size: 26, weight: .bold))
+                        .foregroundStyle(Color(hex: "F0EDE6"))
+                        .lineSpacing(2)
 
-                            AuthenticationField(
-                                title: "Email",
-                                placeholder: "Enter your email",
-                                text: $email,
-                                isFocused: $emailFocused
-                            )
-
-                            AuthenticationField(
-                                title: "Password",
-                                placeholder: "Enter your password",
-                                text: $password,
-                                isSecure: true,
-                                isFocused: $passwordFocused
-                            )
-                        }
-                        .padding(.bottom, 10)
-
-                        AppNavButton(
-                            "Sign Up",
-                            style: .primary,
-                            destination: MainTabView()
-                        )
-                        .padding(.top, 12)
-                        .padding(.bottom, 12)
-
-                        // Divider
-                        OrDivider()
-                            .padding(.bottom, 12)
-
-                        // Secondary buttons
-                        VStack(spacing: 8) {
-                            AppButton(
-                                "Sign Up with Apple",
-                                style: .secondary,
-                                icon: "apple.logo"
-                            ) {
-                                signUpWithApple()
-                            }
-
-                            AppNavButton(
-                                "Sign Up with Email",
-                                style: .secondary,
-                                icon: "envelope",
-                                destination: EmailSignInView()
-                            )
-                        }
-                        .padding(.bottom, 28)
-
-                        // Sign up link
-                        HStack {
-                            Spacer()
-                            Text("Already have an Account?")
-                                .foregroundStyle(Color.white.opacity(0.22))
-                                .font(.system(size: 11))
-                            NavigationLink(destination: SignInView()) {
-                                (Text("Sign In")
-                                    .foregroundStyle(
-                                        Color(hex: "AA9DFF").opacity(0.7)
-                                    ))
-                                    .font(.system(size: 11))
-                            }
-                            Spacer()
-                        }
+                        Text("Create your account and get started")
+                            .font(.system(size: 12))
+                            .foregroundStyle(Color.white.opacity(0.28))
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.top, 20)
-                    .padding(.bottom, 40)
+                    .padding(.bottom, 32)
+
+                    // Fields
+                    VStack(spacing: 10) {
+                        AuthField(
+                            label: "Name",
+                            placeholder: "Enter your name",
+                            text: $name,
+                            isFocused: $nameFocused,
+                            isSecure: false
+                        )
+                        AuthField(
+                            label: "Email",
+                            placeholder: "Enter your email",
+                            text: $email,
+                            isFocused: $emailFocused,
+                            isSecure: false
+                        )
+                        AuthField(
+                            label: "Password",
+                            placeholder: "Create a password",
+                            text: $password,
+                            isFocused: $passwordFocused,
+                            isSecure: true
+                        )
+                    }
+                    .padding(.bottom, 24)
+
+                    // Create Account CTA
+                    NavigationLink(destination: MainTabView()) {
+                        Text("Create Account")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(Color(hex: "1a1630"))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color(hex: "AA9DFF"))
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.bottom, 16)
+
+                    // Divider
+                    AuthDivider()
+                        .padding(.bottom, 16)
+
+                    // Apple
+                    Button {
+                        signUpWithApple()
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "apple.logo")
+                                .font(.system(size: 15, weight: .medium))
+                            Text("Continue with Apple")
+                                .font(.system(size: 14, weight: .medium))
+                        }
+                        .foregroundStyle(Color(hex: "F0EDE6"))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 15)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color(hex: "1C1C1F"))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(Color.white.opacity(0.09), lineWidth: 0.5)
+                                )
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.bottom, 32)
+
+                    // Sign in link
+                    HStack(spacing: 4) {
+                        Spacer()
+                        Text("Already have an account?")
+                            .font(.system(size: 12))
+                            .foregroundStyle(Color.white.opacity(0.25))
+                        NavigationLink(destination: SignInView()) {
+                            Text("Sign In")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(Color(hex: "AA9DFF").opacity(0.75))
+                        }
+                        Spacer()
+                    }
                 }
+                .padding(.horizontal, 24)
+                .padding(.top, 20)
+                .padding(.bottom, 40)
             }
-            .preferredColorScheme(.dark)
         }
+        .navigationBarBackButtonHidden(false)
+        .preferredColorScheme(.dark)
     }
 
     private func signUpWithApple() {
         print("Apple Sign Up tapped")
-        // Add ASAuthorizationAppleIDProvider logic here
     }
 }
 
 #Preview {
-    SignUpView()
+    NavigationStack {
+        SignUpView()
+    }
 }
