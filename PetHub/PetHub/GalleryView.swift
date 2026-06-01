@@ -1,10 +1,10 @@
-
 //
 //  GalleryView.swift
 //  PetHub
 //
 
 import SwiftUI
+import PhotosUI
 
 // MARK: - GalleryView
 
@@ -12,22 +12,45 @@ struct GalleryView: View {
     let room: PetRoom
     @State private var selectedPhoto: PhotoPost? = nil
     @State private var showCamera = false
+    @State private var photos: [PhotoPost]
 
-    // 3-column grid
     let columns = Array(repeating: GridItem(.flexible(), spacing: 2), count: 3)
+
+    init(room: PetRoom) {
+        self.room = room
+        _photos = State(initialValue: room.photos)
+    }
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
-            ScrollView {
-                LazyVGrid(columns: columns, spacing: 2) {
-                    ForEach(Array(room.photos.enumerated()), id: \.element.id) { index, photo in
-                        PhotoCell(photo: photo, index: index)
-                            .onTapGesture { selectedPhoto = photo }
+            Group {
+                if photos.isEmpty {
+                    VStack(spacing: 16) {
+                        Image(systemName: "camera.fill")
+                            .font(.system(size: 44))
+                            .foregroundStyle(room.accent.opacity(0.3))
+                        Text("No photos yet")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundStyle(Color.white.opacity(0.3))
+                        Text("Tap the camera to capture a moment")
+                            .font(.system(size: 13))
+                            .foregroundStyle(Color.white.opacity(0.18))
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding(.horizontal, 40)
+                } else {
+                    ScrollView {
+                        LazyVGrid(columns: columns, spacing: 2) {
+                            ForEach(Array(photos.enumerated()), id: \.element.id) { index, photo in
+                                PhotoCell(photo: photo, index: index)
+                                    .onTapGesture { selectedPhoto = photo }
+                            }
+                        }
+                        .padding(.top, 2)
+                        Spacer().frame(height: 100)
                     }
                 }
-                .padding(.top, 2)
-
-                Spacer().frame(height: 100)
             }
 
             // Camera FAB
@@ -46,8 +69,60 @@ struct GalleryView: View {
             .padding(.trailing, 20)
             .padding(.bottom, 24)
         }
+        // Pass a binding so PhotoDetailView can write comments back
         .sheet(item: $selectedPhoto) { photo in
-            PhotoDetailView(photo: photo, room: room)
+            if let idx = photos.firstIndex(where: { $0.id == photo.id }) {
+                PhotoDetailView(photo: $photos[idx], room: room)
+            }
+        }
+        .fullScreenCover(isPresented: $showCamera) {
+            CaptureAndPostView(accent: room.accent) { image, caption in
+                let newPhoto = PhotoPost(
+                    id: UUID(),
+                    image: image,
+                    emoji: "📸",
+                    backgroundHex: room.accentHex,
+                    caption: caption,
+                    postedBy: .me,
+                    timestamp: Date(),
+                    likeCount: 0,
+                    comments: [],
+                    isLiked: false
+                )
+                withAnimation { photos.insert(newPhoto, at: 0) }
+            }
+        }
+    }
+}
+
+// MARK: - Camera Picker
+
+struct CameraPickerView: UIViewControllerRepresentable {
+    var onPick: (UIImage) -> Void
+
+    func makeCoordinator() -> Coordinator { Coordinator(onPick: onPick) }
+
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.sourceType = .camera
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+
+    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let onPick: (UIImage) -> Void
+        init(onPick: @escaping (UIImage) -> Void) { self.onPick = onPick }
+
+        func imagePickerController(_ picker: UIImagePickerController,
+                                   didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+            picker.dismiss(animated: true)
+            if let img = info[.originalImage] as? UIImage { onPick(img) }
+        }
+
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            picker.dismiss(animated: true)
         }
     }
 }
@@ -58,29 +133,31 @@ struct PhotoCell: View {
     let photo: PhotoPost
     let index: Int
 
-    // Every 5th photo spans 2 columns
     var isWide: Bool { index % 5 == 0 }
 
     var body: some View {
         GeometryReader { geo in
             ZStack(alignment: .bottomLeading) {
-                // Background
-                Rectangle()
-                    .fill(photo.background)
+                if let img = photo.image {
+                    Image(uiImage: img)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: geo.size.width, height: geo.size.height)
+                        .clipped()
+                } else {
+                    Rectangle()
+                        .fill(photo.background)
+                    Text(photo.emoji)
+                        .font(.system(size: isWide ? 56 : 38))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
 
-                // Emoji
-                Text(photo.emoji)
-                    .font(.system(size: isWide ? 56 : 38))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                // Gradient overlay
                 LinearGradient(
                     colors: [Color.clear, Color.black.opacity(0.55)],
                     startPoint: .center,
                     endPoint: .bottom
                 )
 
-                // Stats
                 HStack(spacing: 6) {
                     Label("\(photo.likeCount)", systemImage: "heart.fill")
                         .font(.system(size: 10, weight: .medium))
@@ -105,26 +182,18 @@ struct PhotoCell: View {
 // MARK: - Photo Detail View
 
 struct PhotoDetailView: View {
-    let photo: PhotoPost
+    @Binding var photo: PhotoPost
     let room: PetRoom
     @Environment(\.dismiss) private var dismiss
     @State private var commentText = ""
-    @State private var isLiked: Bool
-    @State private var likeCount: Int
-
-    init(photo: PhotoPost, room: PetRoom) {
-        self.photo = photo
-        self.room = room
-        _isLiked = State(initialValue: photo.isLiked)
-        _likeCount = State(initialValue: photo.likeCount)
-    }
+    @FocusState private var commentFocused: Bool
 
     var body: some View {
         ZStack {
             Color(hex: "0D0D0E").ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Nav bar
+                // Top bar
                 HStack {
                     Button { dismiss() } label: {
                         ZStack {
@@ -149,15 +218,25 @@ struct PhotoDetailView: View {
 
                 // Photo
                 ZStack {
-                    RoundedRectangle(cornerRadius: 24)
-                        .fill(photo.background)
-                        .frame(height: 300)
-                    Text(photo.emoji)
-                        .font(.system(size: 96))
+                    if let img = photo.image {
+                        Image(uiImage: img)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 300)
+                            .clipped()
+                            .clipShape(RoundedRectangle(cornerRadius: 24))
+                    } else {
+                        RoundedRectangle(cornerRadius: 24)
+                            .fill(photo.background)
+                            .frame(height: 300)
+                        Text(photo.emoji)
+                            .font(.system(size: 96))
+                    }
                 }
                 .padding(.horizontal, 16)
 
-                // Caption + actions
+                // Author + like
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(spacing: 10) {
                         MemberAvatar(member: photo.postedBy, size: 32)
@@ -170,19 +249,17 @@ struct PhotoDetailView: View {
                                 .foregroundStyle(Color.white.opacity(0.3))
                         }
                         Spacer()
-
-                        // Like button
                         Button {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
-                                isLiked.toggle()
-                                likeCount += isLiked ? 1 : -1
+                                photo.isLiked.toggle()
+                                photo.likeCount += photo.isLiked ? 1 : -1
                             }
                         } label: {
                             HStack(spacing: 5) {
-                                Image(systemName: isLiked ? "heart.fill" : "heart")
+                                Image(systemName: photo.isLiked ? "heart.fill" : "heart")
                                     .font(.system(size: 17))
-                                    .foregroundStyle(isLiked ? Color(hex: "FF6B6B") : Color.white.opacity(0.4))
-                                Text("\(likeCount)")
+                                    .foregroundStyle(photo.isLiked ? Color(hex: "FF6B6B") : Color.white.opacity(0.4))
+                                Text("\(photo.likeCount)")
                                     .font(.system(size: 13, weight: .medium))
                                     .foregroundStyle(Color.white.opacity(0.5))
                             }
@@ -204,7 +281,7 @@ struct PhotoDetailView: View {
                     .padding(.horizontal, 20)
                     .padding(.vertical, 14)
 
-                // Comments
+                // Comments list
                 ScrollView {
                     VStack(spacing: 0) {
                         if photo.comments.isEmpty {
@@ -224,15 +301,15 @@ struct PhotoDetailView: View {
 
                 Spacer()
 
-                // Comment input
+                // Comment input — now actually posts
                 HStack(spacing: 10) {
                     MemberAvatar(member: .me, size: 30)
-
                     TextField(
                         "",
                         text: $commentText,
                         prompt: Text("Add a comment…").foregroundStyle(Color.white.opacity(0.2))
                     )
+                    .focused($commentFocused)
                     .foregroundStyle(Color(hex: "F0EDE6"))
                     .font(.system(size: 13))
                     .padding(.horizontal, 14)
@@ -245,9 +322,10 @@ struct PhotoDetailView: View {
                                     .stroke(Color.white.opacity(0.07), lineWidth: 0.5)
                             )
                     )
+                    .onSubmit { submitComment() }
 
                     if !commentText.isEmpty {
-                        Button {} label: {
+                        Button { submitComment() } label: {
                             ZStack {
                                 Circle().fill(Color(hex: "AA9DFF")).frame(width: 34, height: 34)
                                 Image(systemName: "arrow.up")
@@ -275,6 +353,24 @@ struct PhotoDetailView: View {
         }
         .preferredColorScheme(.dark)
         .animation(.easeInOut(duration: 0.15), value: commentText.isEmpty)
+    }
+
+    // MARK: - Submit comment
+
+    private func submitComment() {
+        let trimmed = commentText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+
+        let newComment = Message(
+            sender: .me,
+            content: .text(trimmed),
+            isOwn: true
+        )
+        withAnimation(.easeIn(duration: 0.15)) {
+            photo.comments.append(newComment)
+        }
+        commentText = ""
+        commentFocused = false
     }
 }
 

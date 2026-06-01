@@ -35,12 +35,13 @@ struct ReplySnapshot {
 
 struct Message: Identifiable {
     let id: UUID
-    let sender: Member?        // nil = system message
+    let sender: Member?
     let content: MessageContent
     let timestamp: Date
     var replyTo: ReplySnapshot?
-    var reactions: [String: Int] // emoji → count
+    var reactions: [String: Int]
     var isOwn: Bool
+    var image: UIImage? = nil
 
     init(
         id: UUID = UUID(),
@@ -49,7 +50,8 @@ struct Message: Identifiable {
         timestamp: Date = Date(),
         replyTo: ReplySnapshot? = nil,
         reactions: [String: Int] = [:],
-        isOwn: Bool = false
+        isOwn: Bool = false,
+        image: UIImage? = nil
     ) {
         self.id = id
         self.sender = sender
@@ -58,6 +60,7 @@ struct Message: Identifiable {
         self.replyTo = replyTo
         self.reactions = reactions
         self.isOwn = isOwn
+        self.image = image
     }
 
     // Convenience: snapshot self for use as a reply reference
@@ -86,6 +89,7 @@ struct DMThread: Identifiable {
 
 struct PhotoPost: Identifiable {
     let id: UUID
+    var image: UIImage? = nil
     let emoji: String          // placeholder for real image
     let backgroundHex: String
     let caption: String

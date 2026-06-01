@@ -16,13 +16,12 @@ enum ActivityType {
 }
 
 // MARK: - Activity Destination
-// Describes exactly where tapping an item should take the user
 
 enum ActivityDestination {
-    case photo(room: PetRoom, photo: PhotoPost)           // open photo detail sheet
-    case roomGallery(room: PetRoom)                       // open room on gallery tab
-    case roomPeople(room: PetRoom)                        // open room on people tab
-    case lostFound                                        // open lost & found
+    case photo(room: PetRoom, photo: PhotoPost)
+    case roomGallery(room: PetRoom)
+    case roomPeople(room: PetRoom)
+    case lostFound
 }
 
 // MARK: - Activity Item
@@ -185,16 +184,14 @@ struct ActivityView: View {
                 }
             }
             .navigationBarHidden(true)
-            // Deep link: Room (gallery or people tab)
             .navigationDestination(for: PetRoom.self) { room in
                 RoomView(room: room, initialTab: presentedRoomTab)
             }
         }
-        // Deep link: Photo detail
+        // ← Wrap the photo in a local @State so PhotoDetailView gets a Binding
         .sheet(item: $presentedPhoto) { photo in
-            PhotoDetailView(photo: photo, room: PetRoom.mochi)
+            PhotoDetailSheetWrapper(photo: photo, room: PetRoom.mochi)
         }
-        // Deep link: Lost & Found placeholder
         .sheet(isPresented: $showLostFound) {
             LostFoundPlaceholderView()
         }
@@ -204,15 +201,12 @@ struct ActivityView: View {
         switch destination {
         case .photo(_, let photo):
             presentedPhoto = photo
-
         case .roomGallery(let room):
             presentedRoomTab = .gallery
             navigationPath.append(room)
-
         case .roomPeople(let room):
             presentedRoomTab = .people
             navigationPath.append(room)
-
         case .lostFound:
             showLostFound = true
         }
@@ -243,6 +237,25 @@ struct ActivityView: View {
     }
 }
 
+// MARK: - PhotoDetailSheetWrapper
+// Owns a @State copy of the photo so PhotoDetailView gets a valid Binding.
+// Changes (likes, comments) are local to this sheet session — fine until
+// you wire up a shared store later.
+
+private struct PhotoDetailSheetWrapper: View {
+    @State private var photo: PhotoPost
+    let room: PetRoom
+
+    init(photo: PhotoPost, room: PetRoom) {
+        _photo = State(initialValue: photo)
+        self.room = room
+    }
+
+    var body: some View {
+        PhotoDetailView(photo: $photo, room: room)
+    }
+}
+
 // MARK: - Section Label
 
 struct ActivitySectionLabel: View {
@@ -265,7 +278,6 @@ struct ActivityRow: View {
         Button { onTap() } label: {
             HStack(alignment: .top, spacing: 12) {
 
-                // Avatar + badge
                 ZStack(alignment: .bottomTrailing) {
                     if item.type == .lostAnimal {
                         ZStack {
@@ -291,7 +303,6 @@ struct ActivityRow: View {
                     .offset(x: 2, y: 2)
                 }
 
-                // Text
                 VStack(alignment: .leading, spacing: 4) {
                     Text(item.detail)
                         .font(.system(size: 13))
@@ -324,7 +335,6 @@ struct ActivityRow: View {
 
                 Spacer()
 
-                // Photo thumbnail
                 if let emoji = item.photoEmoji {
                     ZStack {
                         RoundedRectangle(cornerRadius: 10)

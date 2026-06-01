@@ -4,8 +4,9 @@
 //
 
 import SwiftUI
+import PhotosUI
 
-// MARK: - ChatView (reusable for group + DM)
+// MARK: - ChatView
 
 struct ChatView: View {
     let title: String
@@ -19,7 +20,9 @@ struct ChatView: View {
     @State private var messageText = ""
     @State private var replyingTo: Message? = nil
     @State private var allMessages: [Message]
+    @State private var showPhotoPicker = false
     @FocusState private var inputFocused: Bool
+    @State private var selectedImage: UIImage? = nil
 
     private var accent: Color { Color(hex: accentHex) }
 
@@ -38,7 +41,6 @@ struct ChatView: View {
             Color(hex: "0D0D0E").ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Top bar
                 ChatTopBar(
                     title: title,
                     subtitle: subtitle,
@@ -48,10 +50,8 @@ struct ChatView: View {
                     onDismiss: { dismiss() }
                 )
 
-                Divider()
-                    .background(Color.white.opacity(0.05))
+                Divider().background(Color.white.opacity(0.05))
 
-                // Messages
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(spacing: 0) {
@@ -77,39 +77,84 @@ struct ChatView: View {
                     .onChange(of: allMessages.count) {
                         withAnimation { proxy.scrollTo("bottom") }
                     }
-                    .onAppear {
-                        proxy.scrollTo("bottom")
-                    }
+                    .onAppear { proxy.scrollTo("bottom") }
                 }
 
-                // Reply preview bar
                 if let reply = replyingTo {
                     ReplyPreviewBar(message: reply, accentHex: accentHex) {
                         replyingTo = nil
                     }
                 }
 
-                // Input
+                if let image = selectedImage {
+                    HStack {
+                        ZStack(alignment: .topTrailing) {
+                            Image(uiImage: image)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 80, height: 80)
+                                .clipped()
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                            Button {
+                                selectedImage = nil
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.title3)
+                                    .foregroundStyle(.white)
+                                    .background(Circle().fill(.black.opacity(0.5)))
+                            }
+                            .offset(x: 6, y: -6)
+                        }
+
+                        Spacer()
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(Color(hex: "161618"))
+                }
+
                 ChatInputBar(
                     text: $messageText,
                     accentHex: accentHex,
+                    hasSelectedImage: selectedImage != nil,
                     isFocused: _inputFocused,
                     onSend: sendMessage,
-                    onPhotoTap: {}
+                    onPhotoTap: { showPhotoPicker = true }
                 )
-            }
+            } // ← closes VStack
         }
         .preferredColorScheme(.dark)
+        .sheet(isPresented: $showPhotoPicker) {
+            PHPickerView { image in
+                selectedImage = image
+            }
+        }
     }
 
     private func sendMessage() {
+        if let image = selectedImage {
+            let newMsg = Message(
+                sender: .me,
+                content: .photo("📸"),
+                isOwn: true,
+                image: image
+            )
+            withAnimation(.easeIn(duration: 0.15)) {
+                allMessages.append(newMsg)
+            }
+            selectedImage = nil
+            messageText = ""
+            replyingTo = nil
+            return
+        }
+
         let trimmed = messageText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
         let newMsg = Message(
             sender: .me,
             content: .text(trimmed),
-//            replyTo: replyingTo,
             isOwn: true
         )
         withAnimation(.easeIn(duration: 0.15)) {
@@ -145,7 +190,6 @@ struct ChatTopBar: View {
                 }
             }
 
-            // Avatar or group icon
             if isGroup {
                 ZStack {
                     Circle()
@@ -189,13 +233,6 @@ struct ChatTopBar: View {
             }
 
             Spacer()
-
-            Button {} label: {
-                Image(systemName: "ellipsis")
-                    .font(.system(size: 17))
-                    .foregroundStyle(Color.white.opacity(0.4))
-                    .rotationEffect(.degrees(90))
-            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
@@ -220,12 +257,10 @@ struct MessageBubble: View {
                 MemberAvatar(member: sender, size: 28)
                     .padding(.bottom, 2)
             } else {
-                // DM — no avatar needed on their side (just a bit of padding)
                 Spacer().frame(width: 0)
             }
 
             VStack(alignment: message.isOwn ? .trailing : .leading, spacing: 4) {
-                // Sender name (group only, not own)
                 if isGroup && !message.isOwn, let sender = message.sender {
                     Text(sender.name)
                         .font(.system(size: 10, weight: .medium))
@@ -233,12 +268,6 @@ struct MessageBubble: View {
                         .padding(.leading, 4)
                 }
 
-                // Reply reference
-//                if let reply = message.replyTo {
-//                    ReplyReference(message: reply, isOwn: message.isOwn)
-//                }
-
-                // Bubble content
                 Group {
                     switch message.content {
                     case .text(let text):
@@ -256,13 +285,23 @@ struct MessageBubble: View {
                                     )
                             )
 
-                    case .photo(let emoji):
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color.white.opacity(0.06))
-                                .frame(width: 180, height: 140)
-                            Text(emoji)
-                                .font(.system(size: 52))
+                    case .photo:
+                        if let img = message.image {
+                            Image(uiImage: img)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 200, height: 160)
+                                .clipped()
+                                .clipShape(RoundedRectangle(cornerRadius: 16))
+                        } else {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color.white.opacity(0.06))
+                                    .frame(width: 180, height: 140)
+                                Image(systemName: "photo")
+                                    .font(.system(size: 32))
+                                    .foregroundStyle(Color.white.opacity(0.2))
+                            }
                         }
                     }
                 }
@@ -275,7 +314,6 @@ struct MessageBubble: View {
                     Button("Cancel", role: .cancel) {}
                 }
 
-                // Reactions
                 if !message.reactions.isEmpty {
                     HStack(spacing: 4) {
                         ForEach(Array(message.reactions.keys.sorted()), id: \.self) { emoji in
@@ -295,7 +333,6 @@ struct MessageBubble: View {
                     }
                 }
 
-                // Timestamp
                 Text(message.timestamp.timeString())
                     .font(.system(size: 9))
                     .foregroundStyle(Color.white.opacity(0.2))
@@ -310,7 +347,7 @@ struct MessageBubble: View {
     }
 }
 
-// MARK: - Reply Reference (inside a bubble)
+// MARK: - Reply Reference
 
 struct ReplyReference: View {
     let message: Message
@@ -329,11 +366,8 @@ struct ReplyReference: View {
 
                 Group {
                     switch message.content {
-                    case .text(let t):
-                        Text(t)
-                            .lineLimit(1)
-                    case .photo:
-                        Label("Photo", systemImage: "photo")
+                    case .text(let t): Text(t).lineLimit(1)
+                    case .photo: Label("Photo", systemImage: "photo")
                     }
                 }
                 .font(.system(size: 11))
@@ -342,15 +376,12 @@ struct ReplyReference: View {
             .padding(.horizontal, 8)
             .padding(.vertical, 5)
         }
-        .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color.white.opacity(0.05))
-        )
+        .background(RoundedRectangle(cornerRadius: 8).fill(Color.white.opacity(0.05)))
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
 
-// MARK: - Reply Preview Bar (input area)
+// MARK: - Reply Preview Bar
 
 struct ReplyPreviewBar: View {
     let message: Message
@@ -371,10 +402,8 @@ struct ReplyPreviewBar: View {
 
                 Group {
                     switch message.content {
-                    case .text(let t):
-                        Text(t).lineLimit(1)
-                    case .photo:
-                        Label("Photo", systemImage: "photo")
+                    case .text(let t): Text(t).lineLimit(1)
+                    case .photo: Label("Photo", systemImage: "photo")
                     }
                 }
                 .font(.system(size: 12))
@@ -392,12 +421,7 @@ struct ReplyPreviewBar: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .background(Color(hex: "161618"))
-        .overlay(
-            Rectangle()
-                .fill(Color.white.opacity(0.05))
-                .frame(height: 0.5),
-            alignment: .top
-        )
+        .overlay(Rectangle().fill(Color.white.opacity(0.05)).frame(height: 0.5), alignment: .top)
         .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 }
@@ -407,15 +431,18 @@ struct ReplyPreviewBar: View {
 struct ChatInputBar: View {
     @Binding var text: String
     let accentHex: String
+    let hasSelectedImage: Bool           // ← fix: was missing from the original
     @FocusState var isFocused: Bool
     let onSend: () -> Void
     let onPhotoTap: () -> Void
 
     private var accent: Color { Color(hex: accentHex) }
+    private var canSend: Bool {
+        !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || hasSelectedImage
+    }
 
     var body: some View {
         HStack(spacing: 8) {
-            // Photo attach
             Button { onPhotoTap() } label: {
                 ZStack {
                     Circle()
@@ -429,7 +456,6 @@ struct ChatInputBar: View {
             }
             .buttonStyle(.plain)
 
-            // Text field
             TextField(
                 "",
                 text: $text,
@@ -449,17 +475,15 @@ struct ChatInputBar: View {
                     )
             )
 
-            // Send / Mic
+            // ← fix: was a Button wrapping another Button; collapsed into one
             Button {
-                if !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    onSend()
-                }
+                if canSend { onSend() }
             } label: {
                 ZStack {
                     Circle()
-                        .fill(text.isEmpty ? Color.white.opacity(0.07) : accent)
+                        .fill(canSend ? accent : Color.white.opacity(0.07))
                         .frame(width: 38, height: 38)
-                    Image(systemName: text.isEmpty ? "mic.fill" : "arrow.up")
+                    Image(systemName: canSend ? "arrow.up" : "mic.fill")
                         .font(.system(size: text.isEmpty ? 15 : 16, weight: .semibold))
                         .foregroundStyle(text.isEmpty ? Color.white.opacity(0.3) : Color.black.opacity(0.8))
                 }
@@ -472,14 +496,44 @@ struct ChatInputBar: View {
         .background(
             Rectangle()
                 .fill(Color(hex: "0D0D0E"))
-                .overlay(
-                    Rectangle()
-                        .fill(Color.white.opacity(0.05))
-                        .frame(height: 0.5),
-                    alignment: .top
-                )
+                .overlay(Rectangle().fill(Color.white.opacity(0.05)).frame(height: 0.5), alignment: .top)
                 .ignoresSafeArea(edges: .bottom)
         )
+    }
+}
+
+// MARK: - PHPicker for chat
+
+struct PHPickerView: UIViewControllerRepresentable {
+    var onPick: (UIImage) -> Void
+
+    func makeCoordinator() -> Coordinator { Coordinator(onPick: onPick) }
+
+    func makeUIViewController(context: Context) -> PHPickerViewController {
+        var config = PHPickerConfiguration()
+        config.selectionLimit = 1
+        config.filter = .images
+        let picker = PHPickerViewController(configuration: config)
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: PHPickerViewController, context: Context) {}
+
+    class Coordinator: NSObject, PHPickerViewControllerDelegate {
+        let onPick: (UIImage) -> Void
+        init(onPick: @escaping (UIImage) -> Void) { self.onPick = onPick }
+
+        func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+            picker.dismiss(animated: true)
+            guard let provider = results.first?.itemProvider,
+                  provider.canLoadObject(ofClass: UIImage.self) else { return }
+            provider.loadObject(ofClass: UIImage.self) { image, _ in
+                DispatchQueue.main.async {
+                    if let img = image as? UIImage { self.onPick(img) }
+                }
+            }
+        }
     }
 }
 

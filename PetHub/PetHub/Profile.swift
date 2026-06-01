@@ -34,7 +34,7 @@ extension UserProfile {
 
 struct ProfileView: View {
     @State private var profile = UserProfile.me
-    @State private var rooms: [PetRoom] = [.mochi]
+    @EnvironmentObject private var store: RoomStore
     @State private var showEditProfile = false
     @State private var showChangePassword = false
     @State private var showLogoutAlert = false
@@ -61,7 +61,7 @@ struct ProfileView: View {
 
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 12) {
-                                ForEach(rooms) { room in
+                                ForEach(store.rooms) { room in
                                     PetChip(room: room)
                                 }
                             }
@@ -195,7 +195,7 @@ struct ProfileView: View {
 
     private var statsRow: some View {
         HStack(spacing: 0) {
-            StatCell(value: "\(rooms.count)", label: "Rooms")
+            StatCell(value: "\(store.rooms.count)", label: "Rooms")
             StatDivider()
             StatCell(value: "\(totalPhotos)", label: "Photos")
         }
@@ -210,7 +210,7 @@ struct ProfileView: View {
     }
 
     private var totalPhotos: Int {
-        rooms.reduce(0) { $0 + $1.photos.count }
+        store.rooms.reduce(0) { $0 + $1.photos.count }
     }
 }
 
