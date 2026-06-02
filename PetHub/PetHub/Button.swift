@@ -63,7 +63,7 @@ struct AppButton: View {
         switch style {
         case .primary:
             LinearGradient(
-                colors: [Color(hex: "AA9DFF"), Color(hex: "8B7EEO")],
+                colors: [Color(hex: "AA9DFF"), Color(hex: "8B7EE0")],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -144,7 +144,7 @@ struct AppNavButton<Destination: View>: View {
         switch style {
         case .primary:
             LinearGradient(
-                colors: [Color(hex: "AA9DFF"), Color(hex: "8B7EEO")],
+                colors: [Color(hex: "AA9DFF"), Color(hex: "8B7EE0")],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )

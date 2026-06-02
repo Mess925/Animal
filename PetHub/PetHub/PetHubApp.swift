@@ -1,48 +1,30 @@
-//
-//  PetHubApp.swift
-//  PetHub
-//
-//  Created by Han Min Thant on 26/5/26.
-//
-
-import SwiftData
 import SwiftUI
+import Supabase
 
 @main
 struct PetHubApp: App {
     @AppStorage("hasSeenOnboarding") var hasSeenOnboarding = false
-
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self
-        ])
-        let modelConfiguration = ModelConfiguration(
-            schema: schema,
-            isStoredInMemoryOnly: false
-        )
-
-        do {
-            return try ModelContainer(
-                for: schema,
-                configurations: [modelConfiguration]
-            )
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }()
+    @State private var isLoggedIn = false
 
     var body: some Scene {
         WindowGroup {
-            let _ = UserDefaults.standard.removeObject(
-                forKey: "hasSeenOnboarding"
-            )
-
-            if hasSeenOnboarding {
-                MainTabView()
-            } else {
-                OnboardingView()
+            ZStack {
+                if !hasSeenOnboarding {
+                    OnboardingView()
+                } else if isLoggedIn {
+                    MainTabView()
+                } else {
+                    NavigationStack {
+                        WelcomeView()
+                    }
+                }
+            }
+            .task {
+                isLoggedIn = supabase.auth.currentSession != nil
+                for await state in supabase.auth.authStateChanges {
+                    isLoggedIn = state.session != nil
+                }
             }
         }
-        .modelContainer(sharedModelContainer)
     }
 }

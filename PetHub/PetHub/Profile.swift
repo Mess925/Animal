@@ -4,7 +4,7 @@
 //
 //  Created by Han Min Thant on 31/5/26.
 //
-
+import Supabase
 import Foundation
 import SwiftUI
 
@@ -136,7 +136,11 @@ struct ProfileView: View {
             ChangePasswordView()
         }
         .alert("Log Out?", isPresented: $showLogoutAlert) {
-            Button("Log Out", role: .destructive) {}
+            Button("Log Out", role: .destructive) {
+                Task {
+                    try? await supabase.auth.signOut()
+                }
+            }
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("You'll need to sign in again to access your rooms.")

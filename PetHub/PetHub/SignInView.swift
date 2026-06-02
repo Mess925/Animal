@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Supabase
 
 struct SignInView: View {
     @State private var email = ""
@@ -13,7 +14,7 @@ struct SignInView: View {
 
     @FocusState private var emailFocused: Bool
     @FocusState private var passwordFocused: Bool
-    
+
     var greeting: AttributedString {
         var text = AttributedString("Good to see you, pet parent. 🐾")
 
@@ -24,7 +25,6 @@ struct SignInView: View {
 
         return text
     }
-
 
     var body: some View {
         ZStack {
@@ -40,8 +40,8 @@ struct SignInView: View {
                             .foregroundStyle(Color.white.opacity(0.35))
 
                         Group {
-                            Text("Good to see you, ") +
-                            Text("pet parent. 🐾")
+                            Text("Good to see you, ")
+                                + Text("pet parent. 🐾")
                                 .font(.custom("Georgia-Italic", size: 28))
                                 .foregroundColor(Color(hex: "AA9DFF"))
                         }
@@ -84,7 +84,9 @@ struct SignInView: View {
                     .padding(.bottom, 24)
 
                     // Sign In CTA
-                    NavigationLink(destination: MainTabView()) {
+                    Button {
+                        Task { await signIn() }
+                    } label: {
                         Text("Sign In")
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(Color(hex: "1a1630"))
@@ -120,7 +122,10 @@ struct SignInView: View {
                                 .fill(Color(hex: "1C1C1F"))
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 16)
-                                        .stroke(Color.white.opacity(0.09), lineWidth: 0.5)
+                                        .stroke(
+                                            Color.white.opacity(0.09),
+                                            lineWidth: 0.5
+                                        )
                                 )
                         )
                     }
@@ -136,7 +141,9 @@ struct SignInView: View {
                         NavigationLink(destination: SignUpView()) {
                             Text("Create one")
                                 .font(.system(size: 12, weight: .medium))
-                                .foregroundStyle(Color(hex: "AA9DFF").opacity(0.75))
+                                .foregroundStyle(
+                                    Color(hex: "AA9DFF").opacity(0.75)
+                                )
                         }
                         Spacer()
                     }
@@ -152,6 +159,14 @@ struct SignInView: View {
 
     private func signInWithApple() {
         print("Apple Sign In tapped")
+    }
+    private func signIn() async {
+        do {
+            try await supabase.auth.signIn(email: email, password: password)
+            print("Signed in successfully!")
+        } catch {
+            print("Sign in error: \(error)")
+        }
     }
 }
 
@@ -203,8 +218,8 @@ struct AuthField: View {
                         RoundedRectangle(cornerRadius: 14)
                             .stroke(
                                 isFocused.wrappedValue
-                                ? Color(hex: "AA9DFF").opacity(0.45)
-                                : Color.white.opacity(0.08),
+                                    ? Color(hex: "AA9DFF").opacity(0.45)
+                                    : Color.white.opacity(0.08),
                                 lineWidth: 0.5
                             )
                     )

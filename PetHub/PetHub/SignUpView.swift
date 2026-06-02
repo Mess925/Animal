@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Supabase
 
 struct SignUpView: View {
     @State private var name = ""
@@ -72,7 +73,9 @@ struct SignUpView: View {
                     .padding(.bottom, 24)
 
                     // Create Account CTA
-                    NavigationLink(destination: MainTabView()) {
+                    Button {
+                        Task { await signUp() }
+                    } label: {
                         Text("Create Account")
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(Color(hex: "1a1630"))
@@ -136,6 +139,15 @@ struct SignUpView: View {
         }
         .navigationBarBackButtonHidden(false)
         .preferredColorScheme(.dark)
+    }
+    
+    private func signUp() async {
+        do {
+            try await supabase.auth.signUp(email: email, password: password)
+            print("Signed up successfully!")
+        } catch {
+            print("Sign up error: \(error)")
+        }
     }
 
     private func signUpWithApple() {
