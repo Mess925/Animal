@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 //
 //  Profile.swift
@@ -7,7 +8,6 @@ import Foundation
 //
 import Supabase
 import SwiftUI
-import Combine
 
 // MARK: - User Profile Model
 
@@ -51,7 +51,7 @@ struct ProfileView: View {
     @State private var showEditProfile = false
     @State private var showChangePassword = false
     @State private var showLogoutAlert = false
-    @EnvironmentObject private var themeManager : ThemeManager
+    @EnvironmentObject private var themeManager: ThemeManager
 
     var body: some View {
         ZStack {
@@ -135,7 +135,7 @@ struct ProfileView: View {
                                 }
                                 .pickerStyle(.segmented)
                                 .frame(width: 160)
-                         
+
                             }
                             .padding(.horizontal, 16)
                             .padding(.vertical, 14)
@@ -458,15 +458,14 @@ struct EditProfileView: View {
                                 .frame(width: 36, height: 36)
                             Image(systemName: "xmark")
                                 .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(Color("AppAdaptiveWhite").opacity(0.8))
+                                .foregroundStyle(
+                                    Color("AppAdaptiveWhite").opacity(0.8)
+                                )
                         }
                     }
                     Spacer()
                     Button {
-                        profile.name = name
-                        profile.username = username
-                        profile.bio = bio
-                        dismiss()
+                        Task { await saveProfile() }
                     } label: {
                         Text("Save")
                             .font(.system(size: 14, weight: .semibold))
@@ -561,6 +560,27 @@ struct EditProfileView: View {
             }
         }
     }
+
+    private func saveProfile() async {
+        do {
+            let user = try await supabase.auth.session.user
+            try await supabase
+                .from("profiles")
+                .update([
+                    "name": name,
+                    "username": username,
+                    "bio": bio,
+                ])
+                .eq("id", value: user.id.uuidString)
+                .execute()
+            profile.name = name
+            profile.username = username
+            profile.bio = bio
+            dismiss()
+        } catch {
+            print("Save profile error: \(error)")
+        }
+    }
 }
 
 // MARK: - Change Password Sheet
@@ -592,19 +612,19 @@ struct ChangePasswordView: View {
                                 .frame(width: 36, height: 36)
                             Image(systemName: "xmark")
                                 .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(Color("AppAdaptiveWhite").opacity(0.8))
+                                .foregroundStyle(Color.white.opacity(0.7))
                         }
                     }
                     Spacer()
                     Button {
-                        dismiss()
+                        Task { await changePassword() }
                     } label: {
                         Text("Save")
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(
                                 canSave
-                                    ? Color("AppAccentText")
-                                    : Color("AppPlaceholder")
+                                    ? Color.black.opacity(0.8)
+                                    : Color.white.opacity(0.2)
                             )
                             .padding(.horizontal, 20)
                             .padding(.vertical, 9)
@@ -613,12 +633,14 @@ struct ChangePasswordView: View {
                                     .fill(
                                         canSave
                                             ? Color(hex: "AA9DFF")
-                                            : Color("AppDivider")
+                                            : Color.white.opacity(0.06)
                                     )
                             )
                     }
                     .buttonStyle(.plain)
                     .disabled(!canSave)
+
+                    
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
@@ -669,6 +691,17 @@ struct ChangePasswordView: View {
 
                 Spacer()
             }
+        }
+    }
+    
+    private func changePassword() async {
+        do {
+            try await supabase.auth.update(
+                user: UserAttributes(password: newPass)
+            )
+            dismiss()
+        } catch {
+            print("Change password error: \(error)")
         }
     }
 }
