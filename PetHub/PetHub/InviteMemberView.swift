@@ -169,8 +169,8 @@ struct InviteMemberView: View {
             try await supabase
                 .from("room_members")
                 .insert([
-                    "room_id": room.id.uuidString,
-                    "user_id": userId.uuidString,
+                    "room_id": room.id.uuidString.lowercased(),
+                    "user_id": userId.uuidString.lowercased(),
                     "role": "member"
                 ])
                 .execute()

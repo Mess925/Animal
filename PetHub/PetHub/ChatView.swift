@@ -3,9 +3,9 @@
 //  PetHub
 //
 
-import SwiftUI
 import PhotosUI
 import Supabase
+import SwiftUI
 
 // MARK: - ChatView
 
@@ -29,7 +29,16 @@ struct ChatView: View {
 
     private var accent: Color { Color(hex: accentHex) }
 
-    init(title: String, subtitle: String, accentHex: String, roomId: String, recipientId: String? = nil, messages: [Message], isGroup: Bool, members: [Member]) {
+    init(
+        title: String,
+        subtitle: String,
+        accentHex: String,
+        roomId: String,
+        recipientId: String? = nil,
+        messages: [Message],
+        isGroup: Bool,
+        members: [Member]
+    ) {
         self.title = title
         self.subtitle = subtitle
         self.accentHex = accentHex
@@ -107,7 +116,9 @@ struct ChatView: View {
                                 Image(systemName: "xmark.circle.fill")
                                     .font(.title3)
                                     .foregroundStyle(.white)
-                                    .background(Circle().fill(.black.opacity(0.5)))
+                                    .background(
+                                        Circle().fill(.black.opacity(0.5))
+                                    )
                             }
                             .offset(x: 6, y: -6)
                         }
@@ -127,18 +138,23 @@ struct ChatView: View {
                     onSend: sendMessage,
                     onPhotoTap: { showPhotoPicker = true }
                 )
-            } // ← closes VStack
+            }  // ← closes VStack
+        }
+        .onAppear {
+            Task { await fetchMessages() }
         }
         .task {
             await fetchMessages()
-            
+
             if let recipientId = recipientId {
                 let user = try? await supabase.auth.session.user
-                let myId = user?.id.uuidString ?? ""
-                let ids = [myId, recipientId].sorted()
+                let myId = user?.id.uuidString.lowercased() ?? ""
+                let ids = [myId, recipientId.lowercased()].sorted()
                 let channelName = "dm:\(ids[0]):\(ids[1])"
-                
-                let channel = supabase.realtimeV2.channel(channelName)
+
+                let channel = supabase.realtimeV2.channel(
+                    "\(channelName)-\(Int(Date().timeIntervalSince1970))"
+                )
                 let changes = channel.postgresChange(
                     AnyAction.self,
                     schema: "public",
@@ -149,12 +165,14 @@ struct ChatView: View {
                     await fetchMessages()
                 }
             } else {
-                let channel = supabase.realtimeV2.channel("messages:\(roomId)")
+                let channel = supabase.realtimeV2.channel(
+                    "room-messages-\(roomId)-\(Int(Date().timeIntervalSince1970))"
+                )
                 let changes = channel.postgresChange(
                     AnyAction.self,
                     schema: "public",
                     table: "messages",
-                    filter: "room_id=eq.\(roomId)"
+                    filter: "room_id=eq.\(roomId.lowercased())"
                 )
                 await channel.subscribe()
                 for await _ in changes {
@@ -168,7 +186,7 @@ struct ChatView: View {
             }
         }
     }
-    
+
     private func fetchMessages() async {
         do {
             let user = try await supabase.auth.session.user
@@ -187,10 +205,13 @@ struct ChatView: View {
                     }
                 }
 
-                let fetched: [DMMessage] = try await supabase
+                let fetched: [DMMessage] =
+                    try await supabase
                     .from("dm_messages")
                     .select()
-                    .or("and(sender_id.eq.\(user.id.uuidString),recipient_id.eq.\(recipientId)),and(sender_id.eq.\(recipientId),recipient_id.eq.\(user.id.uuidString))")
+                    .or(
+                        "and(sender_id.eq.\(user.id.uuidString),recipient_id.eq.\(recipientId)),and(sender_id.eq.\(recipientId),recipient_id.eq.\(user.id.uuidString))"
+                    )
                     .order("created_at", ascending: true)
                     .execute()
                     .value
@@ -221,7 +242,8 @@ struct ChatView: View {
                     }
                 }
 
-                let fetched: [SupabaseMessage] = try await supabase
+                let fetched: [SupabaseMessage] =
+                    try await supabase
                     .from("messages")
                     .select()
                     .eq("room_id", value: roomId)
@@ -259,7 +281,7 @@ struct ChatView: View {
                     .insert([
                         "sender_id": user.id.uuidString,
                         "recipient_id": recipientId,
-                        "body": text
+                        "body": text,
                     ])
                     .execute()
                 print("DM sent!")
@@ -269,7 +291,7 @@ struct ChatView: View {
                     .insert([
                         "room_id": roomId,
                         "sender_id": user.id.uuidString,
-                        "body": text
+                        "body": text,
                     ])
                     .execute()
                 print("Group message sent!")
@@ -280,7 +302,9 @@ struct ChatView: View {
     }
 
     private func sendMessage() {
-        let trimmed = messageText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmed = messageText.trimmingCharacters(
+            in: .whitespacesAndNewlines
+        )
         guard !trimmed.isEmpty else { return }
         Task { await sendMessageToSupabase(trimmed) }
         messageText = ""
@@ -302,7 +326,9 @@ struct ChatTopBar: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Button { onDismiss() } label: {
+            Button {
+                onDismiss()
+            } label: {
                 ZStack {
                     Circle()
                         .fill(Color("AppDivider"))
@@ -329,7 +355,12 @@ struct ChatTopBar: View {
                         Circle()
                             .fill(Color(hex: "06D6A0"))
                             .frame(width: 10, height: 10)
-                            .overlay(Circle().stroke(Color("AppBackground"), lineWidth: 1.5))
+                            .overlay(
+                                Circle().stroke(
+                                    Color("AppBackground"),
+                                    lineWidth: 1.5
+                                )
+                            )
                     }
                 }
             }
@@ -383,7 +414,8 @@ struct MessageBubble: View {
                 Spacer().frame(width: 0)
             }
 
-            VStack(alignment: message.isOwn ? .trailing : .leading, spacing: 4) {
+            VStack(alignment: message.isOwn ? .trailing : .leading, spacing: 4)
+            {
                 if isGroup && !message.isOwn, let sender = message.sender {
                     Text(sender.name)
                         .font(.system(size: 10, weight: .medium))
@@ -396,14 +428,20 @@ struct MessageBubble: View {
                     case .text(let text):
                         Text(text)
                             .font(.system(size: 14))
-                            .foregroundStyle(message.isOwn ? Color("AppAccentText") : Color("AppText"))
+                            .foregroundStyle(
+                                message.isOwn
+                                    ? Color("AppAccentText") : Color("AppText")
+                            )
                             .padding(.horizontal, 14)
                             .padding(.vertical, 10)
                             .background(
                                 RoundedRectangle(cornerRadius: 18)
                                     .fill(
                                         message.isOwn
-                                            ? Color(hex: message.sender?.accentHex ?? "AA9DFF")
+                                            ? Color(
+                                                hex: message.sender?.accentHex
+                                                    ?? "AA9DFF"
+                                            )
                                             : Color("AppBorder")
                                     )
                             )
@@ -439,7 +477,10 @@ struct MessageBubble: View {
 
                 if !message.reactions.isEmpty {
                     HStack(spacing: 4) {
-                        ForEach(Array(message.reactions.keys.sorted()), id: \.self) { emoji in
+                        ForEach(
+                            Array(message.reactions.keys.sorted()),
+                            id: \.self
+                        ) { emoji in
                             if let count = message.reactions[emoji] {
                                 Text("\(emoji) \(count)")
                                     .font(.system(size: 11))
@@ -448,9 +489,16 @@ struct MessageBubble: View {
                                     .background(
                                         Capsule()
                                             .fill(Color("AppBorder"))
-                                            .overlay(Capsule().stroke(Color("AppBorder"), lineWidth: 0.5))
+                                            .overlay(
+                                                Capsule().stroke(
+                                                    Color("AppBorder"),
+                                                    lineWidth: 0.5
+                                                )
+                                            )
                                     )
-                                    .foregroundStyle(Color("AppAdaptiveWhite").opacity(0.8))
+                                    .foregroundStyle(
+                                        Color("AppAdaptiveWhite").opacity(0.8)
+                                    )
                             }
                         }
                     }
@@ -479,13 +527,20 @@ struct ReplyReference: View {
     var body: some View {
         HStack(spacing: 0) {
             Rectangle()
-                .fill(Color(hex: message.sender?.accentHex ?? "AA9DFF").opacity(0.6))
+                .fill(
+                    Color(hex: message.sender?.accentHex ?? "AA9DFF").opacity(
+                        0.6
+                    )
+                )
                 .frame(width: 2)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(message.sender?.name ?? "")
                     .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(Color(hex: message.sender?.accentHex ?? "AA9DFF").opacity(0.8))
+                    .foregroundStyle(
+                        Color(hex: message.sender?.accentHex ?? "AA9DFF")
+                            .opacity(0.8)
+                    )
 
                 Group {
                     switch message.content {
@@ -499,7 +554,11 @@ struct ReplyReference: View {
             .padding(.horizontal, 8)
             .padding(.vertical, 5)
         }
-        .background(RoundedRectangle(cornerRadius: 8).fill(Color("AppDivider").opacity(0.6)))
+        .background(
+            RoundedRectangle(cornerRadius: 8).fill(
+                Color("AppDivider").opacity(0.6)
+            )
+        )
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
@@ -535,7 +594,9 @@ struct ReplyPreviewBar: View {
 
             Spacer()
 
-            Button { onCancel() } label: {
+            Button {
+                onCancel()
+            } label: {
                 Image(systemName: "xmark.circle.fill")
                     .font(.system(size: 18))
                     .foregroundStyle(Color("AppSubtext"))
@@ -544,7 +605,12 @@ struct ReplyPreviewBar: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .background(Color("AppSurface2"))
-        .overlay(Rectangle().fill(Color("AppDivider").opacity(0.6)).frame(height: 0.5), alignment: .top)
+        .overlay(
+            Rectangle().fill(Color("AppDivider").opacity(0.6)).frame(
+                height: 0.5
+            ),
+            alignment: .top
+        )
         .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 }
@@ -554,23 +620,28 @@ struct ReplyPreviewBar: View {
 struct ChatInputBar: View {
     @Binding var text: String
     let accentHex: String
-    let hasSelectedImage: Bool           // ← fix: was missing from the original
+    let hasSelectedImage: Bool  // ← fix: was missing from the original
     @FocusState var isFocused: Bool
     let onSend: () -> Void
     let onPhotoTap: () -> Void
 
     private var accent: Color { Color(hex: accentHex) }
     private var canSend: Bool {
-        !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || hasSelectedImage
+        !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || hasSelectedImage
     }
 
     var body: some View {
         HStack(spacing: 8) {
-            Button { onPhotoTap() } label: {
+            Button {
+                onPhotoTap()
+            } label: {
                 ZStack {
                     Circle()
                         .fill(Color("AppDivider"))
-                        .overlay(Circle().stroke(Color("AppBorder"), lineWidth: 0.5))
+                        .overlay(
+                            Circle().stroke(Color("AppBorder"), lineWidth: 0.5)
+                        )
                         .frame(width: 38, height: 38)
                     Image(systemName: "photo")
                         .font(.system(size: 16))
@@ -582,7 +653,9 @@ struct ChatInputBar: View {
             TextField(
                 "",
                 text: $text,
-                prompt: Text("Message…").foregroundStyle(Color("AppPlaceholder"))
+                prompt: Text("Message…").foregroundStyle(
+                    Color("AppPlaceholder")
+                )
             )
             .focused($isFocused)
             .foregroundStyle(Color("AppText"))
@@ -607,8 +680,16 @@ struct ChatInputBar: View {
                         .fill(canSend ? accent : Color("AppBorder"))
                         .frame(width: 38, height: 38)
                     Image(systemName: canSend ? "arrow.up" : "mic.fill")
-                        .font(.system(size: text.isEmpty ? 15 : 16, weight: .semibold))
-                        .foregroundStyle(text.isEmpty ? Color("AppWhiteText") : Color("AppAccentText"))
+                        .font(
+                            .system(
+                                size: text.isEmpty ? 15 : 16,
+                                weight: .semibold
+                            )
+                        )
+                        .foregroundStyle(
+                            text.isEmpty
+                                ? Color("AppWhiteText") : Color("AppAccentText")
+                        )
                 }
             }
             .buttonStyle(.plain)
@@ -619,7 +700,12 @@ struct ChatInputBar: View {
         .background(
             Rectangle()
                 .fill(Color("AppBackground"))
-                .overlay(Rectangle().fill(Color("AppDivider").opacity(0.6)).frame(height: 0.5), alignment: .top)
+                .overlay(
+                    Rectangle().fill(Color("AppDivider").opacity(0.6)).frame(
+                        height: 0.5
+                    ),
+                    alignment: .top
+                )
                 .ignoresSafeArea(edges: .bottom)
         )
     }
@@ -641,16 +727,23 @@ struct PHPickerView: UIViewControllerRepresentable {
         return picker
     }
 
-    func updateUIViewController(_ uiViewController: PHPickerViewController, context: Context) {}
+    func updateUIViewController(
+        _ uiViewController: PHPickerViewController,
+        context: Context
+    ) {}
 
     class Coordinator: NSObject, PHPickerViewControllerDelegate {
         let onPick: (UIImage) -> Void
         init(onPick: @escaping (UIImage) -> Void) { self.onPick = onPick }
 
-        func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+        func picker(
+            _ picker: PHPickerViewController,
+            didFinishPicking results: [PHPickerResult]
+        ) {
             picker.dismiss(animated: true)
             guard let provider = results.first?.itemProvider,
-                  provider.canLoadObject(ofClass: UIImage.self) else { return }
+                provider.canLoadObject(ofClass: UIImage.self)
+            else { return }
             provider.loadObject(ofClass: UIImage.self) { image, _ in
                 DispatchQueue.main.async {
                     if let img = image as? UIImage { self.onPick(img) }

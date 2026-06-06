@@ -326,7 +326,15 @@ struct CreateRoomView: View {
                 ])
                 .execute()
 
-	
+            // Add owner to room_members ← THIS WAS REMOVED
+            try await supabase
+                .from("room_members")
+                .insert([
+                    "room_id": roomId.uuidString,
+                    "user_id": user.id.uuidString,
+                    "role": "owner"
+                ])
+                .execute()
 
             let newRoom = SupabaseRoom(
                 id: roomId,

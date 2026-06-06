@@ -23,23 +23,24 @@ class RoomStore: ObservableObject {
     func fetchRooms() async {
         do {
             let user = try await supabase.auth.session.user
+            print("Fetching rooms for user: \(user.id)")
 
-            // Rooms I own
             let ownedRooms: [SupabaseRoom] = try await supabase
                 .from("rooms")
                 .select()
                 .eq("owner_id", value: user.id.uuidString)
                 .execute()
                 .value
+            print("Owned rooms: \(ownedRooms.count)")
 
-            // Rooms I'm a member of (NOT owner)
             let memberships: [RoomMembership] = try await supabase
                 .from("room_members")
                 .select()
-                .eq("user_id", value: user.id.uuidString)
+                .eq("user_id", value: user.id.uuidString.lowercased())
                 .eq("role", value: "member")
                 .execute()
                 .value
+            print("Memberships: \(memberships.count)")
 
             let memberRoomIds = memberships.map { $0.roomId.uuidString }
 
