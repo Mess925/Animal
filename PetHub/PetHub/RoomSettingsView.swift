@@ -50,10 +50,10 @@ struct RoomSettingsView: View {
                     VStack(alignment: .leading, spacing: 3) {
                         Text(room.name)
                             .font(.system(size: 18, weight: .semibold))
-                            .foregroundStyle(Color(hex: "F0EDE6"))
+                            .foregroundStyle(Color("AppText"))
                         Text("\(room.breed) · \(room.age)")
                             .font(.system(size: 12))
-                            .foregroundStyle(Color.white.opacity(0.35))
+                            .foregroundStyle(Color("AppSubtext"))
                     }
 
                     Spacer()
@@ -180,15 +180,15 @@ struct RoomSettingsView: View {
                                     .strokeBorder(
                                         style: StrokeStyle(lineWidth: 1, dash: [4, 3])
                                     )
-                                    .foregroundStyle(Color.white.opacity(0.15))
+                                    .foregroundStyle(Color("AppDivider"))
                                     .frame(width: 38, height: 38)
                                 Image(systemName: "plus")
                                     .font(.system(size: 14))
-                                    .foregroundStyle(Color.white.opacity(0.25))
+                                    .foregroundStyle(Color("AppSubtext"))
                             }
                             Text("Invite someone")
                                 .font(.system(size: 14))
-                                .foregroundStyle(Color.white.opacity(0.3))
+                                .foregroundStyle(Color("AppWhiteText"))
                             Spacer()
                         }
                         .padding(.horizontal, 16)
@@ -247,7 +247,7 @@ struct SettingsSectionLabel: View {
         Text(title.uppercased())
             .font(.system(size: 10, weight: .medium))
             .tracking(1.2)
-            .foregroundStyle(Color.white.opacity(0.25))
+            .foregroundStyle(Color("AppSubtext"))
     }
 }
 
@@ -259,10 +259,10 @@ struct SettingsCard<Content: View>: View {
         VStack(spacing: 0) { content }
             .background(
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(Color(hex: "161618"))
+                    .fill(Color("AppSurface2"))
                     .overlay(
                         RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
+                            .stroke(Color("AppDivider"), lineWidth: 0.5)
                     )
             )
     }
@@ -271,7 +271,7 @@ struct SettingsCard<Content: View>: View {
 struct SettingsDivider: View {
     var body: some View {
         Rectangle()
-            .fill(Color.white.opacity(0.04))
+            .fill(Color("AppDivider"))
             .frame(height: 0.5)
             .padding(.leading, 62)
     }
@@ -298,11 +298,11 @@ struct SettingsToggleRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
                     .font(.system(size: 14))
-                    .foregroundStyle(Color(hex: "F0EDE6"))
+                    .foregroundStyle(Color("AppText"))
                 if let sub = sublabel {
                     Text(sub)
                         .font(.system(size: 11))
-                        .foregroundStyle(Color.white.opacity(0.3))
+                        .foregroundStyle(Color("AppWhiteText"))
                 }
             }
 
@@ -330,10 +330,10 @@ struct MemberSettingsRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(member.name)
                     .font(.system(size: 14))
-                    .foregroundStyle(Color(hex: "F0EDE6"))
+                    .foregroundStyle(Color("AppText"))
                 Text(member.isOwner ? "Owner" : "Member")
                     .font(.system(size: 11))
-                    .foregroundStyle(Color.white.opacity(0.3))
+                    .foregroundStyle(Color("AppWhiteText"))
             }
 
             Spacer()
@@ -367,6 +367,5 @@ struct MemberSettingsRow: View {
 
 #Preview {
     RoomSettingsView(room: .mochi)
-        .background(Color(hex: "0D0D0E"))
-        .preferredColorScheme(.dark)
+        .background(Color("AppBackground"))
 }

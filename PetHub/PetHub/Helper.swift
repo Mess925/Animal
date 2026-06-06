@@ -26,14 +26,14 @@ struct AuthenticationField: View {
                             title,
                             text: $text,
                             prompt: Text(placeholder)
-                                .foregroundStyle(Color.white.opacity(0.2))
+                                .foregroundStyle(Color("AppPlaceholder"))
                         )
                     } else {
                         TextField(
                             title,
                             text: $text,
                             prompt: Text(placeholder)
-                                .foregroundStyle(Color.white.opacity(0.2))
+                                .foregroundStyle(Color("AppPlaceholder"))
                         )
                         .textInputAutocapitalization(.never)
                         .disableAutocorrection(true)
@@ -41,17 +41,17 @@ struct AuthenticationField: View {
                     }
                 }
                 .font(.system(size: 13))
-                .foregroundStyle(isFocused ? Color(hex: "F0EDE6") : Color(hex: "F0EDE6").opacity(0.6))
+                .foregroundStyle(isFocused ? Color("AppText") : Color("AppText").opacity(0.6))
             }
             .focused($isFocused)
             .padding(.horizontal, 14)
             .padding(.vertical, 13)
-            .background(Color.white.opacity(0.04))
+            .background(Color("AppDivider"))
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
                     .stroke(
-                        isFocused ? Color(hex: "AA9DFF").opacity(0.5) : Color.white.opacity(0.1),
+                        isFocused ? Color(hex: "AA9DFF").opacity(0.5) : Color("AppBorder"),
                         lineWidth: 0.5
                     )
             )
@@ -66,16 +66,15 @@ struct OrDivider: View {
     var body: some View {
         HStack(spacing: 10) {
             Rectangle()
-                .fill(Color.white.opacity(0.07))
+                .fill(Color("AppBorder"))
                 .frame(height: 0.5)
             Text("OR")
                 .font(.system(size: 10, weight: .regular))
                 .tracking(0.5)
-                .foregroundStyle(Color.white.opacity(0.4))
+                .foregroundStyle(Color("AppSubtext"))
             Rectangle()
-                .fill(Color.white.opacity(0.07))
+                .fill(Color("AppBorder"))
                 .frame(height: 0.5)
         }
     }
 }
-

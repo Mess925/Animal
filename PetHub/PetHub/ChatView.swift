@@ -38,7 +38,7 @@ struct ChatView: View {
 
     var body: some View {
         ZStack {
-            Color(hex: "0D0D0E").ignoresSafeArea()
+            Color("AppBackground").ignoresSafeArea()
 
             VStack(spacing: 0) {
                 ChatTopBar(
@@ -50,7 +50,7 @@ struct ChatView: View {
                     onDismiss: { dismiss() }
                 )
 
-                Divider().background(Color.white.opacity(0.05))
+                Divider().background(Color("AppDivider").opacity(0.6))
 
                 ScrollViewReader { proxy in
                     ScrollView {
@@ -58,7 +58,7 @@ struct ChatView: View {
                             Text("TODAY")
                                 .font(.system(size: 10))
                                 .tracking(0.8)
-                                .foregroundStyle(Color.white.opacity(0.2))
+                                .foregroundStyle(Color("AppPlaceholder"))
                                 .padding(.vertical, 14)
 
                             ForEach(allMessages) { message in
@@ -111,7 +111,7 @@ struct ChatView: View {
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)
-                    .background(Color(hex: "161618"))
+                    .background(Color("AppSurface2"))
                 }
 
                 ChatInputBar(
@@ -124,7 +124,6 @@ struct ChatView: View {
                 )
             } // ← closes VStack
         }
-        .preferredColorScheme(.dark)
         .sheet(isPresented: $showPhotoPicker) {
             PHPickerView { image in
                 selectedImage = image
@@ -182,11 +181,11 @@ struct ChatTopBar: View {
             Button { onDismiss() } label: {
                 ZStack {
                     Circle()
-                        .fill(Color.white.opacity(0.06))
+                        .fill(Color("AppDivider"))
                         .frame(width: 36, height: 36)
                     Image(systemName: "chevron.left")
                         .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(Color.white.opacity(0.8))
+                        .foregroundStyle(Color("AppAdaptiveWhite"))
                 }
             }
 
@@ -206,7 +205,7 @@ struct ChatTopBar: View {
                         Circle()
                             .fill(Color(hex: "06D6A0"))
                             .frame(width: 10, height: 10)
-                            .overlay(Circle().stroke(Color(hex: "0D0D0E"), lineWidth: 1.5))
+                            .overlay(Circle().stroke(Color("AppBackground"), lineWidth: 1.5))
                     }
                 }
             }
@@ -214,7 +213,7 @@ struct ChatTopBar: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Color(hex: "F0EDE6"))
+                    .foregroundStyle(Color("AppText"))
 
                 HStack(spacing: 4) {
                     if !isGroup, let member = members.first, member.isOnline {
@@ -227,7 +226,7 @@ struct ChatTopBar: View {
                         .foregroundStyle(
                             !isGroup && members.first?.isOnline == true
                                 ? Color(hex: "06D6A0")
-                                : Color.white.opacity(0.3)
+                                : Color("AppWhiteText")
                         )
                 }
             }
@@ -273,7 +272,7 @@ struct MessageBubble: View {
                     case .text(let text):
                         Text(text)
                             .font(.system(size: 14))
-                            .foregroundStyle(message.isOwn ? Color.black.opacity(0.85) : Color(hex: "F0EDE6"))
+                            .foregroundStyle(message.isOwn ? Color("AppAccentText") : Color("AppText"))
                             .padding(.horizontal, 14)
                             .padding(.vertical, 10)
                             .background(
@@ -281,7 +280,7 @@ struct MessageBubble: View {
                                     .fill(
                                         message.isOwn
                                             ? Color(hex: message.sender?.accentHex ?? "AA9DFF")
-                                            : Color.white.opacity(0.08)
+                                            : Color("AppBorder")
                                     )
                             )
 
@@ -296,11 +295,11 @@ struct MessageBubble: View {
                         } else {
                             ZStack {
                                 RoundedRectangle(cornerRadius: 16)
-                                    .fill(Color.white.opacity(0.06))
+                                    .fill(Color("AppDivider"))
                                     .frame(width: 180, height: 140)
                                 Image(systemName: "photo")
                                     .font(.system(size: 32))
-                                    .foregroundStyle(Color.white.opacity(0.2))
+                                    .foregroundStyle(Color("AppPlaceholder"))
                             }
                         }
                     }
@@ -324,10 +323,10 @@ struct MessageBubble: View {
                                     .padding(.vertical, 4)
                                     .background(
                                         Capsule()
-                                            .fill(Color.white.opacity(0.07))
-                                            .overlay(Capsule().stroke(Color.white.opacity(0.1), lineWidth: 0.5))
+                                            .fill(Color("AppBorder"))
+                                            .overlay(Capsule().stroke(Color("AppBorder"), lineWidth: 0.5))
                                     )
-                                    .foregroundStyle(Color.white.opacity(0.7))
+                                    .foregroundStyle(Color("AppAdaptiveWhite").opacity(0.8))
                             }
                         }
                     }
@@ -335,7 +334,7 @@ struct MessageBubble: View {
 
                 Text(message.timestamp.timeString())
                     .font(.system(size: 9))
-                    .foregroundStyle(Color.white.opacity(0.2))
+                    .foregroundStyle(Color("AppPlaceholder"))
                     .padding(.horizontal, 4)
             }
 
@@ -371,12 +370,12 @@ struct ReplyReference: View {
                     }
                 }
                 .font(.system(size: 11))
-                .foregroundStyle(Color.white.opacity(0.4))
+                .foregroundStyle(Color("AppSubtext"))
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 5)
         }
-        .background(RoundedRectangle(cornerRadius: 8).fill(Color.white.opacity(0.05)))
+        .background(RoundedRectangle(cornerRadius: 8).fill(Color("AppDivider").opacity(0.6)))
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
@@ -407,7 +406,7 @@ struct ReplyPreviewBar: View {
                     }
                 }
                 .font(.system(size: 12))
-                .foregroundStyle(Color.white.opacity(0.4))
+                .foregroundStyle(Color("AppSubtext"))
             }
 
             Spacer()
@@ -415,13 +414,13 @@ struct ReplyPreviewBar: View {
             Button { onCancel() } label: {
                 Image(systemName: "xmark.circle.fill")
                     .font(.system(size: 18))
-                    .foregroundStyle(Color.white.opacity(0.25))
+                    .foregroundStyle(Color("AppSubtext"))
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(Color(hex: "161618"))
-        .overlay(Rectangle().fill(Color.white.opacity(0.05)).frame(height: 0.5), alignment: .top)
+        .background(Color("AppSurface2"))
+        .overlay(Rectangle().fill(Color("AppDivider").opacity(0.6)).frame(height: 0.5), alignment: .top)
         .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 }
@@ -446,12 +445,12 @@ struct ChatInputBar: View {
             Button { onPhotoTap() } label: {
                 ZStack {
                     Circle()
-                        .fill(Color.white.opacity(0.06))
-                        .overlay(Circle().stroke(Color.white.opacity(0.07), lineWidth: 0.5))
+                        .fill(Color("AppDivider"))
+                        .overlay(Circle().stroke(Color("AppBorder"), lineWidth: 0.5))
                         .frame(width: 38, height: 38)
                     Image(systemName: "photo")
                         .font(.system(size: 16))
-                        .foregroundStyle(Color.white.opacity(0.4))
+                        .foregroundStyle(Color("AppSubtext"))
                 }
             }
             .buttonStyle(.plain)
@@ -459,19 +458,19 @@ struct ChatInputBar: View {
             TextField(
                 "",
                 text: $text,
-                prompt: Text("Message…").foregroundStyle(Color.white.opacity(0.2))
+                prompt: Text("Message…").foregroundStyle(Color("AppPlaceholder"))
             )
             .focused($isFocused)
-            .foregroundStyle(Color(hex: "F0EDE6"))
+            .foregroundStyle(Color("AppText"))
             .font(.system(size: 14))
             .padding(.horizontal, 16)
             .frame(minHeight: 40)
             .background(
                 RoundedRectangle(cornerRadius: 22)
-                    .fill(Color.white.opacity(0.06))
+                    .fill(Color("AppDivider"))
                     .overlay(
                         RoundedRectangle(cornerRadius: 22)
-                            .stroke(Color.white.opacity(0.07), lineWidth: 0.5)
+                            .stroke(Color("AppBorder"), lineWidth: 0.5)
                     )
             )
 
@@ -481,11 +480,11 @@ struct ChatInputBar: View {
             } label: {
                 ZStack {
                     Circle()
-                        .fill(canSend ? accent : Color.white.opacity(0.07))
+                        .fill(canSend ? accent : Color("AppBorder"))
                         .frame(width: 38, height: 38)
                     Image(systemName: canSend ? "arrow.up" : "mic.fill")
                         .font(.system(size: text.isEmpty ? 15 : 16, weight: .semibold))
-                        .foregroundStyle(text.isEmpty ? Color.white.opacity(0.3) : Color.black.opacity(0.8))
+                        .foregroundStyle(text.isEmpty ? Color("AppWhiteText") : Color("AppAccentText"))
                 }
             }
             .buttonStyle(.plain)
@@ -495,8 +494,8 @@ struct ChatInputBar: View {
         .padding(.vertical, 12)
         .background(
             Rectangle()
-                .fill(Color(hex: "0D0D0E"))
-                .overlay(Rectangle().fill(Color.white.opacity(0.05)).frame(height: 0.5), alignment: .top)
+                .fill(Color("AppBackground"))
+                .overlay(Rectangle().fill(Color("AppDivider").opacity(0.6)).frame(height: 0.5), alignment: .top)
                 .ignoresSafeArea(edges: .bottom)
         )
     }

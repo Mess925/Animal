@@ -11,7 +11,7 @@ struct WelcomeView: View {
     var body: some View {
         NavigationStack {
             ZStack(alignment: .bottom) {
-                Color(hex: "0D0D0E").ignoresSafeArea()
+                Color("AppBackground").ignoresSafeArea()
 
                 // Slide content — same as OnboardingSlide
                 VStack(spacing: 0) {
@@ -28,7 +28,10 @@ struct WelcomeView: View {
                             .frame(width: 160, height: 160)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 40)
-                                    .stroke(Color(hex: "AA9DFF").opacity(0.2), lineWidth: 1)
+                                    .stroke(
+                                        Color(hex: "AA9DFF").opacity(0.2),
+                                        lineWidth: 1
+                                    )
                             )
 
                         Text("🐾")
@@ -38,11 +41,7 @@ struct WelcomeView: View {
                         Text("🐶")
                             .font(.system(size: 26))
                             .frame(width: 46, height: 46)
-                            .background(
-                                Circle()
-                                    .fill(Color(hex: "1C1C1F"))
-                                    .overlay(Circle().stroke(Color.white.opacity(0.08), lineWidth: 0.5))
-                            )
+                            .background(Color("AppSurface2"))
                             .offset(x: 86, y: 86)
 
                         Text("🐱")
@@ -50,8 +49,13 @@ struct WelcomeView: View {
                             .frame(width: 46, height: 46)
                             .background(
                                 Circle()
-                                    .fill(Color(hex: "1C1C1F"))
-                                    .overlay(Circle().stroke(Color.white.opacity(0.08), lineWidth: 0.5))
+                                    .fill(Color("AppSurface"))
+                                    .overlay(
+                                        Circle().stroke(
+                                            Color("AppBorder"),
+                                            lineWidth: 0.5
+                                        )
+                                    )
                             )
                             .offset(x: -86, y: -86)
 
@@ -60,8 +64,13 @@ struct WelcomeView: View {
                             .frame(width: 46, height: 46)
                             .background(
                                 Circle()
-                                    .fill(Color(hex: "1C1C1F"))
-                                    .overlay(Circle().stroke(Color.white.opacity(0.08), lineWidth: 0.5))
+                                    .fill(Color("AppSurface"))
+                                    .overlay(
+                                        Circle().stroke(
+                                            Color("AppBorder"),
+                                            lineWidth: 0.5
+                                        )
+                                    )
                             )
                             .offset(x: 86, y: -52)
                     }
@@ -72,19 +81,21 @@ struct WelcomeView: View {
                     Text("Let's get started")
                         .font(.system(size: 24, weight: .bold))
                         .multilineTextAlignment(.center)
-                        .foregroundStyle(Color(hex: "F0EDE6"))
+                        .foregroundStyle(Color("AppText"))
                         .lineSpacing(2)
                         .padding(.horizontal, 32)
                         .padding(.bottom, 14)
 
                     // Body
-                    Text("Sign in to your account or create a new one to start building rooms for the animals in your life.")
-                        .font(.system(size: 14))
-                        .multilineTextAlignment(.center)
-                        .foregroundStyle(Color.white.opacity(0.38))
-                        .lineSpacing(4)
-                        .padding(.horizontal, 36)
-                        .padding(.bottom, 28)
+                    Text(
+                        "Sign in to your account or create a new one to start building rooms for the animals in your life."
+                    )
+                    .font(.system(size: 14))
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(Color("AppSubtext"))
+                    .lineSpacing(4)
+                    .padding(.horizontal, 36)
+                    .padding(.bottom, 28)
 
                     Spacer()
                     Spacer().frame(height: 160)
@@ -95,7 +106,7 @@ struct WelcomeView: View {
                     NavigationLink(destination: SignInView()) {
                         Text("Sign In")
                             .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(Color(hex: "1a1630"))
+                            .foregroundStyle(Color("AppAccentText"))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
                             .background(
@@ -109,7 +120,7 @@ struct WelcomeView: View {
                     NavigationLink(destination: SignUpView()) {
                         Text("Create an Account")
                             .font(.system(size: 13))
-                            .foregroundStyle(Color.white.opacity(0.4))
+                            .foregroundStyle(Color("AppSubtext"))
                     }
                     .buttonStyle(.plain)
                     .padding(.top, 14)
@@ -117,14 +128,16 @@ struct WelcomeView: View {
                 }
                 .background(
                     LinearGradient(
-                        colors: [Color(hex: "0D0D0E").opacity(0), Color(hex: "0D0D0E")],
+                        colors: [
+                            Color("AppBackground").opacity(0),
+                            Color("AppBackground"),
+                        ],
                         startPoint: .top,
                         endPoint: .init(x: 0.5, y: 0.25)
                     )
                     .ignoresSafeArea()
                 )
             }
-            .preferredColorScheme(.dark)
         }
     }
 }

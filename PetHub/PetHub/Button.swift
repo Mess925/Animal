@@ -69,28 +69,28 @@ struct AppButton: View {
             )
             .overlay(alignment: .top) {
                 LinearGradient(
-                    colors: [Color.white.opacity(0.08), Color.clear],
+                    colors: [Color("AppBorder"), Color.clear],
                     startPoint: .top,
                     endPoint: .bottom
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 14))
             }
         case .secondary:
-            Color.white.opacity(0.05)
+            Color("AppDivider").opacity(0.6)
         }
     }
 
     private var foregroundColor: Color {
         switch style {
-        case .primary:   return Color(hex: "0D0D0E")
-        case .secondary: return Color(hex: "F0EDE6").opacity(0.75)
+        case .primary:   return Color("AppBackground")
+        case .secondary: return Color("AppText").opacity(0.75)
         }
     }
 
     private var borderColor: Color {
         switch style {
         case .primary:   return Color.clear
-        case .secondary: return Color.white.opacity(0.1)
+        case .secondary: return Color("AppBorder")
         }
     }
 }
@@ -150,28 +150,28 @@ struct AppNavButton<Destination: View>: View {
             )
             .overlay(alignment: .top) {
                 LinearGradient(
-                    colors: [Color.white.opacity(0.08), Color.clear],
+                    colors: [Color("AppBorder"), Color.clear],
                     startPoint: .top,
                     endPoint: .bottom
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 14))
             }
         case .secondary:
-            Color.white.opacity(0.05)
+            Color("AppDivider").opacity(0.6)
         }
     }
 
     private var foregroundColor: Color {
         switch style {
-        case .primary:   return Color(hex: "0D0D0E")
-        case .secondary: return Color(hex: "F0EDE6").opacity(0.75)
+        case .primary:   return Color("AppBackground")
+        case .secondary: return Color("AppText").opacity(0.75)
         }
     }
 
     private var borderColor: Color {
         switch style {
         case .primary:   return Color.clear
-        case .secondary: return Color.white.opacity(0.1)
+        case .secondary: return Color("AppBorder")
         }
     }
 }
@@ -209,7 +209,7 @@ extension Color {
 #Preview {
     NavigationStack {
         ZStack {
-            Color(hex: "0D0D0E").ignoresSafeArea()
+            Color("AppBackground").ignoresSafeArea()
 
             VStack(spacing: 12) {
 

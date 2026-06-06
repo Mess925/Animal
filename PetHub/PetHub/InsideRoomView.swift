@@ -26,7 +26,7 @@ struct RoomView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            Color(hex: "0D0D0E").ignoresSafeArea()
+            Color("AppBackground").ignoresSafeArea()
 
             VStack(spacing: 0) {
                 // Top bar
@@ -34,21 +34,21 @@ struct RoomView: View {
                     Button { dismiss() } label: {
                         ZStack {
                             Circle()
-                                .fill(Color.white.opacity(0.06))
+                                .fill(Color("AppDivider"))
                                 .frame(width: 36, height: 36)
                             Image(systemName: "chevron.left")
                                 .font(.system(size: 15, weight: .medium))
-                                .foregroundStyle(Color.white.opacity(0.8))
+                                .foregroundStyle(Color("AppAdaptiveWhite"))
                         }
                     }
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text("\(room.name) 🐾")
                             .font(.system(size: 17, weight: .semibold))
-                            .foregroundStyle(Color(hex: "F0EDE6"))
+                            .foregroundStyle(Color("AppText"))
                         Text("\(room.breed) · \(room.age)")
                             .font(.system(size: 11))
-                            .foregroundStyle(Color.white.opacity(0.3))
+                            .foregroundStyle(Color("AppWhiteText"))
                     }
 
                     Spacer()
@@ -66,7 +66,7 @@ struct RoomView: View {
                     .padding(.bottom, 8)
 
                 Divider()
-                    .background(Color.white.opacity(0.05))
+                    .background(Color("AppDivider").opacity(0.6))
 
                 // Content
                 ZStack {
@@ -101,7 +101,6 @@ struct RoomView: View {
                 }
         )
         .navigationBarHidden(true)
-        .preferredColorScheme(.dark)
     }
 }
 
@@ -119,7 +118,7 @@ struct RoomTabBar: View {
         .padding(4)
         .background(
             RoundedRectangle(cornerRadius: 14)
-                .fill(Color.white.opacity(0.04))
+                .fill(Color("AppDivider"))
         )
     }
 }
@@ -139,7 +138,7 @@ struct RoomTabItem: View {
         } label: {
             Text(label)
                 .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(isActive ? Color(hex: "AA9DFF") : Color.white.opacity(0.35))
+                .foregroundStyle(isActive ? Color(hex: "AA9DFF") : Color("AppSubtext"))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 9)
                 .background(
@@ -164,7 +163,7 @@ struct MemberAvatarStack: View {
                 MemberAvatar(member: member, size: 26)
                     .overlay(
                         Circle()
-                            .stroke(Color(hex: "0D0D0E"), lineWidth: 1.5)
+                            .stroke(Color("AppBackground"), lineWidth: 1.5)
                     )
                     .offset(x: CGFloat(i) * -8)
                     .zIndex(Double(displayed.count - i))
@@ -172,13 +171,13 @@ struct MemberAvatarStack: View {
             if overflow > 0 {
                 ZStack {
                     Circle()
-                        .fill(Color.white.opacity(0.08))
+                        .fill(Color("AppBorder"))
                         .frame(width: 26, height: 26)
                     Text("+\(overflow)")
                         .font(.system(size: 9, weight: .semibold))
-                        .foregroundStyle(Color.white.opacity(0.5))
+                        .foregroundStyle(Color("AppWhiteText"))
                 }
-                .overlay(Circle().stroke(Color(hex: "0D0D0E"), lineWidth: 1.5))
+                .overlay(Circle().stroke(Color("AppBackground"), lineWidth: 1.5))
                 .offset(x: CGFloat(displayed.count) * -8)
             }
         }

@@ -1,3 +1,4 @@
+import Foundation
 //
 //  Profile.swift
 //  PetHub
@@ -5,28 +6,39 @@
 //  Created by Han Min Thant on 31/5/26.
 //
 import Supabase
-import Foundation
 import SwiftUI
+import Combine
 
 // MARK: - User Profile Model
 
-struct UserProfile {
+struct UserProfile: Codable {
     var name: String
     var username: String
     var bio: String
     var avatarEmoji: String
-    var avatarAccentHex: String
+    var avatarAccentHex: String?
+    var isOnboarded: Bool?
 
-    var accent: Color { Color(hex: avatarAccentHex) }
+    var accent: Color { Color(hex: avatarAccentHex ?? "AA9DFF") }
+
+    enum CodingKeys: String, CodingKey {
+        case name
+        case username
+        case bio
+        case avatarEmoji = "avatar_emoji"
+        case avatarAccentHex = "avatar_accent_hex"
+        case isOnboarded = "is_onboarded"
+    }
 }
 
 extension UserProfile {
     static let me = UserProfile(
-        name: "Han Min Thant",
-        username: "@hanminthant",
-        bio: "Dog dad 🐶 | Cat mum 🐱 | Bird whisperer 🐦\nSingapore 🇸🇬",
+        name: "",
+        username: "",
+        bio: "",
         avatarEmoji: "🧑",
-        avatarAccentHex: "AA9DFF"
+        avatarAccentHex: "AA9DFF",
+        isOnboarded: false
     )
 }
 
@@ -34,14 +46,16 @@ extension UserProfile {
 
 struct ProfileView: View {
     @State private var profile = UserProfile.me
+    @State private var isLoading = true
     @EnvironmentObject private var store: RoomStore
     @State private var showEditProfile = false
     @State private var showChangePassword = false
     @State private var showLogoutAlert = false
+    @EnvironmentObject private var themeManager : ThemeManager
 
     var body: some View {
         ZStack {
-            Color(hex: "0D0D0E").ignoresSafeArea()
+            Color("AppBackground").ignoresSafeArea()
 
             ScrollView {
                 VStack(spacing: 0) {
@@ -94,6 +108,37 @@ struct ProfileView: View {
                             ) {
                                 showChangePassword = true
                             }
+
+                            ProfileDivider()
+
+                            // Theme picker
+                            HStack(spacing: 12) {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .fill(
+                                            Color(hex: "F4A84A").opacity(0.12)
+                                        )
+                                        .frame(width: 34, height: 34)
+                                    Image(systemName: "circle.lefthalf.filled")
+                                        .font(.system(size: 14))
+                                        .foregroundStyle(Color(hex: "F4A84A"))
+                                }
+                                Text("Appearance")
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(Color("AppText"))
+                                Spacer()
+                                Picker("", selection: $themeManager.theme) {
+                                    ForEach(AppTheme.allCases, id: \.self) {
+                                        theme in
+                                        Text(theme.rawValue).tag(theme)
+                                    }
+                                }
+                                .pickerStyle(.segmented)
+                                .frame(width: 160)
+                         
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 14)
                         }
                     }
                     .padding(.horizontal, 16)
@@ -121,11 +166,13 @@ struct ProfileView: View {
                     // Version tag
                     Text("PetHub v1.0.0")
                         .font(.system(size: 11))
-                        .foregroundStyle(Color.white.opacity(0.12))
+                        .foregroundStyle(Color("AppDivider"))
                         .padding(.top, 28)
 
                     Spacer().frame(height: 110)
                 }
+            }.task {
+                await fetchProfile()
             }
         }
         .navigationBarHidden(true)
@@ -157,7 +204,7 @@ struct ProfileView: View {
                 // Avatar
                 ZStack {
                     Circle()
-                        .fill(Color(hex: "0D0D0E"))
+                        .fill(Color("AppBackground"))
                         .frame(width: 88, height: 88)
 
                     Circle()
@@ -174,7 +221,7 @@ struct ProfileView: View {
             VStack(spacing: 6) {
                 Text(profile.name)
                     .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(Color(hex: "F0EDE6"))
+                    .foregroundStyle(Color("AppText"))
 
                 Text(profile.username)
                     .font(.system(size: 13))
@@ -183,7 +230,7 @@ struct ProfileView: View {
                 if !profile.bio.isEmpty {
                     Text(profile.bio)
                         .font(.system(size: 13))
-                        .foregroundStyle(Color.white.opacity(0.45))
+                        .foregroundStyle(Color("AppText"))
                         .multilineTextAlignment(.center)
                         .lineSpacing(3)
                         .padding(.horizontal, 32)
@@ -205,16 +252,34 @@ struct ProfileView: View {
         }
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(Color(hex: "161618"))
+                .fill(Color("AppSurface2"))
                 .overlay(
                     RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
+                        .stroke(Color("AppDivider"), lineWidth: 0.5)
                 )
         )
     }
 
     private var totalPhotos: Int {
         store.rooms.reduce(0) { $0 + $1.photos.count }
+    }
+
+    private func fetchProfile() async {
+        do {
+            let user = try await supabase.auth.session.user
+            let fetched: UserProfile =
+                try await supabase
+                .from("profiles")
+                .select()
+                .eq("id", value: user.id.uuidString)
+                .single()
+                .execute()
+                .value
+            print("Fetched profile: \(fetched.name), \(fetched.username)")
+            profile = fetched
+        } catch {
+            print("Fetch profile error: \(error)")
+        }
     }
 }
 
@@ -228,10 +293,10 @@ struct StatCell: View {
         VStack(spacing: 4) {
             Text(value)
                 .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(Color(hex: "F0EDE6"))
+                .foregroundStyle(Color("AppText"))
             Text(label)
                 .font(.system(size: 11))
-                .foregroundStyle(Color.white.opacity(0.3))
+                .foregroundStyle(Color("AppWhiteText"))
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 16)
@@ -241,7 +306,7 @@ struct StatCell: View {
 struct StatDivider: View {
     var body: some View {
         Rectangle()
-            .fill(Color.white.opacity(0.06))
+            .fill(Color("AppDivider"))
             .frame(width: 0.5)
             .padding(.vertical, 12)
     }
@@ -265,10 +330,10 @@ struct PetChip: View {
             VStack(spacing: 2) {
                 Text(room.name)
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Color(hex: "F0EDE6"))
+                    .foregroundStyle(Color("AppText"))
                 Text(room.breed)
                     .font(.system(size: 10))
-                    .foregroundStyle(Color.white.opacity(0.3))
+                    .foregroundStyle(Color("AppWhiteText"))
                     .lineLimit(1)
             }
         }
@@ -277,10 +342,10 @@ struct PetChip: View {
         .padding(.horizontal, 8)
         .background(
             RoundedRectangle(cornerRadius: 18)
-                .fill(Color(hex: "161618"))
+                .fill(Color("AppSurface2"))
                 .overlay(
                     RoundedRectangle(cornerRadius: 18)
-                        .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
+                        .stroke(Color("AppDivider"), lineWidth: 0.5)
                 )
         )
     }
@@ -294,7 +359,7 @@ struct ProfileSectionLabel: View {
         Text(title.uppercased())
             .font(.system(size: 10, weight: .medium))
             .tracking(1.3)
-            .foregroundStyle(Color.white.opacity(0.25))
+            .foregroundStyle(Color("AppSubtext"))
     }
 }
 
@@ -306,10 +371,10 @@ struct ProfileCard<Content: View>: View {
         VStack(spacing: 0) { content }
             .background(
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(Color(hex: "161618"))
+                    .fill(Color("AppSurface2"))
                     .overlay(
                         RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
+                            .stroke(Color("AppDivider"), lineWidth: 0.5)
                     )
             )
     }
@@ -318,7 +383,7 @@ struct ProfileCard<Content: View>: View {
 struct ProfileDivider: View {
     var body: some View {
         Rectangle()
-            .fill(Color.white.opacity(0.04))
+            .fill(Color("AppDivider"))
             .frame(height: 0.5)
             .padding(.leading, 62)
     }
@@ -328,7 +393,7 @@ struct ProfileActionRow: View {
     let icon: String
     let iconColor: Color
     let label: String
-    var labelColor: Color = Color(hex: "F0EDE6")
+    var labelColor: Color = Color("AppText")
     let action: () -> Void
 
     var body: some View {
@@ -350,7 +415,7 @@ struct ProfileActionRow: View {
                 Spacer()
                 Image(systemName: "chevron.right")
                     .font(.system(size: 12))
-                    .foregroundStyle(Color.white.opacity(0.15))
+                    .foregroundStyle(Color("AppDivider"))
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
@@ -378,7 +443,7 @@ struct EditProfileView: View {
 
     var body: some View {
         ZStack {
-            Color(hex: "0D0D0E").ignoresSafeArea()
+            Color("AppBackground").ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 0) {
 
@@ -389,11 +454,11 @@ struct EditProfileView: View {
                     } label: {
                         ZStack {
                             Circle()
-                                .fill(Color.white.opacity(0.06))
+                                .fill(Color("AppDivider"))
                                 .frame(width: 36, height: 36)
                             Image(systemName: "xmark")
                                 .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(Color.white.opacity(0.7))
+                                .foregroundStyle(Color("AppAdaptiveWhite").opacity(0.8))
                         }
                     }
                     Spacer()
@@ -405,7 +470,7 @@ struct EditProfileView: View {
                     } label: {
                         Text("Save")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(Color.black.opacity(0.8))
+                            .foregroundStyle(Color("AppAccentText"))
                             .padding(.horizontal, 20)
                             .padding(.vertical, 9)
                             .background(Capsule().fill(Color(hex: "AA9DFF")))
@@ -418,7 +483,7 @@ struct EditProfileView: View {
 
                 Text("Edit Profile")
                     .font(.system(size: 28, weight: .semibold))
-                    .foregroundStyle(Color(hex: "F0EDE6"))
+                    .foregroundStyle(Color("AppText"))
                     .padding(.horizontal, 20)
                     .padding(.bottom, 28)
 
@@ -438,7 +503,7 @@ struct EditProfileView: View {
                                 .frame(width: 26, height: 26)
                             Image(systemName: "camera.fill")
                                 .font(.system(size: 11))
-                                .foregroundStyle(Color.black.opacity(0.8))
+                                .foregroundStyle(Color("AppAccentText"))
                         }
                         .offset(x: 26, y: 26)
                     }
@@ -461,29 +526,29 @@ struct EditProfileView: View {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Bio")
                             .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(Color.white.opacity(0.35))
+                            .foregroundStyle(Color("AppSubtext"))
 
                         ZStack(alignment: .topLeading) {
                             if bio.isEmpty {
                                 Text("Tell people about yourself…")
                                     .font(.system(size: 14))
-                                    .foregroundStyle(Color.white.opacity(0.2))
+                                    .foregroundStyle(Color("AppPlaceholder"))
                                     .padding(.top, 14)
                                     .padding(.leading, 16)
                             }
                             TextEditor(text: $bio)
                                 .scrollContentBackground(.hidden)
-                                .foregroundStyle(Color(hex: "F0EDE6"))
+                                .foregroundStyle(Color("AppText"))
                                 .frame(height: 100)
                                 .padding(12)
                         }
                         .background(
                             RoundedRectangle(cornerRadius: 18)
-                                .fill(Color(hex: "171719"))
+                                .fill(Color("AppSurface2"))
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 18)
                                         .stroke(
-                                            Color.white.opacity(0.06),
+                                            Color("AppDivider"),
                                             lineWidth: 0.5
                                         )
                                 )
@@ -495,7 +560,6 @@ struct EditProfileView: View {
                 Spacer()
             }
         }
-        .preferredColorScheme(.dark)
     }
 }
 
@@ -513,7 +577,7 @@ struct ChangePasswordView: View {
 
     var body: some View {
         ZStack {
-            Color(hex: "0D0D0E").ignoresSafeArea()
+            Color("AppBackground").ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 0) {
 
@@ -524,11 +588,11 @@ struct ChangePasswordView: View {
                     } label: {
                         ZStack {
                             Circle()
-                                .fill(Color.white.opacity(0.06))
+                                .fill(Color("AppDivider"))
                                 .frame(width: 36, height: 36)
                             Image(systemName: "xmark")
                                 .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(Color.white.opacity(0.7))
+                                .foregroundStyle(Color("AppAdaptiveWhite").opacity(0.8))
                         }
                     }
                     Spacer()
@@ -539,8 +603,8 @@ struct ChangePasswordView: View {
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(
                                 canSave
-                                    ? Color.black.opacity(0.8)
-                                    : Color.white.opacity(0.2)
+                                    ? Color("AppAccentText")
+                                    : Color("AppPlaceholder")
                             )
                             .padding(.horizontal, 20)
                             .padding(.vertical, 9)
@@ -549,7 +613,7 @@ struct ChangePasswordView: View {
                                     .fill(
                                         canSave
                                             ? Color(hex: "AA9DFF")
-                                            : Color.white.opacity(0.06)
+                                            : Color("AppDivider")
                                     )
                             )
                     }
@@ -562,7 +626,7 @@ struct ChangePasswordView: View {
 
                 Text("Change\nPassword")
                     .font(.system(size: 28, weight: .semibold))
-                    .foregroundStyle(Color(hex: "F0EDE6"))
+                    .foregroundStyle(Color("AppText"))
                     .lineSpacing(2)
                     .padding(.horizontal, 20)
                     .padding(.bottom, 32)
@@ -606,7 +670,6 @@ struct ChangePasswordView: View {
                 Spacer()
             }
         }
-        .preferredColorScheme(.dark)
     }
 }
 
@@ -622,7 +685,7 @@ struct ProfileInputField: View {
         VStack(alignment: .leading, spacing: 10) {
             Text(title)
                 .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(Color.white.opacity(0.35))
+                .foregroundStyle(Color("AppSubtext"))
 
             Group {
                 if isSecure {
@@ -630,7 +693,7 @@ struct ProfileInputField: View {
                         "",
                         text: $text,
                         prompt: Text(placeholder).foregroundStyle(
-                            Color.white.opacity(0.2)
+                            Color("AppPlaceholder")
                         )
                     )
                 } else {
@@ -638,21 +701,21 @@ struct ProfileInputField: View {
                         "",
                         text: $text,
                         prompt: Text(placeholder).foregroundStyle(
-                            Color.white.opacity(0.2)
+                            Color("AppPlaceholder")
                         )
                     )
                 }
             }
-            .foregroundStyle(Color(hex: "F0EDE6"))
+            .foregroundStyle(Color("AppText"))
             .font(.system(size: 14))
             .padding(.horizontal, 16)
             .frame(height: 52)
             .background(
                 RoundedRectangle(cornerRadius: 18)
-                    .fill(Color(hex: "171719"))
+                    .fill(Color("AppSurface2"))
                     .overlay(
                         RoundedRectangle(cornerRadius: 18)
-                            .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
+                            .stroke(Color("AppDivider"), lineWidth: 0.5)
                     )
             )
         }
@@ -663,5 +726,4 @@ struct ProfileInputField: View {
 
 #Preview {
     ProfileView()
-        .preferredColorScheme(.dark)
 }

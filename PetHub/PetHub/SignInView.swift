@@ -28,7 +28,7 @@ struct SignInView: View {
 
     var body: some View {
         ZStack {
-            Color(hex: "0D0D0E").ignoresSafeArea()
+            Color("AppBackground").ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
@@ -37,7 +37,7 @@ struct SignInView: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Welcome back")
                             .font(.system(size: 13))
-                            .foregroundStyle(Color.white.opacity(0.35))
+                            .foregroundStyle(Color("AppSubtext"))
 
                         Group {
                             Text("Good to see you, ")
@@ -46,12 +46,12 @@ struct SignInView: View {
                                 .foregroundColor(Color(hex: "AA9DFF"))
                         }
                         .font(.system(size: 26, weight: .bold))
-                        .foregroundStyle(Color(hex: "F0EDE6"))
+                        .foregroundStyle(Color("AppText"))
                         .lineSpacing(2)
 
                         Text("Your pets missed you")
                             .font(.system(size: 12))
-                            .foregroundStyle(Color.white.opacity(0.28))
+                            .foregroundStyle(Color("AppSubtext").opacity(0.7))
                     }
                     .padding(.bottom, 32)
 
@@ -89,7 +89,7 @@ struct SignInView: View {
                     } label: {
                         Text("Sign In")
                             .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(Color(hex: "1a1630"))
+                            .foregroundStyle(Color("AppAccentText"))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
                             .background(
@@ -114,16 +114,16 @@ struct SignInView: View {
                             Text("Continue with Apple")
                                 .font(.system(size: 14, weight: .medium))
                         }
-                        .foregroundStyle(Color(hex: "F0EDE6"))
+                        .foregroundStyle(Color("AppText"))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 15)
                         .background(
                             RoundedRectangle(cornerRadius: 16)
-                                .fill(Color(hex: "1C1C1F"))
+                                .fill(Color("AppSurface"))
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 16)
                                         .stroke(
-                                            Color.white.opacity(0.09),
+                                            Color("AppBorder"),
                                             lineWidth: 0.5
                                         )
                                 )
@@ -137,7 +137,7 @@ struct SignInView: View {
                         Spacer()
                         Text("Don't have an account?")
                             .font(.system(size: 12))
-                            .foregroundStyle(Color.white.opacity(0.25))
+                            .foregroundStyle(Color("AppSubtext"))
                         NavigationLink(destination: SignUpView()) {
                             Text("Create one")
                                 .font(.system(size: 12, weight: .medium))
@@ -154,7 +154,6 @@ struct SignInView: View {
             }
         }
         .navigationBarBackButtonHidden(false)
-        .preferredColorScheme(.dark)
     }
 
     private func signInWithApple() {
@@ -184,20 +183,20 @@ struct AuthField: View {
             Text(label.uppercased())
                 .font(.system(size: 10, weight: .medium))
                 .tracking(1.2)
-                .foregroundStyle(Color.white.opacity(0.28))
+                .foregroundStyle(Color("AppSubtext").opacity(0.7))
 
             ZStack(alignment: .leading) {
                 if text.isEmpty {
                     Text(placeholder)
                         .font(.system(size: 15))
-                        .foregroundStyle(Color.white.opacity(0.2))
+                        .foregroundStyle(Color("AppPlaceholder"))
                         .padding(.horizontal, 16)
                 }
                 if isSecure {
                     SecureField("", text: $text)
                         .focused(isFocused)
                         .font(.system(size: 15))
-                        .foregroundStyle(Color(hex: "F0EDE6"))
+                        .foregroundStyle(Color("AppText"))
                         .padding(.horizontal, 16)
                         .padding(.vertical, 14)
                 } else {
@@ -206,20 +205,20 @@ struct AuthField: View {
                         .keyboardType(.emailAddress)
                         .autocapitalization(.none)
                         .font(.system(size: 15))
-                        .foregroundStyle(Color(hex: "F0EDE6"))
+                        .foregroundStyle(Color("AppText"))
                         .padding(.horizontal, 16)
                         .padding(.vertical, 14)
                 }
             }
             .background(
                 RoundedRectangle(cornerRadius: 14)
-                    .fill(Color(hex: "1C1C1F"))
+                    .fill(Color("AppSurface"))
                     .overlay(
                         RoundedRectangle(cornerRadius: 14)
                             .stroke(
                                 isFocused.wrappedValue
                                     ? Color(hex: "AA9DFF").opacity(0.45)
-                                    : Color.white.opacity(0.08),
+                                    : Color("AppBorder"),
                                 lineWidth: 0.5
                             )
                     )
@@ -234,13 +233,13 @@ struct AuthDivider: View {
     var body: some View {
         HStack(spacing: 12) {
             Rectangle()
-                .fill(Color.white.opacity(0.08))
+                .fill(Color("AppBorder"))
                 .frame(height: 0.5)
             Text("or")
                 .font(.system(size: 11))
-                .foregroundStyle(Color.white.opacity(0.22))
+                .foregroundStyle(Color("AppPlaceholder"))
             Rectangle()
-                .fill(Color.white.opacity(0.08))
+                .fill(Color("AppBorder"))
                 .frame(height: 0.5)
         }
     }

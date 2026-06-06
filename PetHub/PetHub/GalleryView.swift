@@ -3,8 +3,9 @@
 //  PetHub
 //
 
-import SwiftUI
 import PhotosUI
+import Supabase
+import SwiftUI
 
 // MARK: - GalleryView
 
@@ -12,7 +13,7 @@ struct GalleryView: View {
     let room: PetRoom
     @State private var selectedPhoto: PhotoPost? = nil
     @State private var showCamera = false
-    @State private var photos: [PhotoPost]
+    @State private var photos: [PhotoPost] = []
 
     let columns = Array(repeating: GridItem(.flexible(), spacing: 2), count: 3)
 
@@ -31,10 +32,10 @@ struct GalleryView: View {
                             .foregroundStyle(room.accent.opacity(0.3))
                         Text("No photos yet")
                             .font(.system(size: 16, weight: .medium))
-                            .foregroundStyle(Color.white.opacity(0.3))
+                            .foregroundStyle(Color("AppWhiteText"))
                         Text("Tap the camera to capture a moment")
                             .font(.system(size: 13))
-                            .foregroundStyle(Color.white.opacity(0.18))
+                            .foregroundStyle(Color("AppBorder").opacity(1.8))
                             .multilineTextAlignment(.center)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -42,7 +43,10 @@ struct GalleryView: View {
                 } else {
                     ScrollView {
                         LazyVGrid(columns: columns, spacing: 2) {
-                            ForEach(Array(photos.enumerated()), id: \.element.id) { index, photo in
+                            ForEach(
+                                Array(photos.enumerated()),
+                                id: \.element.id
+                            ) { index, photo in
                                 PhotoCell(photo: photo, index: index)
                                     .onTapGesture { selectedPhoto = photo }
                             }
@@ -54,20 +58,30 @@ struct GalleryView: View {
             }
 
             // Camera FAB
-            Button { showCamera = true } label: {
+            Button {
+                showCamera = true
+            } label: {
                 ZStack {
                     Circle()
                         .fill(room.accent)
                         .frame(width: 52, height: 52)
-                        .shadow(color: room.accent.opacity(0.4), radius: 12, x: 0, y: 4)
+                        .shadow(
+                            color: room.accent.opacity(0.4),
+                            radius: 12,
+                            x: 0,
+                            y: 4
+                        )
                     Image(systemName: "camera.fill")
                         .font(.system(size: 20))
-                        .foregroundStyle(Color.black.opacity(0.8))
+                        .foregroundStyle(Color("AppAccentText"))
                 }
             }
             .buttonStyle(.plain)
             .padding(.trailing, 20)
             .padding(.bottom, 24)
+        }
+        .task {
+            await fetchPhotos()
         }
         // Pass a binding so PhotoDetailView can write comments back
         .sheet(item: $selectedPhoto) { photo in
@@ -76,21 +90,72 @@ struct GalleryView: View {
             }
         }
         .fullScreenCover(isPresented: $showCamera) {
-            CaptureAndPostView(accent: room.accent) { image, caption in
-                let newPhoto = PhotoPost(
-                    id: UUID(),
-                    image: image,
-                    emoji: "📸",
-                    backgroundHex: room.accentHex,
-                    caption: caption,
-                    postedBy: .me,
-                    timestamp: Date(),
-                    likeCount: 0,
-                    comments: [],
-                    isLiked: false
-                )
-                withAnimation { photos.insert(newPhoto, at: 0) }
+            CaptureAndPostView(
+                accent: room.accent,
+                onPost: { image, caption in
+                    let newPhoto = PhotoPost(
+                        id: UUID(),
+                        image: image,
+                        emoji: "📸",
+                        backgroundHex: room.accentHex,
+                        caption: caption,
+                        postedBy: .me,
+                        timestamp: Date(),
+                        likeCount: 0,
+                        comments: [],
+                        isLiked: false
+                    )
+                    withAnimation { photos.insert(newPhoto, at: 0) }
+                },
+                roomId: room.id.uuidString
+            )
+        }
+    }
+    private func fetchPhotos() async {
+        do {
+            struct SupabasePhoto: Codable {
+                let id: UUID
+                let imageUrl: String
+                let caption: String
+                let createdAt: Date?
+
+                enum CodingKeys: String, CodingKey {
+                    case id
+                    case imageUrl = "image_url"
+                    case caption
+                    case createdAt = "created_at"
+                }
             }
+
+            let fetched: [SupabasePhoto] =
+                try await supabase
+                .from("photo_posts")
+                .select()
+                .eq("room_id", value: room.id.uuidString)
+                .order("created_at", ascending: false)
+                .execute()
+                .value
+
+            await MainActor.run {
+                self.photos = fetched.map { p in
+                    PhotoPost(
+                        id: p.id,
+                        image: nil,
+                        imageUrl: p.imageUrl,
+                        emoji: "📸",
+                        backgroundHex: room.accentHex,
+                        caption: p.caption,
+                        postedBy: .me,
+                        timestamp: p.createdAt ?? Date(),
+                        likeCount: 0,
+                        comments: [],
+                        isLiked: false
+                    )
+                }
+            }
+        } catch {
+            print("Fetch photos error: \(error)")
+
         }
     }
 }
@@ -109,14 +174,22 @@ struct CameraPickerView: UIViewControllerRepresentable {
         return picker
     }
 
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+    func updateUIViewController(
+        _ uiViewController: UIImagePickerController,
+        context: Context
+    ) {}
 
-    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+    class Coordinator: NSObject, UIImagePickerControllerDelegate,
+        UINavigationControllerDelegate
+    {
         let onPick: (UIImage) -> Void
         init(onPick: @escaping (UIImage) -> Void) { self.onPick = onPick }
 
-        func imagePickerController(_ picker: UIImagePickerController,
-                                   didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+        func imagePickerController(
+            _ picker: UIImagePickerController,
+            didFinishPickingMediaWithInfo info: [UIImagePickerController
+                .InfoKey: Any]
+        ) {
             picker.dismiss(animated: true)
             if let img = info[.originalImage] as? UIImage { onPick(img) }
         }
@@ -132,13 +205,14 @@ struct CameraPickerView: UIViewControllerRepresentable {
 struct PhotoCell: View {
     let photo: PhotoPost
     let index: Int
+    @State private var loadedImage: UIImage? = nil
 
     var isWide: Bool { index % 5 == 0 }
 
     var body: some View {
         GeometryReader { geo in
             ZStack(alignment: .bottomLeading) {
-                if let img = photo.image {
+                if let img = loadedImage ?? photo.image {
                     Image(uiImage: img)
                         .resizable()
                         .scaledToFill()
@@ -147,8 +221,8 @@ struct PhotoCell: View {
                 } else {
                     Rectangle()
                         .fill(photo.background)
-                    Text(photo.emoji)
-                        .font(.system(size: isWide ? 56 : 38))
+                    ProgressView()
+                        .tint(.white)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
 
@@ -161,12 +235,15 @@ struct PhotoCell: View {
                 HStack(spacing: 6) {
                     Label("\(photo.likeCount)", systemImage: "heart.fill")
                         .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(Color.white.opacity(0.85))
+                        .foregroundStyle(Color("AppText"))
 
                     if !photo.comments.isEmpty {
-                        Label("\(photo.comments.count)", systemImage: "bubble.left.fill")
-                            .font(.system(size: 10, weight: .medium))
-                            .foregroundStyle(Color.white.opacity(0.85))
+                        Label(
+                            "\(photo.comments.count)",
+                            systemImage: "bubble.left.fill"
+                        )
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(Color("AppText"))
                     }
                 }
                 .padding(.horizontal, 8)
@@ -176,6 +253,17 @@ struct PhotoCell: View {
         .aspectRatio(isWide ? 2 : 1, contentMode: .fit)
         .gridCellColumns(isWide ? 2 : 1)
         .clipped()
+        .task {
+            await loadImage()
+        }
+    }
+
+    private func loadImage() async {
+        guard let urlString = photo.imageUrl, let url = URL(string: urlString)
+        else { return }
+        guard let (data, _) = try? await URLSession.shared.data(from: url)
+        else { return }
+        loadedImage = UIImage(data: data)
     }
 }
 
@@ -187,29 +275,33 @@ struct PhotoDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var commentText = ""
     @FocusState private var commentFocused: Bool
+    @State private var loadedImage: UIImage? = nil
 
     var body: some View {
         ZStack {
-            Color(hex: "0D0D0E").ignoresSafeArea()
+            Color("AppBackground").ignoresSafeArea()
 
             VStack(spacing: 0) {
                 // Top bar
                 HStack {
-                    Button { dismiss() } label: {
+                    Button {
+                        dismiss()
+                    } label: {
                         ZStack {
                             Circle()
-                                .fill(Color.white.opacity(0.06))
+                                .fill(Color("AppDivider"))
                                 .frame(width: 36, height: 36)
                             Image(systemName: "xmark")
                                 .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(Color.white.opacity(0.7))
+                                .foregroundStyle(Color("AppAdaptiveWhite").opacity(0.8))
                         }
                     }
                     Spacer()
-                    Button {} label: {
+                    Button {
+                    } label: {
                         Image(systemName: "square.and.arrow.up")
                             .font(.system(size: 17))
-                            .foregroundStyle(Color.white.opacity(0.5))
+                            .foregroundStyle(Color("AppWhiteText"))
                     }
                 }
                 .padding(.horizontal, 20)
@@ -218,7 +310,7 @@ struct PhotoDetailView: View {
 
                 // Photo
                 ZStack {
-                    if let img = photo.image {
+                    if let img = loadedImage ?? photo.image {
                         Image(uiImage: img)
                             .resizable()
                             .scaledToFill()
@@ -230,11 +322,14 @@ struct PhotoDetailView: View {
                         RoundedRectangle(cornerRadius: 24)
                             .fill(photo.background)
                             .frame(height: 300)
-                        Text(photo.emoji)
-                            .font(.system(size: 96))
+                        ProgressView()
+                            .tint(.white)
                     }
                 }
                 .padding(.horizontal, 16)
+                .task {
+                    await loadImage()
+                }
 
                 // Author + like
                 VStack(alignment: .leading, spacing: 12) {
@@ -243,25 +338,34 @@ struct PhotoDetailView: View {
                         VStack(alignment: .leading, spacing: 1) {
                             Text(photo.postedBy.name)
                                 .font(.system(size: 13, weight: .semibold))
-                                .foregroundStyle(Color(hex: "F0EDE6"))
+                                .foregroundStyle(Color("AppText"))
                             Text(photo.timestamp.relativeString())
                                 .font(.system(size: 11))
-                                .foregroundStyle(Color.white.opacity(0.3))
+                                .foregroundStyle(Color("AppWhiteText"))
                         }
                         Spacer()
                         Button {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+                            withAnimation(
+                                .spring(response: 0.3, dampingFraction: 0.5)
+                            ) {
                                 photo.isLiked.toggle()
                                 photo.likeCount += photo.isLiked ? 1 : -1
                             }
                         } label: {
                             HStack(spacing: 5) {
-                                Image(systemName: photo.isLiked ? "heart.fill" : "heart")
-                                    .font(.system(size: 17))
-                                    .foregroundStyle(photo.isLiked ? Color(hex: "FF6B6B") : Color.white.opacity(0.4))
+                                Image(
+                                    systemName: photo.isLiked
+                                        ? "heart.fill" : "heart"
+                                )
+                                .font(.system(size: 17))
+                                .foregroundStyle(
+                                    photo.isLiked
+                                        ? Color(hex: "FF6B6B")
+                                        : Color("AppSubtext")
+                                )
                                 Text("\(photo.likeCount)")
                                     .font(.system(size: 13, weight: .medium))
-                                    .foregroundStyle(Color.white.opacity(0.5))
+                                    .foregroundStyle(Color("AppWhiteText"))
                             }
                         }
                         .buttonStyle(.plain)
@@ -270,14 +374,14 @@ struct PhotoDetailView: View {
                     if !photo.caption.isEmpty {
                         Text(photo.caption)
                             .font(.system(size: 14))
-                            .foregroundStyle(Color(hex: "F0EDE6"))
+                            .foregroundStyle(Color("AppText"))
                     }
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 16)
 
                 Divider()
-                    .background(Color.white.opacity(0.06))
+                    .background(Color("AppDivider"))
                     .padding(.horizontal, 20)
                     .padding(.vertical, 14)
 
@@ -287,7 +391,7 @@ struct PhotoDetailView: View {
                         if photo.comments.isEmpty {
                             Text("No comments yet. Be first!")
                                 .font(.system(size: 13))
-                                .foregroundStyle(Color.white.opacity(0.2))
+                                .foregroundStyle(Color("AppPlaceholder"))
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 24)
                         } else {
@@ -307,30 +411,40 @@ struct PhotoDetailView: View {
                     TextField(
                         "",
                         text: $commentText,
-                        prompt: Text("Add a comment…").foregroundStyle(Color.white.opacity(0.2))
+                        prompt: Text("Add a comment…").foregroundStyle(
+                            Color("AppPlaceholder")
+                        )
                     )
                     .focused($commentFocused)
-                    .foregroundStyle(Color(hex: "F0EDE6"))
+                    .foregroundStyle(Color("AppText"))
                     .font(.system(size: 13))
                     .padding(.horizontal, 14)
                     .frame(height: 40)
                     .background(
                         RoundedRectangle(cornerRadius: 20)
-                            .fill(Color.white.opacity(0.06))
+                            .fill(Color("AppDivider"))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 20)
-                                    .stroke(Color.white.opacity(0.07), lineWidth: 0.5)
+                                    .stroke(
+                                        Color("AppBorder"),
+                                        lineWidth: 0.5
+                                    )
                             )
                     )
                     .onSubmit { submitComment() }
 
                     if !commentText.isEmpty {
-                        Button { submitComment() } label: {
+                        Button {
+                            submitComment()
+                        } label: {
                             ZStack {
-                                Circle().fill(Color(hex: "AA9DFF")).frame(width: 34, height: 34)
+                                Circle().fill(Color(hex: "AA9DFF")).frame(
+                                    width: 34,
+                                    height: 34
+                                )
                                 Image(systemName: "arrow.up")
                                     .font(.system(size: 14, weight: .semibold))
-                                    .foregroundStyle(Color.black.opacity(0.8))
+                                    .foregroundStyle(Color("AppAccentText"))
                             }
                         }
                         .buttonStyle(.plain)
@@ -341,24 +455,32 @@ struct PhotoDetailView: View {
                 .padding(.vertical, 12)
                 .background(
                     Rectangle()
-                        .fill(Color(hex: "0D0D0E"))
+                        .fill(Color("AppBackground"))
                         .overlay(
                             Rectangle()
-                                .fill(Color.white.opacity(0.05))
+                                .fill(Color("AppDivider").opacity(0.6))
                                 .frame(height: 0.5),
                             alignment: .top
                         )
                 )
             }
         }
-        .preferredColorScheme(.dark)
         .animation(.easeInOut(duration: 0.15), value: commentText.isEmpty)
     }
 
+    private func loadImage() async {
+        guard let urlString = photo.imageUrl, let url = URL(string: urlString)
+        else { return }
+        guard let (data, _) = try? await URLSession.shared.data(from: url)
+        else { return }
+        loadedImage = UIImage(data: data)
+    }
     // MARK: - Submit comment
 
     private func submitComment() {
-        let trimmed = commentText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmed = commentText.trimmingCharacters(
+            in: .whitespacesAndNewlines
+        )
         guard !trimmed.isEmpty else { return }
 
         let newComment = Message(
@@ -388,16 +510,16 @@ struct CommentRow: View {
                 if let sender = message.sender {
                     Text(sender.name)
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(Color.white.opacity(0.4))
+                        .foregroundStyle(Color("AppSubtext"))
                 }
                 if case .text(let text) = message.content {
                     Text(text)
                         .font(.system(size: 13))
-                        .foregroundStyle(Color(hex: "F0EDE6"))
+                        .foregroundStyle(Color("AppText"))
                 }
                 Text(message.timestamp.relativeString())
                     .font(.system(size: 10))
-                    .foregroundStyle(Color.white.opacity(0.2))
+                    .foregroundStyle(Color("AppPlaceholder"))
             }
             Spacer()
         }
@@ -409,6 +531,5 @@ struct CommentRow: View {
 
 #Preview {
     GalleryView(room: .mochi)
-        .background(Color(hex: "0D0D0E"))
-        .preferredColorScheme(.dark)
+        .background(Color("AppBackground"))
 }

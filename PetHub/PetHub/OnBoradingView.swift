@@ -69,7 +69,7 @@ struct OnboardingView: View {
             WelcomeView()
         } else {
             ZStack(alignment: .bottom) {
-                Color(hex: "0D0D0E").ignoresSafeArea()
+                Color("AppBackground").ignoresSafeArea()
 
                 // Slides
                 TabView(selection: $currentPage) {
@@ -87,7 +87,7 @@ struct OnboardingView: View {
                     HStack(spacing: 6) {
                         ForEach(pages.indices, id: \.self) { i in
                             Capsule()
-                                .fill(i == currentPage ? accent : Color.white.opacity(0.18))
+                                .fill(i == currentPage ? accent : Color("AppBorder").opacity(1.8))
                                 .frame(width: i == currentPage ? 20 : 6, height: 6)
                                 .animation(.spring(response: 0.3, dampingFraction: 0.7), value: currentPage)
                         }
@@ -124,7 +124,7 @@ struct OnboardingView: View {
                     } label: {
                         Text("Skip")
                             .font(.system(size: 13))
-                            .foregroundStyle(Color.white.opacity(0.22))
+                            .foregroundStyle(Color("AppPlaceholder"))
                     }
                     .buttonStyle(.plain)
                     .padding(.top, 14)
@@ -134,21 +134,20 @@ struct OnboardingView: View {
                 }
                 .background(
                     LinearGradient(
-                        colors: [Color(hex: "0D0D0E").opacity(0), Color(hex: "0D0D0E")],
+                        colors: [Color("AppBackground").opacity(0), Color("AppBackground")],
                         startPoint: .top,
                         endPoint: .init(x: 0.5, y: 0.25)
                     )
                     .ignoresSafeArea()
                 )
             }
-            .preferredColorScheme(.dark)
         }
     }
 
     private var ctaTextColor: Color {
         switch pages[currentPage].accentHex {
-        case "AA9DFF": return Color(hex: "1a1630")
-        case "7EC8C8": return Color(hex: "1a3333")
+        case "AA9DFF": return Color("AppAccentText")
+        case "7EC8C8": return Color("AppAccentText")
         default:       return .white
         }
     }
@@ -197,8 +196,8 @@ private struct OnboardingSlide: View {
                         .frame(width: 46, height: 46)
                         .background(
                             Circle()
-                                .fill(Color(hex: "1C1C1F"))
-                                .overlay(Circle().stroke(Color.white.opacity(0.08), lineWidth: 0.5))
+                                .fill(Color("AppSurface"))
+                                .overlay(Circle().stroke(Color("AppBorder"), lineWidth: 0.5))
                         )
                         .offset(
                             x: f.x * 86,
@@ -213,7 +212,7 @@ private struct OnboardingSlide: View {
             Text(page.title)
                 .font(.system(size: 24, weight: .bold))
                 .multilineTextAlignment(.center)
-                .foregroundStyle(Color(hex: "F0EDE6"))
+                .foregroundStyle(Color("AppText"))
                 .lineSpacing(2)
                 .padding(.horizontal, 32)
                 .padding(.bottom, 14)
@@ -221,7 +220,7 @@ private struct OnboardingSlide: View {
             Text(page.body)
                 .font(.system(size: 14))
                 .multilineTextAlignment(.center)
-                .foregroundStyle(Color.white.opacity(0.38))
+                .foregroundStyle(Color("AppSubtext"))
                 .lineSpacing(4)
                 .padding(.horizontal, 36)
                 .padding(.bottom, 28)

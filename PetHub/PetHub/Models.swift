@@ -90,6 +90,7 @@ struct DMThread: Identifiable {
 struct PhotoPost: Identifiable {
     let id: UUID
     var image: UIImage? = nil
+    var imageUrl: String? = nil
     let emoji: String          // placeholder for real image
     let backgroundHex: String
     let caption: String
@@ -100,6 +101,37 @@ struct PhotoPost: Identifiable {
     var isLiked: Bool
 
     var background: Color { Color(hex: backgroundHex) }
+}
+
+// MARK: -Supabase Room
+
+struct SupabaseRoom: Codable {
+    let id: UUID
+    let name: String
+    let breed: String
+    let age: String
+    let icon: String
+    let accentHex: String
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, breed, age, icon
+        case accentHex = "accent_hex"
+    }
+
+    func toPetRoom() -> PetRoom {
+        PetRoom(
+            id: id,
+            name: name,
+            breed: breed,
+            age: age,
+            icon: icon,
+            accentHex: accentHex,
+            members: [],
+            photos: [],
+            groupMessages: [],
+            dmThreads: []
+        )
+    }
 }
 
 // MARK: - Pet Room

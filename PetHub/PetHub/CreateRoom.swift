@@ -6,6 +6,7 @@
 import Foundation
 import SwiftUI
 import UIKit
+import Supabase
 
 struct CreateRoomView: View {
 
@@ -49,7 +50,7 @@ struct CreateRoomView: View {
 
     var body: some View {
         ZStack {
-            Color(hex: "0D0D0E")
+            Color("AppBackground")
                 .ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
@@ -63,11 +64,11 @@ struct CreateRoomView: View {
                             } label: {
                                 ZStack {
                                     Circle()
-                                        .fill(Color.white.opacity(0.05))
+                                        .fill(Color("AppDivider").opacity(0.6))
                                         .frame(width: 38, height: 38)
                                     Image(systemName: "chevron.left")
                                         .foregroundStyle(
-                                            Color.white.opacity(0.8)
+                                            Color("AppAdaptiveWhite")
                                         )
                                 }
                             }
@@ -77,11 +78,11 @@ struct CreateRoomView: View {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Create Room")
                                 .font(.system(size: 32, weight: .semibold))
-                                .foregroundStyle(Color(hex: "F0EDE6"))
+                                .foregroundStyle(Color("AppText"))
 
                             Text("Make a private space for your pet.")
                                 .font(.system(size: 14))
-                                .foregroundStyle(Color.white.opacity(0.35))
+                                .foregroundStyle(Color("AppSubtext"))
                         }
                     }
 
@@ -125,11 +126,11 @@ struct CreateRoomView: View {
                             VStack(spacing: 4) {
                                 Text(petName.isEmpty ? "Your Pet" : petName)
                                     .font(.system(size: 20, weight: .semibold))
-                                    .foregroundStyle(Color(hex: "F0EDE6"))
+                                    .foregroundStyle(Color("AppText"))
 
                                 Text(breedAgePreview)
                                     .font(.system(size: 12))
-                                    .foregroundStyle(Color.white.opacity(0.4))
+                                    .foregroundStyle(Color("AppSubtext"))
                             }
                         }
                     }
@@ -140,7 +141,7 @@ struct CreateRoomView: View {
                         // Colors
                         VStack(alignment: .leading, spacing: 10) {
                             Text("Room Color")
-                                .foregroundStyle(Color.white.opacity(0.35))
+                                .foregroundStyle(Color("AppSubtext"))
 
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 12) {
@@ -168,7 +169,7 @@ struct CreateRoomView: View {
                         // Pet Type
                         VStack(alignment: .leading, spacing: 10) {
                             Text("Pet Type")
-                                .foregroundStyle(Color.white.opacity(0.35))
+                                .foregroundStyle(Color("AppSubtext"))
 
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 10) {
@@ -234,16 +235,16 @@ struct CreateRoomView: View {
                             HStack {
                                 Text("Bio").font(
                                     .system(size: 12, weight: .medium)
-                                ).foregroundStyle(Color.white.opacity(0.35))
+                                ).foregroundStyle(Color("AppSubtext"))
                                 Text("optional").font(.system(size: 10))
-                                    .foregroundStyle(Color.white.opacity(0.2))
+                                    .foregroundStyle(Color("AppPlaceholder"))
                             }
                             ZStack(alignment: .topLeading) {
                                 if bio.isEmpty {
                                     Text("Tell something about your pet...")
                                         .font(.system(size: 14))
                                         .foregroundStyle(
-                                            Color.white.opacity(0.2)
+                                            Color("AppPlaceholder")
                                         ).padding(.top, 14).padding(
                                             .leading,
                                             16
@@ -251,15 +252,15 @@ struct CreateRoomView: View {
                                 }
                                 TextEditor(text: $bio).scrollContentBackground(
                                     .hidden
-                                ).foregroundStyle(Color(hex: "F0EDE6")).frame(
+                                ).foregroundStyle(Color("AppText")).frame(
                                     height: 120
                                 ).padding(12)
                             }.background(
                                 RoundedRectangle(cornerRadius: 18).fill(
-                                    Color(hex: "171719")
+                                    Color("AppSurface2")
                                 ).overlay(
                                     RoundedRectangle(cornerRadius: 18).stroke(
-                                        Color.white.opacity(0.06),
+                                        Color("AppDivider"),
                                         lineWidth: 0.5
                                     )
                                 )
@@ -270,25 +271,7 @@ struct CreateRoomView: View {
                     // Create Button
                     Button {
                         guard canCreate else { return }
-
-                        let newRoom = PetRoom(
-                            id: UUID(),
-                            name: petName,
-                            breed: breed,
-                            age: age,
-                            icon: selectedPetIcon,
-                            accentHex: "AA9DFF",
-                            members: [.me],
-                            photos: [],
-                            groupMessages: [],
-                            dmThreads: []
-                        )
-
-                        dismiss()
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            onComplete?(newRoom)
-                        }
-
+                        Task { await createRoom() }
                     } label: {
                         Text("Create Room")
                             .frame(maxWidth: .infinity)
@@ -296,7 +279,7 @@ struct CreateRoomView: View {
                             .background(
                                 canCreate
                                     ? Color(hex: "AA9DFF")
-                                    : Color.white.opacity(0.1)
+                                    : Color("AppBorder")
                             )
                             .foregroundStyle(
                                 canCreate ? .black : .white.opacity(0.3)
@@ -324,7 +307,37 @@ struct CreateRoomView: View {
         default: return "pawprint.fill"
         }
     }
-
+    
+    private func createRoom() async {
+        do {
+            let user = try await supabase.auth.session.user
+            let newRoom = SupabaseRoom(
+                id: UUID(),
+                name: petName,
+                breed: breed,
+                age: age,
+                icon: selectedPetIcon,
+                accentHex: roomColors.first(where: { $0.0 == selectedColor })?.1 ?? "AA9DFF"
+            )
+            try await supabase
+                .from("rooms")
+                .insert([
+                    "id": newRoom.id.uuidString,
+                    "name": newRoom.name,
+                    "breed": newRoom.breed,
+                    "age": newRoom.age,
+                    "icon": newRoom.icon,
+                    "accent_hex": newRoom.accentHex,
+                    "owner_id": user.id.uuidString
+                ])
+                .execute()
+            dismiss()
+            onComplete?(newRoom.toPetRoom())
+        } catch {
+            print("Create room error: \(error)")
+        }
+    }
+    
     private var breedAgePreview: String {
         let b = breed.isEmpty ? displayPetType : breed
         let a = age.isEmpty ? "" : " · \(age)"
@@ -345,7 +358,7 @@ struct CreateRoomInput: View {
         TextField(title, text: $text)
             .keyboardType(keyboardType)
             .padding()
-            .background(Color(hex: "171719"))
+            .background(Color("AppSurface2"))
             .cornerRadius(18)
             .foregroundStyle(.white)
     }

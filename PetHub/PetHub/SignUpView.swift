@@ -5,8 +5,8 @@
 //  Created by Han Min Thant on 29/5/26.
 //
 
-import SwiftUI
 import Supabase
+import SwiftUI
 
 struct SignUpView: View {
     @State private var name = ""
@@ -19,7 +19,7 @@ struct SignUpView: View {
 
     var body: some View {
         ZStack {
-            Color(hex: "0D0D0E").ignoresSafeArea()
+            Color("AppBackground").ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
@@ -28,21 +28,21 @@ struct SignUpView: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("New here?")
                             .font(.system(size: 13))
-                            .foregroundStyle(Color.white.opacity(0.35))
+                            .foregroundStyle(Color("AppSubtext"))
 
                         Group {
-                            Text("Join the ") +
-                            Text("pack. 🐾")
+                            Text("Join the ")
+                                + Text("pack. 🐾")
                                 .font(.custom("Georgia-Italic", size: 28))
                                 .foregroundColor(Color(hex: "AA9DFF"))
                         }
                         .font(.system(size: 26, weight: .bold))
-                        .foregroundStyle(Color(hex: "F0EDE6"))
+                        .foregroundStyle(Color("AppText"))
                         .lineSpacing(2)
 
                         Text("Create your account and get started")
                             .font(.system(size: 12))
-                            .foregroundStyle(Color.white.opacity(0.28))
+                            .foregroundStyle(Color("AppSubtext").opacity(0.7))
                     }
                     .padding(.bottom, 32)
 
@@ -78,7 +78,7 @@ struct SignUpView: View {
                     } label: {
                         Text("Create Account")
                             .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(Color(hex: "1a1630"))
+                            .foregroundStyle(Color("AppAccentText"))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
                             .background(
@@ -103,15 +103,18 @@ struct SignUpView: View {
                             Text("Continue with Apple")
                                 .font(.system(size: 14, weight: .medium))
                         }
-                        .foregroundStyle(Color(hex: "F0EDE6"))
+                        .foregroundStyle(Color("AppText"))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 15)
                         .background(
                             RoundedRectangle(cornerRadius: 16)
-                                .fill(Color(hex: "1C1C1F"))
+                                .fill(Color("AppSurface"))
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 16)
-                                        .stroke(Color.white.opacity(0.09), lineWidth: 0.5)
+                                        .stroke(
+                                            Color("AppBorder"),
+                                            lineWidth: 0.5
+                                        )
                                 )
                         )
                     }
@@ -123,11 +126,13 @@ struct SignUpView: View {
                         Spacer()
                         Text("Already have an account?")
                             .font(.system(size: 12))
-                            .foregroundStyle(Color.white.opacity(0.25))
+                            .foregroundStyle(Color("AppSubtext"))
                         NavigationLink(destination: SignInView()) {
                             Text("Sign In")
                                 .font(.system(size: 12, weight: .medium))
-                                .foregroundStyle(Color(hex: "AA9DFF").opacity(0.75))
+                                .foregroundStyle(
+                                    Color(hex: "AA9DFF").opacity(0.75)
+                                )
                         }
                         Spacer()
                     }
@@ -138,12 +143,29 @@ struct SignUpView: View {
             }
         }
         .navigationBarBackButtonHidden(false)
-        .preferredColorScheme(.dark)
     }
-    
+
     private func signUp() async {
         do {
-            try await supabase.auth.signUp(email: email, password: password)
+            let response = try await supabase.auth.signUp(
+                email: email,
+                password: password
+            )
+
+            let user = response.user
+            try await supabase
+                .from("profiles")
+                .insert([
+                    "id": user.id.uuidString,
+                    "name": name,
+                    "username":
+                        "@\(email.components(separatedBy: "@").first ?? "")",
+                    "bio": "",
+                    "avatar_emoji": "🧑",
+                    "avatar_accent_hex": "AA9DFF",
+                ])
+                .execute()
+
             print("Signed up successfully!")
         } catch {
             print("Sign up error: \(error)")

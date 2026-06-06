@@ -8,18 +8,35 @@
 
 import Combine
 import SwiftUI
+import Supabase
 
 // MARK: - Room Store
 
 class RoomStore: ObservableObject {
-    @Published var rooms: [PetRoom] = [.mochi]
+    @Published var rooms: [PetRoom] = []
     @Published var isInRoom: Bool = false
 
     func add(_ room: PetRoom) {
         rooms.append(room)
     }
-}
 
+    func fetchRooms() async {
+        do {
+            let user = try await supabase.auth.session.user
+            let fetched: [SupabaseRoom] = try await supabase
+                .from("rooms")
+                .select()
+                .eq("owner_id", value: user.id.uuidString)
+                .execute()
+                .value
+            await MainActor.run {
+                self.rooms = fetched.map { $0.toPetRoom() }
+            }
+        } catch {
+            print("Fetch rooms error: \(error)")
+        }
+    }
+}
 // MARK: - Tab Enum
 
 enum AppTab {
@@ -54,8 +71,10 @@ struct MainTabView: View {
                     )
             }
         }
+        .task {
+            await store.fetchRooms()
+        }
         .ignoresSafeArea(edges: .bottom)
-        .preferredColorScheme(.dark)
     }
 }
 
@@ -89,13 +108,13 @@ struct FloatingTabBar: View {
         .padding(.horizontal, 8)
         .background(
             RoundedRectangle(cornerRadius: 28)
-                .fill(Color(hex: "1C1C1F").opacity(0.95))
+                .fill(Color("AppSurface").opacity(0.95))
                 .overlay(
                     RoundedRectangle(cornerRadius: 28)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
+                        .stroke(Color("AppBorder"), lineWidth: 0.5)
                 )
         )
-        .shadow(color: Color.black.opacity(0.5), radius: 24, x: 0, y: 8)
+        .shadow(color: Color.black.opacity(0.18), radius: 20, x: 0, y: 6)
     }
 }
 
@@ -118,13 +137,13 @@ struct TabBarItem: View {
                     .font(.system(size: 20, weight: .medium))
                     .foregroundStyle(
                         isActive
-                            ? Color(hex: "AA9DFF") : Color.white.opacity(0.3)
+                            ? Color(hex: "AA9DFF") : Color("AppWhiteText")
                     )
                 Text(label)
                     .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(
                         isActive
-                            ? Color(hex: "AA9DFF") : Color.white.opacity(0.3)
+                            ? Color(hex: "AA9DFF") : Color("AppWhiteText")
                     )
             }
             .frame(maxWidth: .infinity)
@@ -155,7 +174,7 @@ struct RoomsView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color(hex: "0D0D0E").ignoresSafeArea()
+                Color("AppBackground").ignoresSafeArea()
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
@@ -164,12 +183,12 @@ struct RoomsView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Rooms")
                                 .font(.system(size: 28, weight: .semibold))
-                                .foregroundStyle(Color(hex: "F0EDE6"))
+                                .foregroundStyle(Color("AppText"))
                             Text(
                                 "\(store.rooms.count) room\(store.rooms.count == 1 ? "" : "s") active"
                             )
                             .font(.system(size: 13))
-                            .foregroundStyle(Color.white.opacity(0.3))
+                            .foregroundStyle(Color("AppWhiteText"))
                         }
                         .padding(.horizontal, 20)
                         .padding(.top, 20)
@@ -228,7 +247,7 @@ struct RoomsSectionLabel: View {
         Text(title.uppercased())
             .font(.system(size: 10, weight: .medium))
             .tracking(1.4)
-            .foregroundStyle(Color.white.opacity(0.25))
+            .foregroundStyle(Color("AppSubtext"))
     }
 }
 
@@ -251,10 +270,10 @@ struct LostRoomCard: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Lost Animals")
                         .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(Color(hex: "F0EDE6"))
+                        .foregroundStyle(Color("AppText"))
                     Text("Community · 12 reports nearby")
                         .font(.system(size: 11))
-                        .foregroundStyle(Color.white.opacity(0.35))
+                        .foregroundStyle(Color("AppSubtext"))
                 }
 
                 Spacer()
@@ -270,12 +289,12 @@ struct LostRoomCard: View {
 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 12))
-                    .foregroundStyle(Color.white.opacity(0.2))
+                    .foregroundStyle(Color("AppPlaceholder"))
             }
             .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(Color(hex: "1E1614"))
+                    .fill(Color("AppSurface"))
                     .overlay(
                         RoundedRectangle(cornerRadius: 20)
                             .stroke(
@@ -315,21 +334,21 @@ struct PetRoomCard: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(name)
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Color(hex: "F0EDE6"))
+                    .foregroundStyle(Color("AppText"))
                 Text("\(breed) · \(age)")
                     .font(.system(size: 10))
-                    .foregroundStyle(Color.white.opacity(0.4))
+                    .foregroundStyle(Color("AppSubtext"))
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 12)
             .padding(.vertical, 11)
-            .background(Color(hex: "161618"))
+            .background(Color("AppSurface2"))
         }
         .clipShape(RoundedRectangle(cornerRadius: 20))
         .overlay(
             RoundedRectangle(cornerRadius: 20)
-                .stroke(Color.white.opacity(0.07), lineWidth: 0.5)
+                .stroke(Color("AppBorder"), lineWidth: 0.5)
         )
     }
 }
@@ -347,22 +366,22 @@ struct AddPetCard: View {
             VStack(spacing: 8) {
                 Image(systemName: "plus")
                     .font(.system(size: 26, weight: .light))
-                    .foregroundStyle(Color.white.opacity(0.2))
+                    .foregroundStyle(Color("AppPlaceholder"))
                 Text("Create Room")
                     .font(.system(size: 12))
-                    .foregroundStyle(Color.white.opacity(0.2))
+                    .foregroundStyle(Color("AppPlaceholder"))
             }
             .frame(maxWidth: .infinity)
             .frame(height: 185)
             .background(
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(Color.white.opacity(0.03))
+                    .fill(Color("AppBorder").opacity(0.5))
                     .overlay(
                         RoundedRectangle(cornerRadius: 20)
                             .strokeBorder(
                                 style: StrokeStyle(lineWidth: 1, dash: [5, 4])
                             )
-                            .foregroundStyle(Color.white.opacity(0.1))
+                            .foregroundStyle(Color("AppBorder"))
                     )
             )
         }

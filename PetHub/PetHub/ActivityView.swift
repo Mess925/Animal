@@ -148,14 +148,14 @@ struct ActivityView: View {
     var body: some View {
         NavigationStack(path: $navigationPath) {
             ZStack {
-                Color(hex: "0D0D0E").ignoresSafeArea()
+                Color("AppBackground").ignoresSafeArea()
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
 
                         Text("Activity")
                             .font(.system(size: 28, weight: .semibold))
-                            .foregroundStyle(Color(hex: "F0EDE6"))
+                            .foregroundStyle(Color("AppText"))
                             .padding(.horizontal, 20)
                             .padding(.top, 20)
                             .padding(.bottom, 24)
@@ -221,17 +221,17 @@ struct ActivityView: View {
                 }
                 if item.id != items.last?.id {
                     Divider()
-                        .background(Color.white.opacity(0.04))
+                        .background(Color("AppDivider"))
                         .padding(.leading, 68)
                 }
             }
         }
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(Color(hex: "161618"))
+                .fill(Color("AppSerface2"))
                 .overlay(
                     RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
+                        .stroke(Color("AppDivider"), lineWidth: 0.5)
                 )
         )
     }
@@ -264,7 +264,7 @@ struct ActivitySectionLabel: View {
         Text(title.uppercased())
             .font(.system(size: 10, weight: .medium))
             .tracking(1.4)
-            .foregroundStyle(Color.white.opacity(0.25))
+            .foregroundStyle(Color("AppSubtext"))
     }
 }
 
@@ -294,7 +294,7 @@ struct ActivityRow: View {
 
                     ZStack {
                         Circle()
-                            .fill(Color(hex: "161618"))
+                            .fill(Color("AppSurface2"))
                             .frame(width: 20, height: 20)
                         Image(systemName: badgeIcon)
                             .font(.system(size: 9, weight: .bold))
@@ -306,7 +306,7 @@ struct ActivityRow: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(item.detail)
                         .font(.system(size: 13))
-                        .foregroundStyle(Color(hex: "F0EDE6"))
+                        .foregroundStyle(Color("AppText"))
                         .fixedSize(horizontal: false, vertical: true)
                         .multilineTextAlignment(.leading)
 
@@ -324,12 +324,12 @@ struct ActivityRow: View {
                         .background(Capsule().fill(item.roomAccent.opacity(0.1)))
 
                         Text("·")
-                            .foregroundStyle(Color.white.opacity(0.2))
+                            .foregroundStyle(Color("AppPlaceholder"))
                             .font(.system(size: 10))
 
                         Text(item.timestamp.relativeString())
                             .font(.system(size: 11))
-                            .foregroundStyle(Color.white.opacity(0.25))
+                            .foregroundStyle(Color("AppSubtext"))
                     }
                 }
 
@@ -379,20 +379,19 @@ struct LostFoundPlaceholderView: View {
 
     var body: some View {
         ZStack {
-            Color(hex: "0D0D0E").ignoresSafeArea()
+            Color("AppBackground").ignoresSafeArea()
             VStack(spacing: 16) {
                 Image(systemName: "mappin.and.ellipse")
                     .font(.system(size: 48))
                     .foregroundStyle(Color(hex: "E25718"))
                 Text("Lost & Found")
                     .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(Color(hex: "F0EDE6"))
+                    .foregroundStyle(Color("AppText"))
                 Text("Coming soon")
                     .font(.system(size: 14))
-                    .foregroundStyle(Color.white.opacity(0.3))
+                    .foregroundStyle(Color("AppWhiteText"))
             }
         }
-        .preferredColorScheme(.dark)
     }
 }
 
@@ -400,5 +399,4 @@ struct LostFoundPlaceholderView: View {
 
 #Preview {
     ActivityView()
-        .preferredColorScheme(.dark)
 }

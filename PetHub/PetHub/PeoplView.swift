@@ -1,4 +1,3 @@
-
 //
 //  PeopleView.swift
 //  PetHub
@@ -57,17 +56,17 @@ struct PeopleView: View {
 
                         if thread.id != room.dmThreads.last?.id {
                             Divider()
-                                .background(Color.white.opacity(0.04))
+                                .background(Color("AppDivider"))
                                 .padding(.leading, 68)
                         }
                     }
                 }
                 .background(
                     RoundedRectangle(cornerRadius: 20)
-                        .fill(Color(hex: "161618"))
+                        .fill(Color("AppSurface2"))
                         .overlay(
                             RoundedRectangle(cornerRadius: 20)
-                                .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
+                                .stroke(Color("AppDivider"), lineWidth: 0.5)
                         )
                 )
                 .padding(.horizontal, 16)
@@ -108,7 +107,7 @@ struct PeopleSectionLabel: View {
         Text(title.uppercased())
             .font(.system(size: 10, weight: .medium))
             .tracking(1.2)
-            .foregroundStyle(Color.white.opacity(0.25))
+            .foregroundStyle(Color("AppSubtext"))
     }
 }
 
@@ -143,10 +142,10 @@ struct GroupChatRow: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text("\(room.name)'s Room")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Color(hex: "F0EDE6"))
+                    .foregroundStyle(Color("AppText"))
                 Text(memberNames)
                     .font(.system(size: 11))
-                    .foregroundStyle(Color.white.opacity(0.3))
+                    .foregroundStyle(Color("AppWhiteText"))
                     .lineLimit(1)
             }
 
@@ -155,7 +154,7 @@ struct GroupChatRow: View {
             if totalUnread > 0 {
                 Text("\(totalUnread)")
                     .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(Color.black.opacity(0.8))
+                    .foregroundStyle(Color("AppAccentText"))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
                     .background(Capsule().fill(room.accent))
@@ -163,7 +162,7 @@ struct GroupChatRow: View {
 
             Image(systemName: "chevron.right")
                 .font(.system(size: 12))
-                .foregroundStyle(Color.white.opacity(0.15))
+                .foregroundStyle(Color("AppDivider"))
         }
         .padding(14)
         .background(
@@ -202,7 +201,7 @@ struct DMRow: View {
                     Circle()
                         .fill(Color(hex: "06D6A0"))
                         .frame(width: 11, height: 11)
-                        .overlay(Circle().stroke(Color(hex: "161618"), lineWidth: 2))
+                        .overlay(Circle().stroke(Color("AppSurface2"), lineWidth: 2))
                 }
             }
 
@@ -210,14 +209,14 @@ struct DMRow: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(thread.participant.name)
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Color(hex: "F0EDE6"))
+                    .foregroundStyle(Color("AppText"))
 
                 Text(lastMessagePreview)
                     .font(.system(size: 12))
                     .foregroundStyle(
                         isEmpty
-                            ? Color.white.opacity(0.2)
-                            : Color.white.opacity(thread.unreadCount > 0 ? 0.55 : 0.3)
+                            ? Color("AppPlaceholder")
+                            : Color("AppSubtext")
                     )
                     .italic(isEmpty)
                     .lineLimit(1)
@@ -230,7 +229,7 @@ struct DMRow: View {
                 if let last = thread.lastMessage {
                     Text(last.timestamp.relativeString())
                         .font(.system(size: 10))
-                        .foregroundStyle(Color.white.opacity(0.2))
+                        .foregroundStyle(Color("AppPlaceholder"))
                 }
 
                 if thread.unreadCount > 0 {
@@ -240,12 +239,12 @@ struct DMRow: View {
                             .frame(width: 20, height: 20)
                         Text("\(thread.unreadCount)")
                             .font(.system(size: 10, weight: .bold))
-                            .foregroundStyle(Color.black.opacity(0.8))
+                            .foregroundStyle(Color("AppAccentText"))
                     }
                 } else {
                     Image(systemName: "chevron.right")
                         .font(.system(size: 11))
-                        .foregroundStyle(Color.white.opacity(0.12))
+                        .foregroundStyle(Color("AppDivider"))
                 }
             }
         }
@@ -258,6 +257,5 @@ struct DMRow: View {
 
 #Preview {
     PeopleView(room: .mochi)
-        .background(Color(hex: "0D0D0E"))
-        .preferredColorScheme(.dark)
+        .background(Color("AppBackground"))
 }
