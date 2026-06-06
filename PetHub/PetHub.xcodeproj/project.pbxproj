@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		8F39EDBD2FD426AA00C74F7E /* EditRoomView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F39EDBC2FD426AA00C74F7E /* EditRoomView.swift */; };
 		8FE096302FCD8F1B007A89D0 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 8FE0962F2FCD8F1B007A89D0 /* Supabase */; };
 /* End PBXBuildFile section */
 
@@ -28,6 +29,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		8F39EDBC2FD426AA00C74F7E /* EditRoomView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditRoomView.swift; sourceTree = "<group>"; };
 		8FBFAD672FC4B97E007DE265 /* PetHub.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PetHub.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8FBFAD762FC4B97F007DE265 /* PetHubTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PetHubTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8FBFAD802FC4B97F007DE265 /* PetHubUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PetHubUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -93,6 +95,7 @@
 		8FBFAD5E2FC4B97D007DE265 = {
 			isa = PBXGroup;
 			children = (
+				8F39EDBC2FD426AA00C74F7E /* EditRoomView.swift */,
 				8FBFAD692FC4B97E007DE265 /* PetHub */,
 				8FBFAD792FC4B97F007DE265 /* PetHubTests */,
 				8FBFAD832FC4B97F007DE265 /* PetHubUITests */,
@@ -266,6 +269,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8F39EDBD2FD426AA00C74F7E /* EditRoomView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

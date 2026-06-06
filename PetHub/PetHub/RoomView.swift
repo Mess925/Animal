@@ -7,8 +7,8 @@
 //
 
 import Combine
-import SwiftUI
 import Supabase
+import SwiftUI
 
 // MARK: - Room Store
 
@@ -23,14 +23,39 @@ class RoomStore: ObservableObject {
     func fetchRooms() async {
         do {
             let user = try await supabase.auth.session.user
-            let fetched: [SupabaseRoom] = try await supabase
+
+            // Rooms I own
+            let ownedRooms: [SupabaseRoom] = try await supabase
                 .from("rooms")
                 .select()
                 .eq("owner_id", value: user.id.uuidString)
                 .execute()
                 .value
+
+            // Rooms I'm a member of (NOT owner)
+            let memberships: [RoomMembership] = try await supabase
+                .from("room_members")
+                .select()
+                .eq("user_id", value: user.id.uuidString)
+                .eq("role", value: "member")
+                .execute()
+                .value
+
+            let memberRoomIds = memberships.map { $0.roomId.uuidString }
+
+            var memberRooms: [SupabaseRoom] = []
+            if !memberRoomIds.isEmpty {
+                memberRooms = try await supabase
+                    .from("rooms")
+                    .select()
+                    .in("id", values: memberRoomIds)
+                    .execute()
+                    .value
+            }
+
             await MainActor.run {
-                self.rooms = fetched.map { $0.toPetRoom() }
+                self.rooms = ownedRooms.map { $0.toPetRoom(isOwned: true) } +
+                             memberRooms.map { $0.toPetRoom(isOwned: false) }
             }
         } catch {
             print("Fetch rooms error: \(error)")
@@ -56,6 +81,7 @@ struct MainTabView: View {
                 case .rooms: RoomsView().environmentObject(store)
                 case .activity: ActivityPlaceholderView()
                 case .profile: ProfilePlaceholderView().environmentObject(store)
+
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -171,6 +197,9 @@ struct RoomsView: View {
         GridItem(.flexible(), spacing: 12),
     ]
 
+    private var myRooms: [PetRoom] { store.rooms.filter { $0.isOwned } }
+    private var memberRooms: [PetRoom] { store.rooms.filter { !$0.isOwned } }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -209,7 +238,7 @@ struct RoomsView: View {
                             .padding(.bottom, 12)
 
                         LazyVGrid(columns: columns, spacing: 12) {
-                            ForEach(store.rooms) { room in
+                            ForEach(myRooms) { room in
                                 NavigationLink(
                                     destination:
                                         RoomView(room: room)
@@ -229,6 +258,35 @@ struct RoomsView: View {
                             AddPetCard().environmentObject(store)
                         }
                         .padding(.horizontal, 16)
+
+                        // Member Rooms
+                        if !memberRooms.isEmpty {
+                            RoomsSectionLabel(title: "Joined Rooms")
+                                .padding(.horizontal, 20)
+                                .padding(.top, 28)
+                                .padding(.bottom, 12)
+
+                            LazyVGrid(columns: columns, spacing: 12) {
+                                ForEach(memberRooms) { room in
+                                    NavigationLink(
+                                        destination:
+                                            RoomView(room: room)
+                                            .onAppear { store.isInRoom = true }
+                                            .onDisappear { store.isInRoom = false }
+                                    ) {
+                                        PetRoomCard(
+                                            name: room.name,
+                                            breed: room.breed,
+                                            age: room.age,
+                                            icon: room.icon,
+                                            accentHex: room.accentHex
+                                        )
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                            .padding(.horizontal, 16)
+                        }
 
                         Spacer().frame(height: 110)
                     }

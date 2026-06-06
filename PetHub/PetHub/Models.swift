@@ -85,6 +85,20 @@ struct DMThread: Identifiable {
     var lastMessage: Message? { messages.last }
 }
 
+struct RoomMembership: Codable {
+    let id: UUID
+    let roomId: UUID
+    let userId: UUID
+    let role: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case roomId = "room_id"
+        case userId = "user_id"
+        case role
+    }
+}
+
 // MARK: - Photo Post
 
 struct PhotoPost: Identifiable {
@@ -118,7 +132,7 @@ struct SupabaseRoom: Codable {
         case accentHex = "accent_hex"
     }
 
-    func toPetRoom() -> PetRoom {
+    func toPetRoom(isOwned: Bool = true) -> PetRoom {
         PetRoom(
             id: id,
             name: name,
@@ -129,10 +143,12 @@ struct SupabaseRoom: Codable {
             members: [],
             photos: [],
             groupMessages: [],
-            dmThreads: []
+            dmThreads: [],
+            isOwned: isOwned
         )
     }
 }
+
 
 // MARK: - Pet Room
 
@@ -149,6 +165,7 @@ struct PetRoom: Identifiable, Hashable {
     var photos: [PhotoPost]
     var groupMessages: [Message]
     var dmThreads: [DMThread]
+    var isOwned: Bool = true
 
     var accent: Color { Color(hex: accentHex) }
     var owner: Member? { members.first(where: { $0.isOwner }) }

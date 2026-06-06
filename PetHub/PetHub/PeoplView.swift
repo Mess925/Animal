@@ -3,6 +3,7 @@
 //  PetHub
 //
 
+import Supabase
 import SwiftUI
 
 // MARK: - PeopleView
@@ -10,6 +11,11 @@ import SwiftUI
 struct PeopleView: View {
     let room: PetRoom
     @State private var openThread: ChatDestination? = nil
+    @State private var currentUserId: UUID? = nil
+
+    private var dmMembers: [Member] {
+        room.members.filter { $0.id != currentUserId }
+    }
 
     enum ChatDestination: Identifiable {
         case group
@@ -33,7 +39,9 @@ struct PeopleView: View {
                     .padding(.top, 20)
                     .padding(.bottom, 12)
 
-                Button { openThread = .group } label: {
+                Button {
+                    openThread = .group
+                } label: {
                     GroupChatRow(room: room)
                 }
                 .buttonStyle(.plain)
@@ -45,33 +53,60 @@ struct PeopleView: View {
                     .padding(.top, 28)
                     .padding(.bottom, 4)
 
-                VStack(spacing: 0) {
-                    ForEach(room.dmThreads) { thread in
-                        Button {
-                            openThread = .dm(thread)
-                        } label: {
-                            DMRow(thread: thread)
-                        }
-                        .buttonStyle(.plain)
+                if dmMembers.isEmpty {
+                    Text("No other members yet")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color("AppPlaceholder"))
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 16)
+                } else {
+                    VStack(spacing: 0) {
+                        ForEach(dmMembers) { member in
+                            Button {
+                                openThread = .dm(
+                                    DMThread(
+                                        id: UUID(),
+                                        participant: member,
+                                        messages: [],
+                                        unreadCount: 0
+                                    )
+                                )
+                            } label: {
+                                DMRow(
+                                    thread: DMThread(
+                                        id: member.id,
+                                        participant: member,
+                                        messages: [],
+                                        unreadCount: 0
+                                    )
+                                )
+                            }
+                            .buttonStyle(.plain)
 
-                        if thread.id != room.dmThreads.last?.id {
-                            Divider()
-                                .background(Color("AppDivider"))
-                                .padding(.leading, 68)
+                            if member.id != dmMembers.last?.id {
+                                Divider()
+                                    .background(Color("AppDivider"))
+                                    .padding(.leading, 68)
+                            }
                         }
                     }
+                    .background(
+                        RoundedRectangle(cornerRadius: 20)
+                            .fill(Color("AppSurface2"))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .stroke(Color("AppDivider"), lineWidth: 0.5)
+                            )
+                    )
+                    .padding(.horizontal, 16)
                 }
-                .background(
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(Color("AppSurface2"))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 20)
-                                .stroke(Color("AppDivider"), lineWidth: 0.5)
-                        )
-                )
-                .padding(.horizontal, 16)
 
                 Spacer().frame(height: 100)
+            }
+        }
+        .task {
+            if let session = try? await supabase.auth.session {
+                currentUserId = session.user.id
             }
         }
         .sheet(item: $openThread) { destination in
@@ -81,6 +116,7 @@ struct PeopleView: View {
                     title: "\(room.name)'s Room",
                     subtitle: "\(room.members.count) members",
                     accentHex: room.accentHex,
+                    roomId: room.id.uuidString,
                     messages: room.groupMessages,
                     isGroup: true,
                     members: room.members
@@ -88,8 +124,11 @@ struct PeopleView: View {
             case .dm(let thread):
                 ChatView(
                     title: thread.participant.name,
-                    subtitle: thread.participant.isOnline ? "Active now" : "Offline",
+                    subtitle: thread.participant.isOnline
+                        ? "Active now" : "Offline",
                     accentHex: thread.participant.accentHex,
+                    roomId: room.id.uuidString,
+                    recipientId: thread.participant.id.uuidString,
                     messages: thread.messages,
                     isGroup: false,
                     members: [thread.participant]
@@ -116,13 +155,9 @@ struct PeopleSectionLabel: View {
 struct GroupChatRow: View {
     let room: PetRoom
 
-    private var totalUnread: Int {
-        // In real app, track unread group messages
-        3
-    }
-
     private var memberNames: String {
-        let names = room.members.map { $0.name == "Me" ? "You" : $0.name }
+        let names = room.members.map { $0.name }
+        if names.isEmpty { return "No members yet" }
         let preview = names.prefix(3).joined(separator: ", ")
         if names.count > 3 { return "\(preview) +\(names.count - 3) more" }
         return preview
@@ -150,15 +185,6 @@ struct GroupChatRow: View {
             }
 
             Spacer()
-
-            if totalUnread > 0 {
-                Text("\(totalUnread)")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(Color("AppAccentText"))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Capsule().fill(room.accent))
-            }
 
             Image(systemName: "chevron.right")
                 .font(.system(size: 12))
@@ -201,7 +227,9 @@ struct DMRow: View {
                     Circle()
                         .fill(Color(hex: "06D6A0"))
                         .frame(width: 11, height: 11)
-                        .overlay(Circle().stroke(Color("AppSurface2"), lineWidth: 2))
+                        .overlay(
+                            Circle().stroke(Color("AppSurface2"), lineWidth: 2)
+                        )
                 }
             }
 

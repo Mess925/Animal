@@ -12,6 +12,7 @@ import SwiftUI
 // MARK: - User Profile Model
 
 struct UserProfile: Codable {
+    var id: UUID?  // ← add this
     var name: String
     var username: String
     var bio: String
@@ -22,6 +23,7 @@ struct UserProfile: Codable {
     var accent: Color { Color(hex: avatarAccentHex ?? "AA9DFF") }
 
     enum CodingKeys: String, CodingKey {
+        case id
         case name
         case username
         case bio

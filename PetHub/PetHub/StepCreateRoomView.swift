@@ -133,19 +133,32 @@ struct StepCreateRoomView: View {
     }
 
     private func completeOnboarding() async {
+        print("completeOnboarding called")
         do {
             let user = try await supabase.auth.session.user
+            let roomId = UUID()
 
             // Create room
             try await supabase
                 .from("rooms")
                 .insert([
+                    "id": roomId.uuidString,
                     "name": petName,
                     "breed": breed,
                     "age": "",
                     "icon": selectedIcon,
                     "accent_hex": selectedAccent,
                     "owner_id": user.id.uuidString
+                ])
+                .execute()
+
+            // Add owner to room_members
+            try await supabase
+                .from("room_members")
+                .insert([
+                    "room_id": roomId.uuidString,
+                    "user_id": user.id.uuidString,
+                    "role": "owner"
                 ])
                 .execute()
 

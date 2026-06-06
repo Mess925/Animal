@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import Supabase
 
 // MARK: - Room Tab
 
@@ -17,11 +18,14 @@ struct RoomView: View {
     @State private var selectedTab: RoomTab
     @State private var dragOffset: CGFloat = 0
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var store: RoomStore
+    @State private var currentRoom: PetRoom
 
     init(room: PetRoom, initialTab: RoomTab = .gallery) {
         self.room = room
         self.initialTab = initialTab
         _selectedTab = State(initialValue: initialTab)
+        _currentRoom = State(initialValue: room)
     }
 
     var body: some View {
@@ -72,15 +76,18 @@ struct RoomView: View {
                 ZStack {
                     switch selectedTab {
                     case .gallery:
-                        GalleryView(room: room)
+                        GalleryView(room: currentRoom)
                     case .people:
-                        PeopleView(room: room)
+                        PeopleView(room: currentRoom)
                     case .settings:
-                        RoomSettingsView(room: room)
+                        RoomSettingsView(room: currentRoom).environmentObject(store)
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+        }
+        .task {
+            await fetchMembers()
         }
         .offset(x: max(0, dragOffset))
         .simultaneousGesture(
@@ -101,6 +108,53 @@ struct RoomView: View {
                 }
         )
         .navigationBarHidden(true)
+    }
+    
+    private func fetchMembers() async {
+        do {
+            struct RoomMemberRow: Codable {
+                let userId: UUID
+                let role: String
+                enum CodingKeys: String, CodingKey {
+                    case userId = "user_id"
+                    case role
+                }
+            }
+
+            let rows: [RoomMemberRow] = try await supabase
+                .from("room_members")
+                .select()
+                .eq("room_id", value: room.id.uuidString)
+                .execute()
+                .value
+
+            var fetchedMembers: [Member] = []
+            for row in rows {
+                let profiles: [UserProfile] = try await supabase
+                    .from("profiles")
+                    .select()
+                    .eq("id", value: row.userId.uuidString)
+                    .execute()
+                    .value
+
+                if let p = profiles.first {
+                    fetchedMembers.append(Member(
+                        id: row.userId,
+                        name: p.name,
+                        initials: String(p.name.prefix(1)),
+                        accentHex: p.avatarAccentHex ?? "AA9DFF",
+                        isOnline: false,
+                        isOwner: row.role == "owner"
+                    ))
+                }
+            }
+
+            await MainActor.run {
+                currentRoom.members = fetchedMembers
+            }
+        } catch {
+            print("Fetch members error: \(error)")
+        }
     }
 }
 

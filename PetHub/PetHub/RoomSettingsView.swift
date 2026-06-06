@@ -3,12 +3,18 @@
 //  PetHub
 //
 
+import Supabase
 import SwiftUI
 
 // MARK: - RoomSettingsView
 
 struct RoomSettingsView: View {
     let room: PetRoom
+
+    @State private var isOwner = false
+    @State private var showEditRoom = false
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var store: RoomStore
     @State private var notifyPhotos = true
     @State private var notifyMessages = true
     @State private var notifyReactions = false
@@ -58,7 +64,9 @@ struct RoomSettingsView: View {
 
                     Spacer()
 
-                    Button {} label: {
+                    Button {
+                        showEditRoom = true
+                    } label: {
                         Text("Edit")
                             .font(.system(size: 12, weight: .medium))
                             .foregroundStyle(selectedAccent)
@@ -67,7 +75,12 @@ struct RoomSettingsView: View {
                             .background(
                                 Capsule()
                                     .fill(selectedAccent.opacity(0.12))
-                                    .overlay(Capsule().stroke(selectedAccent.opacity(0.25), lineWidth: 0.5))
+                                    .overlay(
+                                        Capsule().stroke(
+                                            selectedAccent.opacity(0.25),
+                                            lineWidth: 0.5
+                                        )
+                                    )
                             )
                     }
                     .buttonStyle(.plain)
@@ -78,7 +91,10 @@ struct RoomSettingsView: View {
                         .fill(selectedAccent.opacity(0.06))
                         .overlay(
                             RoundedRectangle(cornerRadius: 20)
-                                .stroke(selectedAccent.opacity(0.12), lineWidth: 0.5)
+                                .stroke(
+                                    selectedAccent.opacity(0.12),
+                                    lineWidth: 0.5
+                                )
                         )
                 )
                 .padding(.horizontal, 16)
@@ -103,7 +119,12 @@ struct RoomSettingsView: View {
                                 .frame(width: 30, height: 30)
                                 .overlay(
                                     Circle()
-                                        .stroke(Color.white.opacity(isSelected ? 0.9 : 0), lineWidth: 2)
+                                        .stroke(
+                                            Color.white.opacity(
+                                                isSelected ? 0.9 : 0
+                                            ),
+                                            lineWidth: 2
+                                        )
                                         .padding(3)
                                 )
                                 .scaleEffect(isSelected ? 1.1 : 1.0)
@@ -159,7 +180,7 @@ struct RoomSettingsView: View {
                         MemberSettingsRow(
                             member: member,
                             accentColor: selectedAccent,
-                            canRemove: !member.isOwner,
+                            canRemove: isOwner && !member.isOwner,
                             onRemove: {
                                 withAnimation {
                                     members.removeAll { $0.id == member.id }
@@ -173,12 +194,17 @@ struct RoomSettingsView: View {
 
                     // Add member
                     SettingsDivider()
-                    Button { showAddMember = true } label: {
+                    Button {
+                        showAddMember = true
+                    } label: {
                         HStack(spacing: 12) {
                             ZStack {
                                 Circle()
                                     .strokeBorder(
-                                        style: StrokeStyle(lineWidth: 1, dash: [4, 3])
+                                        style: StrokeStyle(
+                                            lineWidth: 1,
+                                            dash: [4, 3]
+                                        )
                                     )
                                     .foregroundStyle(Color("AppDivider"))
                                     .frame(width: 38, height: 38)
@@ -199,42 +225,142 @@ struct RoomSettingsView: View {
                 .padding(.horizontal, 16)
 
                 // MARK: Danger zone
-                SettingsSectionLabel(title: "Danger zone")
-                    .padding(.horizontal, 20)
-                    .padding(.top, 28)
-                    .padding(.bottom, 12)
+                if isOwner {
+                    SettingsSectionLabel(title: "Danger zone")
+                        .padding(.horizontal, 20)
+                        .padding(.top, 28)
+                        .padding(.bottom, 12)
 
-                SettingsCard {
-                    Button { showDeleteAlert = true } label: {
-                        HStack(spacing: 12) {
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(Color(hex: "E25718").opacity(0.1))
-                                    .frame(width: 34, height: 34)
-                                Image(systemName: "trash.fill")
+                    SettingsCard {
+                        Button {
+                            showDeleteAlert = true
+                        } label: {
+                            HStack(spacing: 12) {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .fill(Color(hex: "E25718").opacity(0.1))
+                                        .frame(width: 34, height: 34)
+                                    Image(systemName: "trash.fill")
+                                        .font(.system(size: 14))
+                                        .foregroundStyle(Color(hex: "E25718"))
+                                }
+                                Text("Delete room")
                                     .font(.system(size: 14))
                                     .foregroundStyle(Color(hex: "E25718"))
+                                Spacer()
                             }
-                            Text("Delete room")
-                                .font(.system(size: 14))
-                                .foregroundStyle(Color(hex: "E25718"))
-                            Spacer()
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 14)
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 14)
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
+                    .padding(.horizontal, 16)
                 }
-                .padding(.horizontal, 16)
 
                 Spacer().frame(height: 100)
             }
         }
+        .sheet(isPresented: $showEditRoom) {
+            EditRoomView(room: room).environmentObject(store)
+        }
+        .task {
+            await fetchMembers()
+            let user = try? await supabase.auth.session.user
+            isOwner = room.members.first(where: { $0.isOwner })?.id == user?.id
+            // or check from room_members
+            if let userId = user?.id {
+                let rows: [RoomMembership] =
+                    (try? await supabase
+                        .from("room_members")
+                        .select()
+                        .eq("room_id", value: room.id.uuidString)
+                        .eq("user_id", value: userId.uuidString)
+                        .execute()
+                        .value) ?? []
+                isOwner = rows.first?.role == "owner"  // need role in RoomMembership
+            }
+        }
+        .sheet(isPresented: $showAddMember) {
+            InviteMemberView(room: room)
+        }
         .alert("Delete Room?", isPresented: $showDeleteAlert) {
-            Button("Delete", role: .destructive) {}
+            Button("Delete", role: .destructive) {
+                Task { await deleteRoom() }
+            }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("All photos and messages in \(room.name)'s room will be permanently deleted.")
+            Text(
+                "All photos and messages in \(room.name)'s room will be permanently deleted."
+            )
+        }
+    }
+
+    private func fetchMembers() async {
+        do {
+            struct RoomMemberRow: Codable {
+                let userId: UUID
+                let role: String
+
+                enum CodingKeys: String, CodingKey {
+                    case userId = "user_id"
+                    case role
+                }
+            }
+
+            let rows: [RoomMemberRow] =
+                try await supabase
+                .from("room_members")
+                .select()
+                .eq("room_id", value: room.id.uuidString)
+                .execute()
+                .value
+
+            var fetchedMembers: [Member] = []
+
+            for row in rows {
+                let profiles: [UserProfile] =
+                    try await supabase
+                    .from("profiles")
+                    .select()
+                    .eq("id", value: row.userId.uuidString)
+                    .execute()
+                    .value
+
+                if let p = profiles.first {
+                    fetchedMembers.append(
+                        Member(
+                            id: row.userId,
+                            name: p.name,
+                            initials: String(p.name.prefix(1)),
+                            accentHex: p.avatarAccentHex ?? "AA9DFF",
+                            isOnline: false,
+                            isOwner: row.role == "owner"
+                        )
+                    )
+                }
+            }
+
+            await MainActor.run {
+                members = fetchedMembers
+            }
+        } catch {
+            print("Fetch members error: \(error)")
+        }
+    }
+
+    private func deleteRoom() async {
+        do {
+            try await supabase
+                .from("rooms")
+                .delete()
+                .eq("id", value: room.id.uuidString)
+                .execute()
+            await MainActor.run {
+                store.rooms.removeAll { $0.id == room.id }
+            }
+            dismiss()
+        } catch {
+            print("Delete room error: \(error)")
         }
     }
 }
@@ -343,7 +469,9 @@ struct MemberSettingsRow: View {
                     .font(.system(size: 13))
                     .foregroundStyle(accentColor.opacity(0.7))
             } else if canRemove {
-                Button { onRemove() } label: {
+                Button {
+                    onRemove()
+                } label: {
                     Text("Remove")
                         .font(.system(size: 12))
                         .foregroundStyle(Color(hex: "E25718"))
@@ -352,7 +480,12 @@ struct MemberSettingsRow: View {
                         .background(
                             Capsule()
                                 .fill(Color(hex: "E25718").opacity(0.1))
-                                .overlay(Capsule().stroke(Color(hex: "E25718").opacity(0.2), lineWidth: 0.5))
+                                .overlay(
+                                    Capsule().stroke(
+                                        Color(hex: "E25718").opacity(0.2),
+                                        lineWidth: 0.5
+                                    )
+                                )
                         )
                 }
                 .buttonStyle(.plain)

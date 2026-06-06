@@ -311,26 +311,31 @@ struct CreateRoomView: View {
     private func createRoom() async {
         do {
             let user = try await supabase.auth.session.user
+            let roomId = UUID()
+            
+            try await supabase
+                .from("rooms")
+                .insert([
+                    "id": roomId.uuidString,
+                    "name": petName,
+                    "breed": breed,
+                    "age": age,
+                    "icon": selectedPetIcon,
+                    "accent_hex": roomColors.first(where: { $0.0 == selectedColor })?.1 ?? "AA9DFF",
+                    "owner_id": user.id.uuidString
+                ])
+                .execute()
+
+	
+
             let newRoom = SupabaseRoom(
-                id: UUID(),
+                id: roomId,
                 name: petName,
                 breed: breed,
                 age: age,
                 icon: selectedPetIcon,
                 accentHex: roomColors.first(where: { $0.0 == selectedColor })?.1 ?? "AA9DFF"
             )
-            try await supabase
-                .from("rooms")
-                .insert([
-                    "id": newRoom.id.uuidString,
-                    "name": newRoom.name,
-                    "breed": newRoom.breed,
-                    "age": newRoom.age,
-                    "icon": newRoom.icon,
-                    "accent_hex": newRoom.accentHex,
-                    "owner_id": user.id.uuidString
-                ])
-                .execute()
             dismiss()
             onComplete?(newRoom.toPetRoom())
         } catch {

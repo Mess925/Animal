@@ -5,6 +5,7 @@
 
 import SwiftUI
 import PhotosUI
+import Supabase
 
 // MARK: - ChatView
 
@@ -15,6 +16,8 @@ struct ChatView: View {
     let messages: [Message]
     let isGroup: Bool
     let members: [Member]
+    let roomId: String
+    let recipientId: String?
 
     @Environment(\.dismiss) private var dismiss
     @State private var messageText = ""
@@ -26,14 +29,16 @@ struct ChatView: View {
 
     private var accent: Color { Color(hex: accentHex) }
 
-    init(title: String, subtitle: String, accentHex: String, messages: [Message], isGroup: Bool, members: [Member]) {
+    init(title: String, subtitle: String, accentHex: String, roomId: String, recipientId: String? = nil, messages: [Message], isGroup: Bool, members: [Member]) {
         self.title = title
         self.subtitle = subtitle
         self.accentHex = accentHex
+        self.roomId = roomId
+        self.recipientId = recipientId
         self.messages = messages
         self.isGroup = isGroup
         self.members = members
-        _allMessages = State(initialValue: messages)
+        _allMessages = State(initialValue: [])
     }
 
     var body: some View {
@@ -124,41 +129,160 @@ struct ChatView: View {
                 )
             } // ← closes VStack
         }
+        .task {
+            await fetchMessages()
+            
+            if let recipientId = recipientId {
+                let user = try? await supabase.auth.session.user
+                let myId = user?.id.uuidString ?? ""
+                let ids = [myId, recipientId].sorted()
+                let channelName = "dm:\(ids[0]):\(ids[1])"
+                
+                let channel = supabase.realtimeV2.channel(channelName)
+                let changes = channel.postgresChange(
+                    AnyAction.self,
+                    schema: "public",
+                    table: "dm_messages"
+                )
+                await channel.subscribe()
+                for await _ in changes {
+                    await fetchMessages()
+                }
+            } else {
+                let channel = supabase.realtimeV2.channel("messages:\(roomId)")
+                let changes = channel.postgresChange(
+                    AnyAction.self,
+                    schema: "public",
+                    table: "messages",
+                    filter: "room_id=eq.\(roomId)"
+                )
+                await channel.subscribe()
+                for await _ in changes {
+                    await fetchMessages()
+                }
+            }
+        }
         .sheet(isPresented: $showPhotoPicker) {
             PHPickerView { image in
                 selectedImage = image
             }
         }
     }
+    
+    private func fetchMessages() async {
+        do {
+            let user = try await supabase.auth.session.user
+
+            if let recipientId = recipientId {
+                // DM messages
+                struct DMMessage: Codable {
+                    let id: UUID
+                    let body: String
+                    let senderId: UUID
+                    let createdAt: Date
+                    enum CodingKeys: String, CodingKey {
+                        case id, body
+                        case senderId = "sender_id"
+                        case createdAt = "created_at"
+                    }
+                }
+
+                let fetched: [DMMessage] = try await supabase
+                    .from("dm_messages")
+                    .select()
+                    .or("and(sender_id.eq.\(user.id.uuidString),recipient_id.eq.\(recipientId)),and(sender_id.eq.\(recipientId),recipient_id.eq.\(user.id.uuidString))")
+                    .order("created_at", ascending: true)
+                    .execute()
+                    .value
+
+                await MainActor.run {
+                    allMessages = fetched.map { m in
+                        let isOwn = m.senderId == user.id
+                        return Message(
+                            id: m.id,
+                            sender: isOwn ? .me : members.first,
+                            content: .text(m.body),
+                            timestamp: m.createdAt,
+                            isOwn: isOwn
+                        )
+                    }
+                }
+            } else {
+                // Group messages
+                struct SupabaseMessage: Codable {
+                    let id: UUID
+                    let body: String
+                    let senderId: UUID
+                    let createdAt: Date
+                    enum CodingKeys: String, CodingKey {
+                        case id, body
+                        case senderId = "sender_id"
+                        case createdAt = "created_at"
+                    }
+                }
+
+                let fetched: [SupabaseMessage] = try await supabase
+                    .from("messages")
+                    .select()
+                    .eq("room_id", value: roomId)
+                    .order("created_at", ascending: true)
+                    .execute()
+                    .value
+
+                await MainActor.run {
+                    allMessages = fetched.map { m in
+                        let isOwn = m.senderId == user.id
+                        return Message(
+                            id: m.id,
+                            sender: isOwn ? .me : members.first,
+                            content: .text(m.body),
+                            timestamp: m.createdAt,
+                            isOwn: isOwn
+                        )
+                    }
+                }
+            }
+        } catch {
+            print("Fetch messages error: \(error)")
+        }
+    }
+
+    private func sendMessageToSupabase(_ text: String) async {
+        do {
+            let user = try await supabase.auth.session.user
+            print("Sending as user: \(user.id)")
+            print("recipientId: \(recipientId ?? "nil - group")")
+
+            if let recipientId = recipientId {
+                try await supabase
+                    .from("dm_messages")
+                    .insert([
+                        "sender_id": user.id.uuidString,
+                        "recipient_id": recipientId,
+                        "body": text
+                    ])
+                    .execute()
+                print("DM sent!")
+            } else {
+                try await supabase
+                    .from("messages")
+                    .insert([
+                        "room_id": roomId,
+                        "sender_id": user.id.uuidString,
+                        "body": text
+                    ])
+                    .execute()
+                print("Group message sent!")
+            }
+        } catch {
+            print("Send message error: \(error)")
+        }
+    }
 
     private func sendMessage() {
-        if let image = selectedImage {
-            let newMsg = Message(
-                sender: .me,
-                content: .photo("📸"),
-                isOwn: true,
-                image: image
-            )
-            withAnimation(.easeIn(duration: 0.15)) {
-                allMessages.append(newMsg)
-            }
-            selectedImage = nil
-            messageText = ""
-            replyingTo = nil
-            return
-        }
-
         let trimmed = messageText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-
-        let newMsg = Message(
-            sender: .me,
-            content: .text(trimmed),
-            isOwn: true
-        )
-        withAnimation(.easeIn(duration: 0.15)) {
-            allMessages.append(newMsg)
-        }
+        Task { await sendMessageToSupabase(trimmed) }
         messageText = ""
         replyingTo = nil
     }
@@ -543,6 +667,7 @@ struct PHPickerView: UIViewControllerRepresentable {
         title: "Mochi's Room",
         subtitle: "4 members",
         accentHex: "AA9DFF",
+        roomId: "preview",
         messages: PetRoom.mochi.groupMessages,
         isGroup: true,
         members: PetRoom.mochi.members
