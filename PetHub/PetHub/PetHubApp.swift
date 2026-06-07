@@ -22,7 +22,7 @@ struct PetHubApp: App {
                 } else if !isOnboarded {
                     UserOnboardingView()
                 } else {
-                    MainTabView()
+                    MainTabView(subscriptionManager: subscriptionManager)
                 }
             }
             .preferredColorScheme(themeManager.theme.colorScheme)

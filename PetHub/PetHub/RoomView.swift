@@ -25,7 +25,8 @@ class RoomStore: ObservableObject {
             let user = try await supabase.auth.session.user
             print("Fetching rooms for user: \(user.id)")
 
-            let ownedRooms: [SupabaseRoom] = try await supabase
+            let ownedRooms: [SupabaseRoom] =
+                try await supabase
                 .from("rooms")
                 .select()
                 .eq("owner_id", value: user.id.uuidString)
@@ -33,7 +34,8 @@ class RoomStore: ObservableObject {
                 .value
             print("Owned rooms: \(ownedRooms.count)")
 
-            let memberships: [RoomMembership] = try await supabase
+            let memberships: [RoomMembership] =
+                try await supabase
                 .from("room_members")
                 .select()
                 .eq("user_id", value: user.id.uuidString.lowercased())
@@ -46,7 +48,8 @@ class RoomStore: ObservableObject {
 
             var memberRooms: [SupabaseRoom] = []
             if !memberRoomIds.isEmpty {
-                memberRooms = try await supabase
+                memberRooms =
+                    try await supabase
                     .from("rooms")
                     .select()
                     .in("id", values: memberRoomIds)
@@ -55,8 +58,9 @@ class RoomStore: ObservableObject {
             }
 
             await MainActor.run {
-                self.rooms = ownedRooms.map { $0.toPetRoom(isOwned: true) } +
-                             memberRooms.map { $0.toPetRoom(isOwned: false) }
+                self.rooms =
+                    ownedRooms.map { $0.toPetRoom(isOwned: true) }
+                    + memberRooms.map { $0.toPetRoom(isOwned: false) }
             }
         } catch {
             print("Fetch rooms error: \(error)")
@@ -73,20 +77,23 @@ enum AppTab {
 
 struct MainTabView: View {
     @StateObject private var store = RoomStore()
-    @StateObject private var subscriptionManager = SubscriptionManager()
+    @ObservedObject var subscriptionManager: SubscriptionManager
     @State private var selectedTab: AppTab = .rooms
 
     var body: some View {
         ZStack(alignment: .bottom) {
             Group {
                 switch selectedTab {
-                case .rooms: RoomsView()
-                    .environmentObject(store)
-                    .environmentObject(subscriptionManager)
-                case .activity: ActivityPlaceholderView()
-                    .environmentObject(store)
-                case .profile: ProfilePlaceholderView()
-                    .environmentObject(store)
+                case .rooms:
+                    RoomsView()
+                        .environmentObject(store)
+                        .environmentObject(subscriptionManager)
+                case .activity:
+                    ActivityPlaceholderView()
+                        .environmentObject(store)
+                case .profile:
+                    ProfilePlaceholderView()
+                        .environmentObject(store)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -196,6 +203,7 @@ struct TabBarItem: View {
 
 struct RoomsView: View {
     @EnvironmentObject private var store: RoomStore
+    @EnvironmentObject private var subscriptionManager: SubscriptionManager
 
     let columns = [
         GridItem(.flexible(), spacing: 12),
@@ -234,6 +242,7 @@ struct RoomsView: View {
                             .padding(.bottom, 12)
 
                         LostRoomCard()
+                            .environmentObject(subscriptionManager)
                             .padding(.horizontal, 16)
                             .padding(.bottom, 28)
 
@@ -277,7 +286,9 @@ struct RoomsView: View {
                                         destination:
                                             RoomView(room: room)
                                             .onAppear { store.isInRoom = true }
-                                            .onDisappear { store.isInRoom = false }
+                                            .onDisappear {
+                                                store.isInRoom = false
+                                            }
                                     ) {
                                         PetRoomCard(
                                             name: room.name,
@@ -317,9 +328,14 @@ struct RoomsSectionLabel: View {
 // MARK: - Lost Room Card
 
 struct LostRoomCard: View {
+    @EnvironmentObject private var subscriptionManager: SubscriptionManager
+    @State private var showLostFound = false
+    @State private var showUpgrade = false
+
     var body: some View {
         Button {
-        } label: {
+            showLostFound = true
+        }label: {
             HStack(spacing: 14) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 15)
@@ -366,6 +382,16 @@ struct LostRoomCard: View {
                             )
                     )
             )
+        }
+//        .sheet(isPresented: $showLostFound){
+//            Text("Test")
+//        }
+        .sheet(isPresented: $showLostFound) {
+            LostAndFoundView()
+                .environmentObject(subscriptionManager)
+        }
+        .sheet(isPresented: $showUpgrade) {
+            UpgradeView()
         }
         .buttonStyle(.plain)
     }
@@ -426,7 +452,9 @@ struct AddPetCard: View {
 
     var body: some View {
         Button {
-            if store.rooms.filter({ $0.isOwned }).count >= subscriptionManager.maxRooms {
+            if store.rooms.filter({ $0.isOwned }).count
+                >= subscriptionManager.maxRooms
+            {
                 showUpgradeSheet = true
             } else {
                 showCreateRoom = true
@@ -482,4 +510,6 @@ struct ProfilePlaceholderView: View {
 
 // MARK: - Preview
 
-#Preview { MainTabView() }
+#Preview {
+    MainTabView(subscriptionManager: SubscriptionManager())
+}
