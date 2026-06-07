@@ -195,13 +195,15 @@ struct ChatView: View {
                 // DM messages
                 struct DMMessage: Codable {
                     let id: UUID
-                    let body: String
+                    let body: String?
                     let senderId: UUID
                     let createdAt: Date
+                    let imageUrl: String?
                     enum CodingKeys: String, CodingKey {
                         case id, body
                         case senderId = "sender_id"
                         case createdAt = "created_at"
+                        case imageUrl = "image_url"
                     }
                 }
 
@@ -209,6 +211,7 @@ struct ChatView: View {
                     try await supabase
                     .from("dm_messages")
                     .select()
+                    .eq("room_id", value: roomId)
                     .or(
                         "and(sender_id.eq.\(user.id.uuidString),recipient_id.eq.\(recipientId)),and(sender_id.eq.\(recipientId),recipient_id.eq.\(user.id.uuidString))"
                     )
@@ -219,29 +222,40 @@ struct ChatView: View {
                 await MainActor.run {
                     allMessages = fetched.map { m in
                         let isOwn = m.senderId == user.id
-                        return Message(
-                            id: m.id,
-                            sender: isOwn ? .me : members.first,
-                            content: .text(m.body),
-                            timestamp: m.createdAt,
-                            isOwn: isOwn
-                        )
+                        if let imageUrl = m.imageUrl {
+                            return Message(
+                                id: m.id,
+                                sender: isOwn ? .me : members.first,
+                                content: .photo(imageUrl),
+                                timestamp: m.createdAt,
+                                isOwn: isOwn
+                            )
+                        } else {
+                            return Message(
+                                id: m.id,
+                                sender: isOwn ? .me : members.first,
+                                content: .text(m.body ?? ""),
+                                timestamp: m.createdAt,
+                                isOwn: isOwn
+                            )
+                        }
                     }
                 }
             } else {
                 // Group messages
                 struct SupabaseMessage: Codable {
                     let id: UUID
-                    let body: String
+                    let body: String?
                     let senderId: UUID
                     let createdAt: Date
+                    let imageUrl: String?
                     enum CodingKeys: String, CodingKey {
                         case id, body
                         case senderId = "sender_id"
                         case createdAt = "created_at"
+                        case imageUrl = "image_url"
                     }
                 }
-
                 let fetched: [SupabaseMessage] =
                     try await supabase
                     .from("messages")
@@ -254,13 +268,23 @@ struct ChatView: View {
                 await MainActor.run {
                     allMessages = fetched.map { m in
                         let isOwn = m.senderId == user.id
-                        return Message(
-                            id: m.id,
-                            sender: isOwn ? .me : members.first,
-                            content: .text(m.body),
-                            timestamp: m.createdAt,
-                            isOwn: isOwn
-                        )
+                        if let imageUrl = m.imageUrl {
+                            return Message(
+                                id: m.id,
+                                sender: isOwn ? .me : members.first,
+                                content: .photo(imageUrl),
+                                timestamp: m.createdAt,
+                                isOwn: isOwn
+                            )
+                        } else {
+                            return Message(
+                                id: m.id,
+                                sender: isOwn ? .me : members.first,
+                                content: .text(m.body ?? ""),
+                                timestamp: m.createdAt,
+                                isOwn: isOwn
+                            )
+                        }
                     }
                 }
             }
@@ -282,6 +306,7 @@ struct ChatView: View {
                         "sender_id": user.id.uuidString,
                         "recipient_id": recipientId,
                         "body": text,
+                        "room_id": roomId,
                     ])
                     .execute()
                 print("DM sent!")
@@ -302,6 +327,10 @@ struct ChatView: View {
     }
 
     private func sendMessage() {
+        if let image = selectedImage {
+            Task { await sendImageMessage(image) }
+            return
+        }
         let trimmed = messageText.trimmingCharacters(
             in: .whitespacesAndNewlines
         )
@@ -309,6 +338,47 @@ struct ChatView: View {
         Task { await sendMessageToSupabase(trimmed) }
         messageText = ""
         replyingTo = nil
+    }
+
+    private func sendImageMessage(_ image: UIImage) async {
+        guard let data = image.jpegData(compressionQuality: 0.7) else { return }
+        do {
+            let user = try await supabase.auth.session.user
+            let fileName = "\(UUID().uuidString).jpg"
+            let path = "chat/\(roomId)/\(fileName)"
+
+            try await supabase.storage
+                .from("photos")
+                .upload(
+                    path,
+                    data: data,
+                    options: .init(contentType: "image/jpeg")
+                )
+
+            let url = try supabase.storage
+                .from("photos")
+                .getPublicURL(path: path)
+
+            let table = recipientId != nil ? "dm_messages" : "messages"
+            var insert: [String: String] = [
+                "sender_id": user.id.uuidString,
+                "image_url": url.absoluteString,
+            ]
+            if let recipientId = recipientId {
+                insert["recipient_id"] = recipientId
+                insert["room_id"] = roomId
+            } else {
+                insert["room_id"] = roomId
+            }
+
+            try await supabase.from(table).insert(insert).execute()
+
+            await MainActor.run {
+                selectedImage = nil
+            }
+        } catch {
+            print("Send image error: \(error)")
+        }
     }
 }
 
@@ -446,22 +516,20 @@ struct MessageBubble: View {
                                     )
                             )
 
-                    case .photo:
-                        if let img = message.image {
-                            Image(uiImage: img)
+                    case .photo(let urlString):
+                        AsyncImage(url: URL(string: urlString)) { image in
+                            image
                                 .resizable()
                                 .scaledToFill()
                                 .frame(width: 200, height: 160)
                                 .clipped()
                                 .clipShape(RoundedRectangle(cornerRadius: 16))
-                        } else {
+                        } placeholder: {
                             ZStack {
                                 RoundedRectangle(cornerRadius: 16)
                                     .fill(Color("AppDivider"))
-                                    .frame(width: 180, height: 140)
-                                Image(systemName: "photo")
-                                    .font(.system(size: 32))
-                                    .foregroundStyle(Color("AppPlaceholder"))
+                                    .frame(width: 200, height: 160)
+                                ProgressView().tint(.white)
                             }
                         }
                     }
