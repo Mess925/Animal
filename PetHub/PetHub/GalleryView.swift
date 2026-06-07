@@ -97,7 +97,12 @@ struct GalleryView: View {
                     Circle()
                         .fill(room.accent)
                         .frame(width: 52, height: 52)
-                        .shadow(color: room.accent.opacity(0.4), radius: 12, x: 0, y: 4)
+                        .shadow(
+                            color: room.accent.opacity(0.4),
+                            radius: 12,
+                            x: 0,
+                            y: 4
+                        )
                     Image(systemName: "camera.fill")
                         .font(.system(size: 20))
                         .foregroundStyle(Color("AppAccentText"))
@@ -154,7 +159,8 @@ struct GalleryView: View {
                 }
             }
 
-            let fetched: [SupabasePhoto] = try await supabase
+            let fetched: [SupabasePhoto] =
+                try await supabase
                 .from("photo_posts")
                 .select()
                 .eq("room_id", value: room.id.uuidString)
@@ -199,14 +205,22 @@ struct CameraPickerView: UIViewControllerRepresentable {
         return picker
     }
 
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+    func updateUIViewController(
+        _ uiViewController: UIImagePickerController,
+        context: Context
+    ) {}
 
-    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+    class Coordinator: NSObject, UIImagePickerControllerDelegate,
+        UINavigationControllerDelegate
+    {
         let onPick: (UIImage) -> Void
         init(onPick: @escaping (UIImage) -> Void) { self.onPick = onPick }
 
-        func imagePickerController(_ picker: UIImagePickerController,
-                                   didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+        func imagePickerController(
+            _ picker: UIImagePickerController,
+            didFinishPickingMediaWithInfo info: [UIImagePickerController
+                .InfoKey: Any]
+        ) {
             picker.dismiss(animated: true)
             if let img = info[.originalImage] as? UIImage { onPick(img) }
         }
@@ -257,9 +271,12 @@ struct PhotoCell: View {
                         .foregroundStyle(.white)
 
                     if commentCount > 0 {
-                        Label("\(commentCount)", systemImage: "bubble.left.fill")
-                            .font(.system(size: 10, weight: .medium))
-                            .foregroundStyle(.white)
+                        Label(
+                            "\(commentCount)",
+                            systemImage: "bubble.left.fill"
+                        )
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(.white)
                     }
                 }
                 .padding(.horizontal, 8)
@@ -276,14 +293,17 @@ struct PhotoCell: View {
     }
 
     private func loadImage() async {
-        guard let urlString = photo.imageUrl, let url = URL(string: urlString) else { return }
-        guard let (data, _) = try? await URLSession.shared.data(from: url) else { return }
+        guard let urlString = photo.imageUrl, let url = URL(string: urlString)
+        else { return }
+        guard let (data, _) = try? await URLSession.shared.data(from: url)
+        else { return }
         loadedImage = UIImage(data: data)
     }
 
     private func fetchCounts() async {
         do {
-            let likes: [PhotoLike] = try await supabase
+            let likes: [PhotoLike] =
+                try await supabase
                 .from("photo_likes")
                 .select()
                 .eq("photo_id", value: photo.id.uuidString)
@@ -291,7 +311,8 @@ struct PhotoCell: View {
                 .value
             likeCount = likes.count
 
-            let comments: [PhotoComment] = try await supabase
+            let comments: [PhotoComment] =
+                try await supabase
                 .from("photo_comments")
                 .select()
                 .eq("photo_id", value: photo.id.uuidString)
@@ -331,18 +352,23 @@ struct PhotoDetailView: View {
             VStack(spacing: 0) {
                 // Top bar
                 HStack {
-                    Button { dismiss() } label: {
+                    Button {
+                        dismiss()
+                    } label: {
                         ZStack {
                             Circle()
                                 .fill(Color("AppDivider"))
                                 .frame(width: 36, height: 36)
                             Image(systemName: "xmark")
                                 .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(Color("AppAdaptiveWhite").opacity(0.8))
+                                .foregroundStyle(
+                                    Color("AppAdaptiveWhite").opacity(0.8)
+                                )
                         }
                     }
                     Spacer()
-                    Button {} label: {
+                    Button {
+                    } label: {
                         Image(systemName: "square.and.arrow.up")
                             .font(.system(size: 17))
                             .foregroundStyle(Color("AppWhiteText"))
@@ -388,9 +414,15 @@ struct PhotoDetailView: View {
                             Task { await toggleLike() }
                         } label: {
                             HStack(spacing: 5) {
-                                Image(systemName: isLiked ? "heart.fill" : "heart")
-                                    .font(.system(size: 17))
-                                    .foregroundStyle(isLiked ? Color(hex: "FF6B6B") : Color("AppSubtext"))
+                                Image(
+                                    systemName: isLiked ? "heart.fill" : "heart"
+                                )
+                                .font(.system(size: 17))
+                                .foregroundStyle(
+                                    isLiked
+                                        ? Color(hex: "FF6B6B")
+                                        : Color("AppSubtext")
+                                )
                                 Text("\(likeCount)")
                                     .font(.system(size: 13, weight: .medium))
                                     .foregroundStyle(Color("AppWhiteText"))
@@ -429,20 +461,40 @@ struct PhotoDetailView: View {
                                         .fill(Color(hex: "AA9DFF").opacity(0.2))
                                         .frame(width: 28, height: 28)
                                         .overlay(
-                                            Text(String(comment.userName.prefix(1)).uppercased())
-                                                .font(.system(size: 11, weight: .semibold))
-                                                .foregroundStyle(Color(hex: "AA9DFF"))
+                                            Text(
+                                                String(
+                                                    comment.userName.prefix(1)
+                                                ).uppercased()
+                                            )
+                                            .font(
+                                                .system(
+                                                    size: 11,
+                                                    weight: .semibold
+                                                )
+                                            )
+                                            .foregroundStyle(
+                                                Color(hex: "AA9DFF")
+                                            )
                                         )
                                     VStack(alignment: .leading, spacing: 3) {
                                         Text(comment.userName)
-                                            .font(.system(size: 11, weight: .semibold))
-                                            .foregroundStyle(Color("AppSubtext"))
+                                            .font(
+                                                .system(
+                                                    size: 11,
+                                                    weight: .semibold
+                                                )
+                                            )
+                                            .foregroundStyle(
+                                                Color("AppSubtext")
+                                            )
                                         Text(comment.body)
                                             .font(.system(size: 13))
                                             .foregroundStyle(Color("AppText"))
                                         Text(comment.createdAt.relativeString())
                                             .font(.system(size: 10))
-                                            .foregroundStyle(Color("AppPlaceholder"))
+                                            .foregroundStyle(
+                                                Color("AppPlaceholder")
+                                            )
                                     }
                                     Spacer()
                                 }
@@ -461,7 +513,9 @@ struct PhotoDetailView: View {
                     TextField(
                         "",
                         text: $commentText,
-                        prompt: Text("Add a comment…").foregroundStyle(Color("AppPlaceholder"))
+                        prompt: Text("Add a comment…").foregroundStyle(
+                            Color("AppPlaceholder")
+                        )
                     )
                     .focused($commentFocused)
                     .foregroundStyle(Color("AppText"))
@@ -479,9 +533,14 @@ struct PhotoDetailView: View {
                     .onSubmit { submitComment() }
 
                     if !commentText.isEmpty {
-                        Button { submitComment() } label: {
+                        Button {
+                            submitComment()
+                        } label: {
                             ZStack {
-                                Circle().fill(Color(hex: "AA9DFF")).frame(width: 34, height: 34)
+                                Circle().fill(Color(hex: "AA9DFF")).frame(
+                                    width: 34,
+                                    height: 34
+                                )
                                 Image(systemName: "arrow.up")
                                     .font(.system(size: 14, weight: .semibold))
                                     .foregroundStyle(Color("AppAccentText"))
@@ -513,8 +572,10 @@ struct PhotoDetailView: View {
     }
 
     private func loadImage() async {
-        guard let urlString = photo.imageUrl, let url = URL(string: urlString) else { return }
-        guard let (data, _) = try? await URLSession.shared.data(from: url) else { return }
+        guard let urlString = photo.imageUrl, let url = URL(string: urlString)
+        else { return }
+        guard let (data, _) = try? await URLSession.shared.data(from: url)
+        else { return }
         loadedImage = UIImage(data: data)
     }
 
@@ -522,7 +583,8 @@ struct PhotoDetailView: View {
         do {
             let user = try await supabase.auth.session.user
 
-            let likes: [PhotoLike] = try await supabase
+            let likes: [PhotoLike] =
+                try await supabase
                 .from("photo_likes")
                 .select()
                 .eq("photo_id", value: photo.id.uuidString)
@@ -532,7 +594,8 @@ struct PhotoDetailView: View {
             likeCount = likes.count
             isLiked = likes.contains { $0.userId == user.id }
 
-            let fetched: [PhotoComment] = try await supabase
+            let fetched: [PhotoComment] =
+                try await supabase
                 .from("photo_comments")
                 .select()
                 .eq("photo_id", value: photo.id.uuidString)
@@ -543,19 +606,22 @@ struct PhotoDetailView: View {
             // Fetch names for each comment
             var result: [CommentWithName] = []
             for comment in fetched {
-                let profiles: [UserProfile] = try await supabase
+                let profiles: [UserProfile] =
+                    try await supabase
                     .from("profiles")
                     .select()
                     .eq("id", value: comment.userId.uuidString)
                     .execute()
                     .value
                 let name = profiles.first?.name ?? "Unknown"
-                result.append(CommentWithName(
-                    id: comment.id,
-                    body: comment.body,
-                    createdAt: comment.createdAt,
-                    userName: name
-                ))
+                result.append(
+                    CommentWithName(
+                        id: comment.id,
+                        body: comment.body,
+                        createdAt: comment.createdAt,
+                        userName: name
+                    )
+                )
             }
 
             await MainActor.run {
@@ -583,9 +649,21 @@ struct PhotoDetailView: View {
                     .from("photo_likes")
                     .insert([
                         "photo_id": photo.id.uuidString,
-                        "user_id": user.id.uuidString
+                        "user_id": user.id.uuidString,
                     ])
                     .execute()
+
+                // Insert activity
+                try await supabase
+                    .from("activities")
+                    .insert([
+                        "type": "like",
+                        "actor_id": user.id.uuidString,
+                        "room_id": room.id.uuidString,
+                        "photo_id": photo.id.uuidString,
+                    ])
+                    .execute()
+
                 isLiked = true
                 likeCount += 1
             }
@@ -602,9 +680,22 @@ struct PhotoDetailView: View {
                 .insert([
                     "photo_id": photo.id.uuidString,
                     "user_id": user.id.uuidString,
-                    "body": text
+                    "body": text,
                 ])
                 .execute()
+
+            // Add this
+            try await supabase
+                .from("activities")
+                .insert([
+                    "type": "comment",
+                    "actor_id": user.id.uuidString,
+                    "room_id": room.id.uuidString,
+                    "photo_id": photo.id.uuidString,
+                    "body": text,
+                ])
+                .execute()
+
             await fetchLikesAndComments()
         } catch {
             print("Post comment error: \(error)")
@@ -612,7 +703,9 @@ struct PhotoDetailView: View {
     }
 
     private func submitComment() {
-        let trimmed = commentText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmed = commentText.trimmingCharacters(
+            in: .whitespacesAndNewlines
+        )
         guard !trimmed.isEmpty else { return }
         Task { await postComment(trimmed) }
         commentText = ""

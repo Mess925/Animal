@@ -3,6 +3,7 @@
 //  PetHub
 //
 
+import Supabase
 import SwiftUI
 
 // MARK: - Activity Type
@@ -15,13 +16,26 @@ enum ActivityType {
     case lostAnimal
 }
 
-// MARK: - Activity Destination
+// MARK: - Supabase Activity Model
 
-enum ActivityDestination {
-    case photo(room: PetRoom, photo: PhotoPost)
-    case roomGallery(room: PetRoom)
-    case roomPeople(room: PetRoom)
-    case lostFound
+struct SupabaseActivity: Codable, Identifiable {
+    let id: UUID
+    let type: String
+    let actorId: UUID
+    let roomId: UUID?
+    let photoId: UUID?
+    let body: String?
+    let createdAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case type
+        case actorId = "actor_id"
+        case roomId = "room_id"
+        case photoId = "photo_id"
+        case body
+        case createdAt = "created_at"
+    }
 }
 
 // MARK: - Activity Item
@@ -29,186 +43,177 @@ enum ActivityDestination {
 struct ActivityItem: Identifiable {
     let id: UUID
     let type: ActivityType
-    let actor: Member
+    let actorName: String
+    let actorAccentHex: String
     let roomName: String
     let roomIcon: String
     let roomAccentHex: String
     let timestamp: Date
     var detail: String
-    var photoEmoji: String?
-    var destination: ActivityDestination
-
     var roomAccent: Color { Color(hex: roomAccentHex) }
-}
-
-// MARK: - Sample Data
-
-extension ActivityItem {
-    static let samples: [ActivityItem] = {
-        let room = PetRoom.mochi
-        let photos = room.photos
-
-        return [
-            ActivityItem(
-                id: UUID(), type: .photoPosted,
-                actor: .sarah, roomName: "Mochi", roomIcon: "dog.fill", roomAccentHex: "AA9DFF",
-                timestamp: Date().addingTimeInterval(-120),
-                detail: "Sarah posted a new photo",
-                photoEmoji: "🐶",
-                destination: .photo(room: room, photo: photos[0])
-            ),
-            ActivityItem(
-                id: UUID(), type: .comment,
-                actor: .jake, roomName: "Mochi", roomIcon: "dog.fill", roomAccentHex: "AA9DFF",
-                timestamp: Date().addingTimeInterval(-600),
-                detail: "omg he looks SO fluffy today 😭",
-                photoEmoji: "🐶",
-                destination: .photo(room: room, photo: photos[0])
-            ),
-            ActivityItem(
-                id: UUID(), type: .like,
-                actor: .priya, roomName: "Mochi", roomIcon: "dog.fill", roomAccentHex: "AA9DFF",
-                timestamp: Date().addingTimeInterval(-1200),
-                detail: "Priya liked your photo",
-                photoEmoji: "🏖️",
-                destination: .photo(room: room, photo: photos[4])
-            ),
-            ActivityItem(
-                id: UUID(), type: .lostAnimal,
-                actor: Member(id: UUID(), name: "Community", initials: "!", accentHex: "E25718", isOnline: false, isOwner: false),
-                roomName: "Lost & Found", roomIcon: "mappin.and.ellipse", roomAccentHex: "E25718",
-                timestamp: Date().addingTimeInterval(-2400),
-                detail: "Golden Retriever reported missing 0.4 km away",
-                photoEmoji: "🐕",
-                destination: .lostFound
-            ),
-            ActivityItem(
-                id: UUID(), type: .newMember,
-                actor: .priya, roomName: "Mochi", roomIcon: "dog.fill", roomAccentHex: "AA9DFF",
-                timestamp: Date().addingTimeInterval(-7200),
-                detail: "Priya joined Mochi's room",
-                photoEmoji: nil,
-                destination: .roomPeople(room: room)
-            ),
-            ActivityItem(
-                id: UUID(), type: .comment,
-                actor: .sarah, roomName: "Mochi", roomIcon: "dog.fill", roomAccentHex: "AA9DFF",
-                timestamp: Date().addingTimeInterval(-10800),
-                detail: "can you send me the oat shampoo link?",
-                photoEmoji: "🛁",
-                destination: .photo(room: room, photo: photos[7])
-            ),
-            ActivityItem(
-                id: UUID(), type: .like,
-                actor: .jake, roomName: "Mochi", roomIcon: "dog.fill", roomAccentHex: "AA9DFF",
-                timestamp: Date().addingTimeInterval(-14400),
-                detail: "Jake liked your photo",
-                photoEmoji: "🎾",
-                destination: .photo(room: room, photo: photos[5])
-            ),
-            ActivityItem(
-                id: UUID(), type: .lostAnimal,
-                actor: Member(id: UUID(), name: "Community", initials: "!", accentHex: "E25718", isOnline: false, isOwner: false),
-                roomName: "Lost & Found", roomIcon: "mappin.and.ellipse", roomAccentHex: "E25718",
-                timestamp: Date().addingTimeInterval(-86400),
-                detail: "Tabby cat found near Orchard Road",
-                photoEmoji: "🐈",
-                destination: .lostFound
-            ),
-            ActivityItem(
-                id: UUID(), type: .photoPosted,
-                actor: .jake, roomName: "Mochi", roomIcon: "dog.fill", roomAccentHex: "AA9DFF",
-                timestamp: Date().addingTimeInterval(-90000),
-                detail: "Jake posted a new photo",
-                photoEmoji: "😴",
-                destination: .photo(room: room, photo: photos[3])
-            ),
-        ]
-    }()
 }
 
 // MARK: - ActivityView
 
 struct ActivityView: View {
-
-    @State private var navigationPath = NavigationPath()
-    @State private var presentedPhoto: PhotoPost? = nil
-    @State private var presentedRoom: PetRoom? = nil
-    @State private var presentedRoomTab: RoomTab = .gallery
-    @State private var showLostFound = false
+    @EnvironmentObject private var store: RoomStore
+    @State private var items: [ActivityItem] = []
+    @State private var isLoading = true
+    
 
     private var todayItems: [ActivityItem] {
-        ActivityItem.samples.filter { Calendar.current.isDateInToday($0.timestamp) }
+        items.filter { Calendar.current.isDateInToday($0.timestamp) }
     }
 
     private var earlierItems: [ActivityItem] {
-        ActivityItem.samples.filter { !Calendar.current.isDateInToday($0.timestamp) }
+        items.filter { !Calendar.current.isDateInToday($0.timestamp) }
     }
 
     var body: some View {
-        NavigationStack(path: $navigationPath) {
+        NavigationStack {
             ZStack {
                 Color("AppBackground").ignoresSafeArea()
 
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 0) {
+                if isLoading {
+                    ProgressView()
+                        .tint(Color(hex: "AA9DFF"))
+                } else if items.isEmpty {
+                    VStack(spacing: 12) {
+                        Image(systemName: "bell.slash")
+                            .font(.system(size: 44))
+                            .foregroundStyle(Color("AppSubtext"))
+                        Text("No activity yet")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundStyle(Color("AppWhiteText"))
+                        Text("Likes and comments will appear here")
+                            .font(.system(size: 13))
+                            .foregroundStyle(Color("AppPlaceholder"))
+                    }
+                } else {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 0) {
 
-                        Text("Activity")
-                            .font(.system(size: 28, weight: .semibold))
-                            .foregroundStyle(Color("AppText"))
-                            .padding(.horizontal, 20)
-                            .padding(.top, 20)
-                            .padding(.bottom, 24)
-
-                        if !todayItems.isEmpty {
-                            ActivitySectionLabel(title: "Today")
+                            Text("Activity")
+                                .font(.system(size: 28, weight: .semibold))
+                                .foregroundStyle(Color("AppText"))
                                 .padding(.horizontal, 20)
-                                .padding(.bottom, 8)
+                                .padding(.top, 20)
+                                .padding(.bottom, 24)
 
-                            activityCard(items: todayItems)
-                                .padding(.horizontal, 16)
-                                .padding(.bottom, 28)
+                            if !todayItems.isEmpty {
+                                ActivitySectionLabel(title: "Today")
+                                    .padding(.horizontal, 20)
+                                    .padding(.bottom, 8)
+
+                                activityCard(items: todayItems)
+                                    .padding(.horizontal, 16)
+                                    .padding(.bottom, 28)
+                            }
+
+                            if !earlierItems.isEmpty {
+                                ActivitySectionLabel(title: "Earlier")
+                                    .padding(.horizontal, 20)
+                                    .padding(.bottom, 8)
+
+                                activityCard(items: earlierItems)
+                                    .padding(.horizontal, 16)
+                            }
+
+                            Spacer().frame(height: 110)
                         }
-
-                        if !earlierItems.isEmpty {
-                            ActivitySectionLabel(title: "Earlier")
-                                .padding(.horizontal, 20)
-                                .padding(.bottom, 8)
-
-                            activityCard(items: earlierItems)
-                                .padding(.horizontal, 16)
-                        }
-
-                        Spacer().frame(height: 110)
                     }
                 }
             }
             .navigationBarHidden(true)
-            .navigationDestination(for: PetRoom.self) { room in
-                RoomView(room: room, initialTab: presentedRoomTab)
-            }
         }
-        // ← Wrap the photo in a local @State so PhotoDetailView gets a Binding
-        .sheet(item: $presentedPhoto) { photo in
-            PhotoDetailSheetWrapper(photo: photo, room: PetRoom.mochi)
-        }
-        .sheet(isPresented: $showLostFound) {
-            LostFoundPlaceholderView()
+        .task {
+            await fetchActivities()
         }
     }
 
-    private func handle(_ destination: ActivityDestination) {
-        switch destination {
-        case .photo(_, let photo):
-            presentedPhoto = photo
-        case .roomGallery(let room):
-            presentedRoomTab = .gallery
-            navigationPath.append(room)
-        case .roomPeople(let room):
-            presentedRoomTab = .people
-            navigationPath.append(room)
-        case .lostFound:
-            showLostFound = true
+    private func fetchActivities() async {
+        isLoading = true
+        do {
+            let user = try await supabase.auth.session.user
+
+            // Get all room IDs the user is part of
+            let roomIds = store.rooms.map { $0.id.uuidString }
+            guard !roomIds.isEmpty else {
+                isLoading = false
+                return
+            }
+
+            // Fetch activities for those rooms, excluding current user's own actions
+            let activities: [SupabaseActivity] = try await supabase
+                .from("activities")
+                .select()
+                .in("room_id", values: roomIds)
+                .neq("actor_id", value: user.id.uuidString)
+                .order("created_at", ascending: false)
+                .limit(50)
+                .execute()
+                .value
+
+            // Build activity items with actor names
+            var result: [ActivityItem] = []
+            for activity in activities {
+                // Get actor name
+                let profiles: [UserProfile] = try await supabase
+                    .from("profiles")
+                    .select()
+                    .eq("id", value: activity.actorId.uuidString)
+                    .execute()
+                    .value
+                let actorName = profiles.first?.name ?? "Someone"
+                let actorAccent = profiles.first?.avatarAccentHex ?? "AA9DFF"
+
+                // Get room info
+                let room = store.rooms.first { $0.id.uuidString == activity.roomId?.uuidString }
+                let roomName = room?.name ?? "Unknown"
+                let roomIcon = room?.icon ?? "pawprint.fill"
+                let roomAccentHex = room?.accentHex ?? "AA9DFF"
+
+                let detail: String
+                let activityType: ActivityType
+
+                switch activity.type {
+                case "like":
+                    detail = "\(actorName) liked a photo"
+                    activityType = .like
+                case "comment":
+                    detail = activity.body ?? "\(actorName) commented"
+                    activityType = .comment
+                case "photo_posted":
+                    detail = "\(actorName) posted a new photo"
+                    activityType = .photoPosted
+                case "new_member":
+                    detail = "\(actorName) joined \(roomName)'s room"
+                    activityType = .newMember
+                default:
+                    detail = "\(actorName) did something"
+                    activityType = .like
+                }
+
+                result.append(ActivityItem(
+                    id: activity.id,
+                    type: activityType,
+                    actorName: actorName,
+                    actorAccentHex: actorAccent,
+                    roomName: roomName,
+                    roomIcon: roomIcon,
+                    roomAccentHex: roomAccentHex,
+                    timestamp: activity.createdAt,
+                    detail: detail
+                ))
+            }
+
+            await MainActor.run {
+                items = result
+                isLoading = false
+            }
+        } catch {
+            print("Fetch activities error: \(error)")
+            isLoading = false
         }
     }
 
@@ -216,9 +221,7 @@ struct ActivityView: View {
     private func activityCard(items: [ActivityItem]) -> some View {
         VStack(spacing: 0) {
             ForEach(items) { item in
-                ActivityRow(item: item) {
-                    handle(item.destination)
-                }
+                ActivityRow(item: item)
                 if item.id != items.last?.id {
                     Divider()
                         .background(Color("AppDivider"))
@@ -228,31 +231,12 @@ struct ActivityView: View {
         }
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(Color("AppSerface2"))
+                .fill(Color("AppSurface2"))
                 .overlay(
                     RoundedRectangle(cornerRadius: 20)
                         .stroke(Color("AppDivider"), lineWidth: 0.5)
                 )
         )
-    }
-}
-
-// MARK: - PhotoDetailSheetWrapper
-// Owns a @State copy of the photo so PhotoDetailView gets a valid Binding.
-// Changes (likes, comments) are local to this sheet session — fine until
-// you wire up a shared store later.
-
-private struct PhotoDetailSheetWrapper: View {
-    @State private var photo: PhotoPost
-    let room: PetRoom
-
-    init(photo: PhotoPost, room: PetRoom) {
-        _photo = State(initialValue: photo)
-        self.room = room
-    }
-
-    var body: some View {
-        PhotoDetailView(photo: $photo, room: room)
     }
 }
 
@@ -272,83 +256,65 @@ struct ActivitySectionLabel: View {
 
 struct ActivityRow: View {
     let item: ActivityItem
-    let onTap: () -> Void
 
     var body: some View {
-        Button { onTap() } label: {
-            HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: 12) {
 
-                ZStack(alignment: .bottomTrailing) {
-                    if item.type == .lostAnimal {
-                        ZStack {
-                            Circle()
-                                .fill(Color(hex: "E25718").opacity(0.15))
-                                .frame(width: 44, height: 44)
-                            Image(systemName: "mappin.and.ellipse")
-                                .font(.system(size: 18))
-                                .foregroundStyle(Color(hex: "E25718"))
-                        }
-                    } else {
-                        MemberAvatar(member: item.actor, size: 44)
-                    }
-
-                    ZStack {
-                        Circle()
-                            .fill(Color("AppSurface2"))
-                            .frame(width: 20, height: 20)
-                        Image(systemName: badgeIcon)
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundStyle(badgeColor)
-                    }
-                    .offset(x: 2, y: 2)
+            ZStack(alignment: .bottomTrailing) {
+                ZStack {
+                    Circle()
+                        .fill(Color(hex: item.actorAccentHex).opacity(0.18))
+                        .frame(width: 44, height: 44)
+                    Text(String(item.actorName.prefix(1)).uppercased())
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(Color(hex: item.actorAccentHex))
                 }
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(item.detail)
-                        .font(.system(size: 13))
-                        .foregroundStyle(Color("AppText"))
-                        .fixedSize(horizontal: false, vertical: true)
-                        .multilineTextAlignment(.leading)
-
-                    HStack(spacing: 6) {
-                        HStack(spacing: 4) {
-                            Image(systemName: item.roomIcon)
-                                .font(.system(size: 9, weight: .medium))
-                                .foregroundStyle(item.roomAccent)
-                            Text(item.roomName)
-                                .font(.system(size: 10, weight: .medium))
-                                .foregroundStyle(item.roomAccent.opacity(0.9))
-                        }
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 3)
-                        .background(Capsule().fill(item.roomAccent.opacity(0.1)))
-
-                        Text("·")
-                            .foregroundStyle(Color("AppPlaceholder"))
-                            .font(.system(size: 10))
-
-                        Text(item.timestamp.relativeString())
-                            .font(.system(size: 11))
-                            .foregroundStyle(Color("AppSubtext"))
-                    }
+                ZStack {
+                    Circle()
+                        .fill(Color("AppSurface2"))
+                        .frame(width: 20, height: 20)
+                    Image(systemName: badgeIcon)
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(badgeColor)
                 }
+                .offset(x: 2, y: 2)
+            }
 
-                Spacer()
+            VStack(alignment: .leading, spacing: 4) {
+                Text(item.detail)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color("AppText"))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .multilineTextAlignment(.leading)
 
-                if let emoji = item.photoEmoji {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(item.roomAccent.opacity(0.1))
-                            .frame(width: 44, height: 44)
-                        Text(emoji)
-                            .font(.system(size: 22))
+                HStack(spacing: 6) {
+                    HStack(spacing: 4) {
+                        Image(systemName: item.roomIcon)
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundStyle(item.roomAccent)
+                        Text(item.roomName)
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(item.roomAccent.opacity(0.9))
                     }
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(Capsule().fill(item.roomAccent.opacity(0.1)))
+
+                    Text("·")
+                        .foregroundStyle(Color("AppPlaceholder"))
+                        .font(.system(size: 10))
+
+                    Text(item.timestamp.relativeString())
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color("AppSubtext"))
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
+
+            Spacer()
         }
-        .buttonStyle(.plain)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
     }
 
     private var badgeIcon: String {

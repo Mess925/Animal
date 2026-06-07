@@ -80,9 +80,8 @@ struct MainTabView: View {
             Group {
                 switch selectedTab {
                 case .rooms: RoomsView().environmentObject(store)
-                case .activity: ActivityPlaceholderView()
+                case .activity: ActivityPlaceholderView().environmentObject(store)
                 case .profile: ProfilePlaceholderView().environmentObject(store)
-
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
