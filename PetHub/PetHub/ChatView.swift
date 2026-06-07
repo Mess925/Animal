@@ -516,20 +516,22 @@ struct MessageBubble: View {
                                     )
                             )
 
-                    case .photo(let urlString):
-                        AsyncImage(url: URL(string: urlString)) { image in
-                            image
+                    case .photo:
+                        if let img = message.image {
+                            Image(uiImage: img)
                                 .resizable()
                                 .scaledToFill()
                                 .frame(width: 200, height: 160)
                                 .clipped()
                                 .clipShape(RoundedRectangle(cornerRadius: 16))
-                        } placeholder: {
+                        } else {
                             ZStack {
                                 RoundedRectangle(cornerRadius: 16)
                                     .fill(Color("AppDivider"))
-                                    .frame(width: 200, height: 160)
-                                ProgressView().tint(.white)
+                                    .frame(width: 180, height: 140)
+                                Image(systemName: "photo")
+                                    .font(.system(size: 32))
+                                    .foregroundStyle(Color("AppPlaceholder"))
                             }
                         }
                     }

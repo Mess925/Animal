@@ -1,5 +1,6 @@
 import Supabase
 import SwiftUI
+import Combine
 
 @main
 struct PetHubApp: App {
@@ -7,6 +8,7 @@ struct PetHubApp: App {
     @State private var isLoggedIn = false
     @State private var isOnboarded = false
     @StateObject private var themeManager = ThemeManager()
+    @StateObject private var subscriptionManager = SubscriptionManager()
 
     var body: some Scene {
         WindowGroup {
@@ -25,6 +27,7 @@ struct PetHubApp: App {
             }
             .preferredColorScheme(themeManager.theme.colorScheme)
             .environmentObject(themeManager)
+            .environmentObject(subscriptionManager)
             .task {
                 isLoggedIn = supabase.auth.currentSession != nil
                 if let session = supabase.auth.currentSession {
@@ -52,6 +55,9 @@ struct PetHubApp: App {
                 .execute()
                 .value
             isOnboarded = profile.isOnboarded ?? false
+            await MainActor.run {
+                subscriptionManager.update(from: profile)
+            }
         } catch {
             isOnboarded = false
         }

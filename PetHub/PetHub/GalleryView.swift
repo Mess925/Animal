@@ -46,6 +46,8 @@ struct GalleryView: View {
     @State private var selectedPhoto: PhotoPost? = nil
     @State private var showCamera = false
     @State private var photos: [PhotoPost] = []
+    @State private var showUpgradeSheet = false
+    @EnvironmentObject private var subscriptionManager: SubscriptionManager
 
     let columns = Array(repeating: GridItem(.flexible(), spacing: 2), count: 3)
 
@@ -115,6 +117,7 @@ struct GalleryView: View {
         .task {
             await fetchPhotos()
         }
+        .sheet(isPresented: $showUpgradeSheet) { UpgradeView() }
         .sheet(item: $selectedPhoto) { photo in
             if let idx = photos.firstIndex(where: { $0.id == photo.id }) {
                 PhotoDetailView(photo: $photos[idx], room: room)
@@ -138,8 +141,10 @@ struct GalleryView: View {
                     )
                     withAnimation { photos.insert(newPhoto, at: 0) }
                 },
-                roomId: room.id.uuidString
+                roomId: room.id.uuidString,
+                onShowUpgrade: { showUpgradeSheet = true }
             )
+            .environmentObject(subscriptionManager)
         }
     }
 

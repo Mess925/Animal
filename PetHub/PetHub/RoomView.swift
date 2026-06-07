@@ -73,15 +73,20 @@ enum AppTab {
 
 struct MainTabView: View {
     @StateObject private var store = RoomStore()
+    @StateObject private var subscriptionManager = SubscriptionManager()
     @State private var selectedTab: AppTab = .rooms
 
     var body: some View {
         ZStack(alignment: .bottom) {
             Group {
                 switch selectedTab {
-                case .rooms: RoomsView().environmentObject(store)
-                case .activity: ActivityPlaceholderView().environmentObject(store)
-                case .profile: ProfilePlaceholderView().environmentObject(store)
+                case .rooms: RoomsView()
+                    .environmentObject(store)
+                    .environmentObject(subscriptionManager)
+                case .activity: ActivityPlaceholderView()
+                    .environmentObject(store)
+                case .profile: ProfilePlaceholderView()
+                    .environmentObject(store)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -416,10 +421,16 @@ struct PetRoomCard: View {
 struct AddPetCard: View {
     @EnvironmentObject private var store: RoomStore
     @State private var showCreateRoom = false
+    @EnvironmentObject private var subscriptionManager: SubscriptionManager
+    @State private var showUpgradeSheet = false
 
     var body: some View {
         Button {
-            showCreateRoom = true
+            if store.rooms.filter({ $0.isOwned }).count >= subscriptionManager.maxRooms {
+                showUpgradeSheet = true
+            } else {
+                showCreateRoom = true
+            }
         } label: {
             VStack(spacing: 8) {
                 Image(systemName: "plus")
@@ -442,6 +453,9 @@ struct AddPetCard: View {
                             .foregroundStyle(Color("AppBorder"))
                     )
             )
+        }
+        .sheet(isPresented: $showUpgradeSheet) {
+            UpgradeView()
         }
         .buttonStyle(.plain)
         .sheet(isPresented: $showCreateRoom) {

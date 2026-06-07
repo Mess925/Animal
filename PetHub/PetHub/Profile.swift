@@ -12,13 +12,14 @@ import SwiftUI
 // MARK: - User Profile Model
 
 struct UserProfile: Codable {
-    var id: UUID?  // ← add this
+    var id: UUID?
     var name: String
     var username: String
     var bio: String
     var avatarEmoji: String
     var avatarAccentHex: String?
     var isOnboarded: Bool?
+    var subscriptionTier: String?
 
     var accent: Color { Color(hex: avatarAccentHex ?? "AA9DFF") }
 
@@ -30,6 +31,7 @@ struct UserProfile: Codable {
         case avatarEmoji = "avatar_emoji"
         case avatarAccentHex = "avatar_accent_hex"
         case isOnboarded = "is_onboarded"
+        case subscriptionTier = "subscription_tier"
     }
 }
 

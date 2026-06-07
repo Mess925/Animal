@@ -11,6 +11,8 @@ struct CaptureAndPostView: View {
     var accent: Color
     var onPost: (UIImage, String) -> Void
     var roomId: String
+    @EnvironmentObject private var subscriptionManager: SubscriptionManager
+    var onShowUpgrade: (() -> Void)? = nil
 
     @State private var capturedImage: UIImage? = nil
     @State private var caption = ""
@@ -109,13 +111,31 @@ struct CaptureAndPostView: View {
             }
         }
     }
+    
     private func uploadAndPost(_ image: UIImage) async {
         isUploading = true
         do {
-            // Compress image
-            guard let data = image.jpegData(compressionQuality: 0.7) else {
-                return
+            let user = try await supabase.auth.session.user
+
+            // Check photo limit for free users
+            if subscriptionManager.isFree {
+                struct PhotoCount: Codable { let id: UUID }
+                let photos: [PhotoCount] = try await supabase
+                    .from("photo_posts")
+                    .select()
+                    .eq("posted_by", value: user.id.uuidString)
+                    .execute()
+                    .value
+
+                if photos.count >= subscriptionManager.maxPhotos {
+                    await MainActor.run { isUploading = false }
+                    onShowUpgrade?()
+                    return
+                }
             }
+
+            // Compress image
+            guard let data = image.jpegData(compressionQuality: 0.7) else { return }
 
             // Upload to Supabase Storage
             let fileName = "\(UUID().uuidString).jpg"
@@ -123,11 +143,7 @@ struct CaptureAndPostView: View {
 
             try await supabase.storage
                 .from("photos")
-                .upload(
-                    path,
-                    data: data,
-                    options: .init(contentType: "image/jpeg")
-                )
+                .upload(path, data: data, options: .init(contentType: "image/jpeg"))
 
             // Get public URL
             let url = try supabase.storage
@@ -135,7 +151,6 @@ struct CaptureAndPostView: View {
                 .getPublicURL(path: path)
 
             // Save to photos table
-            let user = try await supabase.auth.session.user
             try await supabase
                 .from("photo_posts")
                 .insert([
