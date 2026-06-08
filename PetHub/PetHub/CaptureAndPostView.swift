@@ -114,11 +114,14 @@ struct CaptureAndPostView: View {
     
     private func uploadAndPost(_ image: UIImage) async {
         isUploading = true
+        
+        let isFree = await MainActor.run { subscriptionManager.isFree }
+        let maxPhotos = await MainActor.run { subscriptionManager.maxPhotosPerRoom }
+        
         do {
             let user = try await supabase.auth.session.user
 
-            // Check photo limit for free users
-            if subscriptionManager.isFree {
+            if isFree {
                 struct PhotoCount: Codable { let id: UUID }
                 let photos: [PhotoCount] = try await supabase
                     .from("photo_posts")
@@ -127,7 +130,7 @@ struct CaptureAndPostView: View {
                     .execute()
                     .value
 
-                if photos.count >= subscriptionManager.maxPhotos {
+                if photos.count >= maxPhotos {
                     await MainActor.run { isUploading = false }
                     onShowUpgrade?()
                     return

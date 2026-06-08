@@ -84,7 +84,7 @@ struct LostAndFoundView: View {
                     Spacer()
 
                     Button {
-                        if subscriptionManager.canAccessLostFound {
+                        if subscriptionManager.canPostLostPet {
                             showAddPost = true
                         } else {
                             showUpgrade = true

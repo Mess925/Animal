@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		8FB4590E2FD6EAE50066D27C /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = 8FB4590D2FD6EAE50066D27C /* RevenueCat */; };
 		8FE096302FCD8F1B007A89D0 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 8FE0962F2FCD8F1B007A89D0 /* Supabase */; };
 /* End PBXBuildFile section */
 
@@ -69,6 +70,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8FB4590E2FD6EAE50066D27C /* RevenueCat in Frameworks */,
 				8FE096302FCD8F1B007A89D0 /* Supabase in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -139,6 +141,7 @@
 			name = PetHub;
 			packageProductDependencies = (
 				8FE0962F2FCD8F1B007A89D0 /* Supabase */,
+				8FB4590D2FD6EAE50066D27C /* RevenueCat */,
 			);
 			productName = PetHub;
 			productReference = 8FBFAD672FC4B97E007DE265 /* PetHub.app */;
@@ -224,6 +227,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				8FE0962B2FCD749E007A89D0 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+				8FB4590C2FD6E86C0066D27C /* XCRemoteSwiftPackageReference "purchases-ios" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8FBFAD682FC4B97E007DE265 /* Products */;
@@ -616,6 +620,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		8FB4590C2FD6E86C0066D27C /* XCRemoteSwiftPackageReference "purchases-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/RevenueCat/purchases-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.77.0;
+			};
+		};
 		8FE0962B2FCD749E007A89D0 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/supabase/supabase-swift";
@@ -627,6 +639,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		8FB4590D2FD6EAE50066D27C /* RevenueCat */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8FB4590C2FD6E86C0066D27C /* XCRemoteSwiftPackageReference "purchases-ios" */;
+			productName = RevenueCat;
+		};
 		8FE0962F2FCD8F1B007A89D0 /* Supabase */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8FE0962B2FCD749E007A89D0 /* XCRemoteSwiftPackageReference "supabase-swift" */;

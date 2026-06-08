@@ -12,6 +12,7 @@ struct PeopleView: View {
     let room: PetRoom
     @State private var openThread: ChatDestination? = nil
     @State private var currentUserId: UUID? = nil
+    @State private var lastDMMessages: [UUID: String] = [:]
 
     private var dmMembers: [Member] {
         room.members.filter { $0.id != currentUserId }
@@ -78,7 +79,8 @@ struct PeopleView: View {
                                         participant: member,
                                         messages: [],
                                         unreadCount: 0
-                                    )
+                                    ),
+                                    lastMessagePreview: lastDMMessages[member.id] ?? ""
                                 )
                             }
                             .buttonStyle(.plain)
@@ -107,6 +109,7 @@ struct PeopleView: View {
         .task {
             if let session = try? await supabase.auth.session {
                 currentUserId = session.user.id
+                await fetchLastDMMessages()
             }
         }
         .sheet(item: $openThread) { destination in
@@ -124,8 +127,7 @@ struct PeopleView: View {
             case .dm(let thread):
                 ChatView(
                     title: thread.participant.name,
-                    subtitle: thread.participant.isOnline
-                        ? "Active now" : "Offline",
+                    subtitle: thread.participant.isOnline ? "Active now" : "Offline",
                     accentHex: thread.participant.accentHex,
                     roomId: room.id.uuidString,
                     recipientId: thread.participant.id.uuidString,
@@ -133,6 +135,36 @@ struct PeopleView: View {
                     isGroup: false,
                     members: [thread.participant]
                 )
+            }
+        }
+    }
+
+    private func fetchLastDMMessages() async {
+        guard let currentUserId = currentUserId else { return }
+
+        for member in room.members where member.id != currentUserId {
+            struct DMMsg: Codable {
+                let body: String?
+                let imageUrl: String?
+                enum CodingKeys: String, CodingKey {
+                    case body
+                    case imageUrl = "image_url"
+                }
+            }
+
+            let msgs: [DMMsg] = (try? await supabase
+                .from("dm_messages")
+                .select()
+                .eq("room_id", value: room.id.uuidString)
+                .or("and(sender_id.eq.\(currentUserId),recipient_id.eq.\(member.id.uuidString)),and(sender_id.eq.\(member.id.uuidString),recipient_id.eq.\(currentUserId.uuidString))")
+                .order("created_at", ascending: false)
+                .limit(1)
+                .execute()
+                .value) ?? []
+
+            let preview = msgs.first?.body ?? (msgs.first?.imageUrl != nil ? "📷 Photo" : "")
+            await MainActor.run {
+                lastDMMessages[member.id] = preview
             }
         }
     }
@@ -206,20 +238,16 @@ struct GroupChatRow: View {
 
 struct DMRow: View {
     let thread: DMThread
+    var lastMessagePreview: String = ""
 
-    private var lastMessagePreview: String {
-        guard let msg = thread.lastMessage else { return "No messages yet" }
-        switch msg.content {
-        case .text(let t): return t
-        case .photo: return "📷 Photo"
-        }
+    private var preview: String {
+        lastMessagePreview.isEmpty ? "No messages yet" : lastMessagePreview
     }
 
-    private var isEmpty: Bool { thread.messages.isEmpty }
+    private var isEmpty: Bool { lastMessagePreview.isEmpty }
 
     var body: some View {
         HStack(spacing: 12) {
-            // Avatar with online indicator
             ZStack(alignment: .bottomTrailing) {
                 MemberAvatar(member: thread.participant, size: 44)
 
@@ -227,54 +255,27 @@ struct DMRow: View {
                     Circle()
                         .fill(Color(hex: "06D6A0"))
                         .frame(width: 11, height: 11)
-                        .overlay(
-                            Circle().stroke(Color("AppSurface2"), lineWidth: 2)
-                        )
+                        .overlay(Circle().stroke(Color("AppSurface2"), lineWidth: 2))
                 }
             }
 
-            // Name + preview
             VStack(alignment: .leading, spacing: 3) {
                 Text(thread.participant.name)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(Color("AppText"))
 
-                Text(lastMessagePreview)
+                Text(preview)
                     .font(.system(size: 12))
-                    .foregroundStyle(
-                        isEmpty
-                            ? Color("AppPlaceholder")
-                            : Color("AppSubtext")
-                    )
+                    .foregroundStyle(isEmpty ? Color("AppPlaceholder") : Color("AppSubtext"))
                     .italic(isEmpty)
                     .lineLimit(1)
             }
 
             Spacer()
 
-            // Right side: time + unread
-            VStack(alignment: .trailing, spacing: 5) {
-                if let last = thread.lastMessage {
-                    Text(last.timestamp.relativeString())
-                        .font(.system(size: 10))
-                        .foregroundStyle(Color("AppPlaceholder"))
-                }
-
-                if thread.unreadCount > 0 {
-                    ZStack {
-                        Circle()
-                            .fill(thread.participant.accent)
-                            .frame(width: 20, height: 20)
-                        Text("\(thread.unreadCount)")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundStyle(Color("AppAccentText"))
-                    }
-                } else {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 11))
-                        .foregroundStyle(Color("AppDivider"))
-                }
-            }
+            Image(systemName: "chevron.right")
+                .font(.system(size: 11))
+                .foregroundStyle(Color("AppDivider"))
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 13)

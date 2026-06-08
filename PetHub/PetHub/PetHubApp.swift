@@ -1,6 +1,7 @@
 import Supabase
 import SwiftUI
 import Combine
+import RevenueCat
 
 @main
 struct PetHubApp: App {
@@ -9,6 +10,11 @@ struct PetHubApp: App {
     @State private var isOnboarded = false
     @StateObject private var themeManager = ThemeManager()
     @StateObject private var subscriptionManager = SubscriptionManager()
+
+    init() {
+        Purchases.logLevel = .debug
+        Purchases.configure(withAPIKey: "test_SawIEyfctZaetbkOBaLgIHHwOBZ")
+    }
 
     var body: some Scene {
         WindowGroup {
