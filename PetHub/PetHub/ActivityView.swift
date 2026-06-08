@@ -59,7 +59,6 @@ struct ActivityView: View {
     @EnvironmentObject private var store: RoomStore
     @State private var items: [ActivityItem] = []
     @State private var isLoading = true
-    
 
     private var todayItems: [ActivityItem] {
         items.filter { Calendar.current.isDateInToday($0.timestamp) }
@@ -125,6 +124,9 @@ struct ActivityView: View {
                 }
             }
             .navigationBarHidden(true)
+        }   
+        .onAppear {
+            Task { await fetchActivities() }
         }
         .task {
             await fetchActivities()
@@ -144,7 +146,8 @@ struct ActivityView: View {
             }
 
             // Fetch activities for those rooms, excluding current user's own actions
-            let activities: [SupabaseActivity] = try await supabase
+            let activities: [SupabaseActivity] =
+                try await supabase
                 .from("activities")
                 .select()
                 .in("room_id", values: roomIds)
@@ -158,7 +161,8 @@ struct ActivityView: View {
             var result: [ActivityItem] = []
             for activity in activities {
                 // Get actor name
-                let profiles: [UserProfile] = try await supabase
+                let profiles: [UserProfile] =
+                    try await supabase
                     .from("profiles")
                     .select()
                     .eq("id", value: activity.actorId.uuidString)
@@ -168,7 +172,9 @@ struct ActivityView: View {
                 let actorAccent = profiles.first?.avatarAccentHex ?? "AA9DFF"
 
                 // Get room info
-                let room = store.rooms.first { $0.id.uuidString == activity.roomId?.uuidString }
+                let room = store.rooms.first {
+                    $0.id.uuidString == activity.roomId?.uuidString
+                }
                 let roomName = room?.name ?? "Unknown"
                 let roomIcon = room?.icon ?? "pawprint.fill"
                 let roomAccentHex = room?.accentHex ?? "AA9DFF"
@@ -194,17 +200,19 @@ struct ActivityView: View {
                     activityType = .like
                 }
 
-                result.append(ActivityItem(
-                    id: activity.id,
-                    type: activityType,
-                    actorName: actorName,
-                    actorAccentHex: actorAccent,
-                    roomName: roomName,
-                    roomIcon: roomIcon,
-                    roomAccentHex: roomAccentHex,
-                    timestamp: activity.createdAt,
-                    detail: detail
-                ))
+                result.append(
+                    ActivityItem(
+                        id: activity.id,
+                        type: activityType,
+                        actorName: actorName,
+                        actorAccentHex: actorAccent,
+                        roomName: roomName,
+                        roomIcon: roomIcon,
+                        roomAccentHex: roomAccentHex,
+                        timestamp: activity.createdAt,
+                        detail: detail
+                    )
+                )
             }
 
             await MainActor.run {
@@ -319,21 +327,21 @@ struct ActivityRow: View {
 
     private var badgeIcon: String {
         switch item.type {
-        case .photoPosted:  return "photo.fill"
-        case .comment:      return "bubble.left.fill"
-        case .like:         return "heart.fill"
-        case .newMember:    return "person.fill.badge.plus"
-        case .lostAnimal:   return "exclamationmark"
+        case .photoPosted: return "photo.fill"
+        case .comment: return "bubble.left.fill"
+        case .like: return "heart.fill"
+        case .newMember: return "person.fill.badge.plus"
+        case .lostAnimal: return "exclamationmark"
         }
     }
 
     private var badgeColor: Color {
         switch item.type {
-        case .photoPosted:  return Color(hex: "AA9DFF")
-        case .comment:      return Color(hex: "7EC8C8")
-        case .like:         return Color(hex: "FF6B6B")
-        case .newMember:    return Color(hex: "06D6A0")
-        case .lostAnimal:   return Color(hex: "E25718")
+        case .photoPosted: return Color(hex: "AA9DFF")
+        case .comment: return Color(hex: "7EC8C8")
+        case .like: return Color(hex: "FF6B6B")
+        case .newMember: return Color(hex: "06D6A0")
+        case .lostAnimal: return Color(hex: "E25718")
         }
     }
 }

@@ -151,13 +151,27 @@ struct CaptureAndPostView: View {
                 .getPublicURL(path: path)
 
             // Save to photos table
+            let photoId = UUID().uuidString
+
             try await supabase
                 .from("photo_posts")
                 .insert([
+                    "id": photoId,
                     "room_id": roomId,
                     "image_url": url.absoluteString,
                     "caption": caption,
                     "posted_by": user.id.uuidString,
+                ])
+                .execute()
+
+            // Insert activity
+            try await supabase
+                .from("activities")
+                .insert([
+                    "type": "photo_posted",
+                    "actor_id": user.id.uuidString,
+                    "room_id": roomId,
+                    "photo_id": photoId
                 ])
                 .execute()
 

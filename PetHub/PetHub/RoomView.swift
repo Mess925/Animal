@@ -57,10 +57,68 @@ class RoomStore: ObservableObject {
                     .value
             }
 
+            var allRooms: [PetRoom] =
+                ownedRooms.map { $0.toPetRoom(isOwned: true) }
+                + memberRooms.map { $0.toPetRoom(isOwned: false) }
+
+            struct LastMessage: Codable {
+                let createdAt: Date
+                let body: String?
+                enum CodingKeys: String, CodingKey {
+                    case createdAt = "created_at"
+                    case body
+                }
+            }
+
+            for i in allRooms.indices {
+                let roomId = allRooms[i].id.uuidString
+
+                struct LastMessage: Codable {
+                    let createdAt: Date
+                    let body: String?
+                    enum CodingKeys: String, CodingKey {
+                        case createdAt = "created_at"
+                        case body
+                    }
+                }
+
+                // Get latest activity from messages, photos, comments, likes
+                let lastMsg: [LastMessage] =
+                    (try? await supabase.from("messages").select().eq(
+                        "room_id",
+                        value: roomId
+                    ).order("created_at", ascending: false).limit(1).execute()
+                        .value) ?? []
+
+                allRooms[i].lastMessage = lastMsg.first?.body ?? ""  // ← after lastMsg
+
+                let lastPhoto: [LastMessage] =
+                    (try? await supabase.from("photo_posts").select().eq(
+                        "room_id",
+                        value: roomId
+                    ).order("created_at", ascending: false).limit(1).execute()
+                        .value) ?? []
+
+                let lastActivity: [LastMessage] =
+                    (try? await supabase.from("activities").select().eq(
+                        "room_id",
+                        value: roomId
+                    ).order("created_at", ascending: false).limit(1).execute()
+                        .value) ?? []
+
+                let dates = [
+                    lastMsg.first?.createdAt,
+                    lastPhoto.first?.createdAt,
+                    lastActivity.first?.createdAt,
+                ].compactMap { $0 }
+
+                allRooms[i].lastActivity = dates.max() ?? Date.distantPast
+            }
+
             await MainActor.run {
-                self.rooms =
-                    ownedRooms.map { $0.toPetRoom(isOwned: true) }
-                    + memberRooms.map { $0.toPetRoom(isOwned: false) }
+                self.rooms = allRooms.sorted {
+                    $0.lastActivity > $1.lastActivity
+                }
             }
         } catch {
             print("Fetch rooms error: \(error)")
@@ -204,6 +262,7 @@ struct TabBarItem: View {
 struct RoomsView: View {
     @EnvironmentObject private var store: RoomStore
     @EnvironmentObject private var subscriptionManager: SubscriptionManager
+    @State private var searchText = ""
 
     let columns = [
         GridItem(.flexible(), spacing: 12),
@@ -212,6 +271,22 @@ struct RoomsView: View {
 
     private var myRooms: [PetRoom] { store.rooms.filter { $0.isOwned } }
     private var memberRooms: [PetRoom] { store.rooms.filter { !$0.isOwned } }
+
+    private var filteredMyRooms: [PetRoom] {
+        if searchText.isEmpty { return myRooms }
+        return myRooms.filter {
+            $0.name.localizedCaseInsensitiveContains(searchText)
+                || $0.breed.localizedCaseInsensitiveContains(searchText)
+        }
+    }
+
+    private var filteredMemberRooms: [PetRoom] {
+        if searchText.isEmpty { return memberRooms }
+        return memberRooms.filter {
+            $0.name.localizedCaseInsensitiveContains(searchText)
+                || $0.breed.localizedCaseInsensitiveContains(searchText)
+        }
+    }
 
     var body: some View {
         NavigationStack {
@@ -236,6 +311,22 @@ struct RoomsView: View {
                         .padding(.top, 20)
                         .padding(.bottom, 24)
 
+                        HStack(spacing: 10) {
+                            Image(systemName: "magnifyingglass")
+                                .foregroundStyle(Color("AppPlaceholder"))
+                            TextField("Search rooms...", text: $searchText)
+                                .foregroundStyle(Color("AppText"))
+                                .font(.system(size: 14))
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14)
+                                .fill(Color("AppSurface"))
+                        )
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 20)
+
                         // Lost & Found
                         RoomsSectionLabel(title: "Lost & Found")
                             .padding(.horizontal, 20)
@@ -252,7 +343,7 @@ struct RoomsView: View {
                             .padding(.bottom, 12)
 
                         LazyVGrid(columns: columns, spacing: 12) {
-                            ForEach(myRooms) { room in
+                            ForEach(filteredMyRooms) { room in
                                 NavigationLink(
                                     destination:
                                         RoomView(room: room)
@@ -264,7 +355,8 @@ struct RoomsView: View {
                                         breed: room.breed,
                                         age: room.age,
                                         icon: room.icon,
-                                        accentHex: room.accentHex
+                                        accentHex: room.accentHex,
+                                        lastMessage: room.lastMessage
                                     )
                                 }
                                 .buttonStyle(.plain)
@@ -274,14 +366,14 @@ struct RoomsView: View {
                         .padding(.horizontal, 16)
 
                         // Member Rooms
-                        if !memberRooms.isEmpty {
+                        if !filteredMemberRooms.isEmpty {
                             RoomsSectionLabel(title: "Joined Rooms")
                                 .padding(.horizontal, 20)
                                 .padding(.top, 28)
                                 .padding(.bottom, 12)
 
                             LazyVGrid(columns: columns, spacing: 12) {
-                                ForEach(memberRooms) { room in
+                                ForEach(filteredMemberRooms) { room in
                                     NavigationLink(
                                         destination:
                                             RoomView(room: room)
@@ -295,7 +387,8 @@ struct RoomsView: View {
                                             breed: room.breed,
                                             age: room.age,
                                             icon: room.icon,
-                                            accentHex: room.accentHex
+                                            accentHex: room.accentHex,
+                                            lastMessage: room.lastMessage
                                         )
                                     }
                                     .buttonStyle(.plain)
@@ -309,6 +402,9 @@ struct RoomsView: View {
                 }
             }
             .navigationBarHidden(true)
+            .onAppear {
+                Task { await store.fetchRooms() }
+            }
         }
     }
 }
@@ -335,7 +431,7 @@ struct LostRoomCard: View {
     var body: some View {
         Button {
             showLostFound = true
-        }label: {
+        } label: {
             HStack(spacing: 14) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 15)
@@ -383,9 +479,9 @@ struct LostRoomCard: View {
                     )
             )
         }
-//        .sheet(isPresented: $showLostFound){
-//            Text("Test")
-//        }
+        //        .sheet(isPresented: $showLostFound){
+        //            Text("Test")
+        //        }
         .sheet(isPresented: $showLostFound) {
             LostAndFoundView()
                 .environmentObject(subscriptionManager)
@@ -405,6 +501,7 @@ struct PetRoomCard: View {
     let age: String
     let icon: String
     let accentHex: String
+    var lastMessage: String = ""
 
     private var accent: Color { Color(hex: accentHex) }
 
@@ -424,10 +521,17 @@ struct PetRoomCard: View {
                 Text(name)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(Color("AppText"))
-                Text("\(breed) · \(age)")
-                    .font(.system(size: 10))
-                    .foregroundStyle(Color("AppSubtext"))
-                    .lineLimit(1)
+                if !lastMessage.isEmpty {
+                    Text(lastMessage)
+                        .font(.system(size: 10))
+                        .foregroundStyle(Color("AppPlaceholder"))
+                        .lineLimit(1)
+                } else {
+                    Text("\(breed) · \(age)")
+                        .font(.system(size: 10))
+                        .foregroundStyle(Color("AppSubtext"))
+                        .lineLimit(1)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 12)

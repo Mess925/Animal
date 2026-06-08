@@ -166,7 +166,8 @@ struct PetRoom: Identifiable, Hashable {
     var groupMessages: [Message]
     var dmThreads: [DMThread]
     var isOwned: Bool = true
-
+    var lastMessage: String =  ""
+    var lastActivity: Date = Date.distantPast
     var accent: Color { Color(hex: accentHex) }
     var owner: Member? { members.first(where: { $0.isOwner }) }
 }

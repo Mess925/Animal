@@ -38,12 +38,12 @@ struct LostFoundPost: Codable, Identifiable {
 // MARK: - LostAndFoundView
 
 struct LostAndFoundView: View {
-//    @EnvironmentObject private var subscriptionManager: SubscriptionManager
+    @EnvironmentObject private var subscriptionManager: SubscriptionManager
+    @State private var showUpgrade = false
     @Environment(\.dismiss) private var dismiss
     @State private var posts: [LostFoundPost] = []
     @State private var isLoading = true
     @State private var showAddPost = false
-    @State private var showUpgrade = false
     @State private var selectedFilter = "all"
 
     let filters = ["all", "lost", "found"]
@@ -62,7 +62,9 @@ struct LostAndFoundView: View {
             VStack(spacing: 0) {
                 // Header
                 HStack {
-                    Button { dismiss() } label: {
+                    Button {
+                        dismiss()
+                    } label: {
                         ZStack {
                             Circle()
                                 .fill(Color("AppSurface"))
@@ -82,7 +84,11 @@ struct LostAndFoundView: View {
                     Spacer()
 
                     Button {
-                        showAddPost = true
+                        if subscriptionManager.canAccessLostFound {
+                            showAddPost = true
+                        } else {
+                            showUpgrade = true
+                        }
                     } label: {
                         ZStack {
                             Circle()
@@ -92,7 +98,8 @@ struct LostAndFoundView: View {
                                 .font(.system(size: 15, weight: .medium))
                                 .foregroundStyle(Color(hex: "E25718"))
                         }
-                    }                }
+                    }
+                }
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
                 .padding(.bottom, 16)
@@ -105,12 +112,20 @@ struct LostAndFoundView: View {
                         } label: {
                             Text(filter.capitalized)
                                 .font(.system(size: 12, weight: .medium))
-                                .foregroundStyle(selectedFilter == filter ? Color("AppAccentText") : Color("AppSubtext"))
+                                .foregroundStyle(
+                                    selectedFilter == filter
+                                        ? Color("AppAccentText")
+                                        : Color("AppSubtext")
+                                )
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 8)
                                 .background(
                                     Capsule()
-                                        .fill(selectedFilter == filter ? Color(hex: "E25718") : Color("AppSurface"))
+                                        .fill(
+                                            selectedFilter == filter
+                                                ? Color(hex: "E25718")
+                                                : Color("AppSurface")
+                                        )
                                 )
                         }
                         .buttonStyle(.plain)
@@ -165,7 +180,8 @@ struct LostAndFoundView: View {
     private func fetchPosts() async {
         isLoading = true
         do {
-            let fetched: [LostFoundPost] = try await supabase
+            let fetched: [LostFoundPost] =
+                try await supabase
                 .from("lost_found")
                 .select()
                 .eq("status", value: "active")
@@ -190,7 +206,9 @@ struct LostFoundCard: View {
     let post: LostFoundPost
 
     private var isLost: Bool { post.reportType == "lost" }
-    private var accentColor: Color { isLost ? Color(hex: "E25718") : Color(hex: "06D6A0") }
+    private var accentColor: Color {
+        isLost ? Color(hex: "E25718") : Color(hex: "06D6A0")
+    }
 
     var body: some View {
         HStack(spacing: 14) {
@@ -200,7 +218,8 @@ struct LostFoundCard: View {
                     .fill(accentColor.opacity(0.12))
                     .frame(width: 70, height: 70)
 
-                if let imageUrl = post.imageUrl, let url = URL(string: imageUrl) {
+                if let imageUrl = post.imageUrl, let url = URL(string: imageUrl)
+                {
                     AsyncImage(url: url) { image in
                         image
                             .resizable()
@@ -291,7 +310,9 @@ struct AddLostFoundView: View {
 
                 // Nav
                 HStack {
-                    Button { dismiss() } label: {
+                    Button {
+                        dismiss()
+                    } label: {
                         ZStack {
                             Circle()
                                 .fill(Color("AppSurface"))
@@ -341,13 +362,28 @@ struct AddLostFoundView: View {
                                         type = t
                                     } label: {
                                         Text(t.capitalized)
-                                            .font(.system(size: 14, weight: .medium))
-                                            .foregroundStyle(type == t ? Color("AppAccentText") : Color("AppSubtext"))
+                                            .font(
+                                                .system(
+                                                    size: 14,
+                                                    weight: .medium
+                                                )
+                                            )
+                                            .foregroundStyle(
+                                                type == t
+                                                    ? Color("AppAccentText")
+                                                    : Color("AppSubtext")
+                                            )
                                             .frame(maxWidth: .infinity)
                                             .padding(.vertical, 12)
                                             .background(
-                                                RoundedRectangle(cornerRadius: 12)
-                                                    .fill(type == t ? Color(hex: "E25718") : Color("AppSurface"))
+                                                RoundedRectangle(
+                                                    cornerRadius: 12
+                                                )
+                                                .fill(
+                                                    type == t
+                                                        ? Color(hex: "E25718")
+                                                        : Color("AppSurface")
+                                                )
                                             )
                                     }
                                     .buttonStyle(.plain)
@@ -363,7 +399,9 @@ struct AddLostFoundView: View {
                                 .tracking(1.2)
                                 .foregroundStyle(Color("AppSubtext"))
 
-                            Button { showImagePicker = true } label: {
+                            Button {
+                                showImagePicker = true
+                            } label: {
                                 ZStack {
                                     RoundedRectangle(cornerRadius: 16)
                                         .fill(Color("AppSurface"))
@@ -374,15 +412,23 @@ struct AddLostFoundView: View {
                                             .resizable()
                                             .scaledToFill()
                                             .frame(height: 140)
-                                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                                            .clipShape(
+                                                RoundedRectangle(
+                                                    cornerRadius: 16
+                                                )
+                                            )
                                     } else {
                                         VStack(spacing: 8) {
                                             Image(systemName: "camera.fill")
                                                 .font(.system(size: 28))
-                                                .foregroundStyle(Color("AppPlaceholder"))
+                                                .foregroundStyle(
+                                                    Color("AppPlaceholder")
+                                                )
                                             Text("Add a photo")
                                                 .font(.system(size: 13))
-                                                .foregroundStyle(Color("AppPlaceholder"))
+                                                .foregroundStyle(
+                                                    Color("AppPlaceholder")
+                                                )
                                         }
                                     }
                                 }
@@ -393,9 +439,21 @@ struct AddLostFoundView: View {
 
                         // Fields
                         VStack(spacing: 16) {
-                            ProfileInputField(title: "Animal Type", placeholder: "e.g. Golden Retriever", text: $animalType)
-                            ProfileInputField(title: "Location", placeholder: "e.g. Orchard Road, Singapore", text: $location)
-                            ProfileInputField(title: "Phone Number", placeholder: "e.g. +65 9123 4567", text: $contactPhone)
+                            ProfileInputField(
+                                title: "Animal Type",
+                                placeholder: "e.g. Golden Retriever",
+                                text: $animalType
+                            )
+                            ProfileInputField(
+                                title: "Location",
+                                placeholder: "e.g. Orchard Road, Singapore",
+                                text: $location
+                            )
+                            ProfileInputField(
+                                title: "Phone Number",
+                                placeholder: "e.g. +65 9123 4567",
+                                text: $contactPhone
+                            )
 
                             VStack(alignment: .leading, spacing: 10) {
                                 Text("Description")
@@ -404,11 +462,15 @@ struct AddLostFoundView: View {
 
                                 ZStack(alignment: .topLeading) {
                                     if description.isEmpty {
-                                        Text("Describe the animal, any identifying marks…")
-                                            .font(.system(size: 14))
-                                            .foregroundStyle(Color("AppPlaceholder"))
-                                            .padding(.top, 14)
-                                            .padding(.leading, 16)
+                                        Text(
+                                            "Describe the animal, any identifying marks…"
+                                        )
+                                        .font(.system(size: 14))
+                                        .foregroundStyle(
+                                            Color("AppPlaceholder")
+                                        )
+                                        .padding(.top, 14)
+                                        .padding(.leading, 16)
                                     }
                                     TextEditor(text: $description)
                                         .scrollContentBackground(.hidden)
@@ -421,7 +483,10 @@ struct AddLostFoundView: View {
                                         .fill(Color("AppSurface2"))
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 18)
-                                                .stroke(Color("AppDivider"), lineWidth: 0.5)
+                                                .stroke(
+                                                    Color("AppDivider"),
+                                                    lineWidth: 0.5
+                                                )
                                         )
                                 )
                             }
@@ -447,12 +512,19 @@ struct AddLostFoundView: View {
 
             // Upload image if selected
             if let image = selectedImage,
-               let data = image.jpegData(compressionQuality: 0.7) {
+                let data = image.jpegData(compressionQuality: 0.7)
+            {
                 let path = "lost_found/\(UUID().uuidString).jpg"
                 try await supabase.storage
                     .from("photos")
-                    .upload(path, data: data, options: .init(contentType: "image/jpeg"))
-                let url = try supabase.storage.from("photos").getPublicURL(path: path)
+                    .upload(
+                        path,
+                        data: data,
+                        options: .init(contentType: "image/jpeg")
+                    )
+                let url = try supabase.storage.from("photos").getPublicURL(
+                    path: path
+                )
                 imageUrl = url.absoluteString
             }
 
@@ -463,7 +535,7 @@ struct AddLostFoundView: View {
                 "description": description,
                 "location": location,
                 "contact_phone": contactPhone,
-                "status": "active"
+                "status": "active",
             ]
             if let imageUrl { insert["image_url"] = imageUrl }
 
