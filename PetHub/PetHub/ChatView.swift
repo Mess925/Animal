@@ -18,6 +18,7 @@ struct ChatView: View {
     let members: [Member]
     let roomId: String
     let recipientId: String?
+    let isLostFound: Bool
 
     @Environment(\.dismiss) private var dismiss
     @State private var messageText = ""
@@ -35,10 +36,12 @@ struct ChatView: View {
         accentHex: String,
         roomId: String,
         recipientId: String? = nil,
+        isLostFound: Bool = false,
         messages: [Message],
         isGroup: Bool,
         members: [Member]
     ) {
+
         self.title = title
         self.subtitle = subtitle
         self.accentHex = accentHex
@@ -47,6 +50,7 @@ struct ChatView: View {
         self.messages = messages
         self.isGroup = isGroup
         self.members = members
+        self.isLostFound = isLostFound
         _allMessages = State(initialValue: [])
     }
 
@@ -164,7 +168,20 @@ struct ChatView: View {
                 for await _ in changes {
                     await fetchMessages()
                 }
-            } else {
+            } else if isLostFound {
+                let channel = supabase.realtimeV2.channel(
+                    "lf-messages-\(roomId)-\(Int(Date().timeIntervalSince1970))"
+                )
+                let changes = channel.postgresChange(
+                    AnyAction.self,
+                    schema: "public",
+                    table: "lost_found_messages"
+                )
+                await channel.subscribe()
+                for await _ in changes {
+                    await fetchMessages()
+                }
+            }    else {
                 let channel = supabase.realtimeV2.channel(
                     "room-messages-\(roomId)-\(Int(Date().timeIntervalSince1970))"
                 )
@@ -288,6 +305,44 @@ struct ChatView: View {
                     }
                 }
             }
+
+            if isLostFound {
+                struct LFMessage: Codable {
+                    let id: UUID
+                    let body: String?
+                    let senderId: UUID
+                    let createdAt: Date
+                    enum CodingKeys: String, CodingKey {
+                        case id, body
+                        case senderId = "sender_id"
+                        case createdAt = "created_at"
+                    }
+                }
+                let fetched: [LFMessage] =
+                    try await supabase
+                    .from("lost_found_messages")
+                    .select()
+                    .eq("post_id", value: roomId)
+                    .or(
+                        "and(sender_id.eq.\(user.id.uuidString),recipient_id.eq.\(recipientId ?? "")),and(sender_id.eq.\(recipientId ?? ""),recipient_id.eq.\(user.id.uuidString))"
+                    )
+                    .order("created_at", ascending: true)
+                    .execute()
+                    .value
+                await MainActor.run {
+                    allMessages = fetched.map { m in
+                        let isOwn = m.senderId == user.id
+                        return Message(
+                            id: m.id,
+                            sender: isOwn ? .me : members.first,
+                            content: .text(m.body ?? ""),
+                            timestamp: m.createdAt,
+                            isOwn: isOwn
+                        )
+                    }
+                }
+                return
+            }
         } catch {
             print("Fetch messages error: \(error)")
         }
@@ -321,9 +376,21 @@ struct ChatView: View {
                     .execute()
                 print("Group message sent!")
             }
+            if isLostFound {
+                try await supabase
+                    .from("lost_found_messages")
+                    .insert([
+                        "post_id": roomId,
+                        "sender_id": user.id.uuidString,
+                        "recipient_id": recipientId ?? "",
+                        "body": text,
+                    ])
+                    .execute()
+            }
         } catch {
             print("Send message error: \(error)")
         }
+
     }
 
     private func sendMessage() {

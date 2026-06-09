@@ -334,6 +334,7 @@ struct RoomsView: View {
 
                         LostRoomCard()
                             .environmentObject(subscriptionManager)
+                            .environmentObject(store)
                             .padding(.horizontal, 16)
                             .padding(.bottom, 28)
 
@@ -425,12 +426,17 @@ struct RoomsSectionLabel: View {
 
 struct LostRoomCard: View {
     @EnvironmentObject private var subscriptionManager: SubscriptionManager
-    @State private var showLostFound = false
-    @State private var showUpgrade = false
+    @EnvironmentObject private var store: RoomStore
 
     var body: some View {
-        Button {
-            showLostFound = true
+        NavigationLink {
+            LostAndFoundView()
+                .environmentObject(subscriptionManager)
+                .navigationBarBackButtonHidden(true)
+                .toolbar(.hidden, for: .tabBar)
+                .onAppear {
+                    store.isInRoom = true
+                }
         } label: {
             HStack(spacing: 14) {
                 ZStack {
@@ -478,16 +484,6 @@ struct LostRoomCard: View {
                             )
                     )
             )
-        }
-        //        .sheet(isPresented: $showLostFound){
-        //            Text("Test")
-        //        }
-        .sheet(isPresented: $showLostFound) {
-            LostAndFoundView()
-                .environmentObject(subscriptionManager)
-        }
-        .sheet(isPresented: $showUpgrade) {
-            UpgradeView()
         }
         .buttonStyle(.plain)
     }

@@ -93,7 +93,7 @@ struct UpgradeView: View {
                                 ]
                             ) {
                                 Task {
-                                    let id = isYearly ? "$rc_annual" : "$rc_monthly"
+                                    let id = isYearly ? "pethub_semipro_yearly" : "pethub_semipro_monthly"
                                     if let package = currentOffering?.package(identifier: id) {
                                         await purchase(package)
                                     }
