@@ -14,6 +14,7 @@ import SwiftUI
 struct LostFoundPost: Codable, Identifiable {
     let id: UUID
     let userId: UUID
+    let contactPhone: String?
     let reportType: String
     let animalType: String
     let description: String?
@@ -31,6 +32,7 @@ struct LostFoundPost: Codable, Identifiable {
         case location
         case imageUrl = "image_url"
         case status
+        case contactPhone = "contact phone"
         case createdAt = "created_at"
     }
 }
@@ -158,6 +160,7 @@ struct LostAndFoundView: View {
                         VStack(spacing: 12) {
                             ForEach(filteredPosts) { post in
                                 LostFoundCard(post: post)
+                                    .environmentObject(subscriptionManager)
                             }
                         }
                         .padding(.horizontal, 16)
@@ -204,6 +207,7 @@ struct LostAndFoundView: View {
 
 struct LostFoundCard: View {
     let post: LostFoundPost
+    @EnvironmentObject private var subscriptionManager: SubscriptionManager
 
     private var isLost: Bool { post.reportType == "lost" }
     private var accentColor: Color {
@@ -267,10 +271,31 @@ struct LostFoundCard: View {
                             .foregroundStyle(Color("AppPlaceholder"))
                     }
                 }
-
                 Text(post.createdAt.relativeString())
                     .font(.system(size: 10))
                     .foregroundStyle(Color("AppPlaceholder"))
+
+                if let phone = post.contactPhone, !phone.isEmpty {
+                    if subscriptionManager.isSemiPro || subscriptionManager.isPro {
+                        HStack(spacing: 4) {
+                            Image(systemName: "phone.fill")
+                                .font(.system(size: 10))
+                                .foregroundStyle(Color("AppPlaceholder"))
+                            Text(phone)
+                                .font(.system(size: 11))
+                                .foregroundStyle(Color("AppPlaceholder"))
+                        }
+                    } else {
+                        HStack(spacing: 4) {
+                            Image(systemName: "lock.fill")
+                                .font(.system(size: 10))
+                                .foregroundStyle(Color("AppPlaceholder"))
+                            Text("Upgrade to see contact")
+                                .font(.system(size: 11))
+                                .foregroundStyle(Color("AppPlaceholder"))
+                        }
+                    }
+                }
             }
 
             Spacer()
