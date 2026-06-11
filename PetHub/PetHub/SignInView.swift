@@ -12,6 +12,7 @@ struct SignInView: View {
     @State private var email = ""
     @State private var password = ""
 
+    @AppStorage("isLoggedIn") var isLoggedIn = false
     @State private var isSigningIn = false
     @State private var authError: String?
     @State private var showForgotPassword = false
@@ -205,6 +206,7 @@ struct SignInView: View {
 
         do {
             try await supabase.auth.signIn(email: cleanedEmail, password: password)
+            isLoggedIn = true
             print("Signed in successfully!")
         } catch {
             authError = friendlyAuthError(error)

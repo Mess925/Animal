@@ -336,10 +336,10 @@ struct UpgradeView: View {
                 guard !isCurrent else { return }
                 Task {
                     let id = isYearly ? packageYearlyId : packageMonthlyId
-                    if let package = currentOffering?.package(identifier: id) {
+                    if let package = findPackage(id) {
                         await purchase(package)
                     } else {
-                        errorMessage = "Plan is not available yet. Check RevenueCat package id: \(id)"
+                        errorMessage = "Plan is not available. Missing package/product id: \(id)"
                     }
                 }
             } label: {
@@ -390,6 +390,12 @@ struct UpgradeView: View {
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color("AppDivider").opacity(0.45))
         )
+    }
+
+    private func findPackage(_ id: String) -> Package? {
+        currentOffering?.availablePackages.first {
+            $0.identifier == id || $0.storeProduct.productIdentifier == id
+        }
     }
 
     private func buttonTitle(for tier: SubscriptionTier) -> String {

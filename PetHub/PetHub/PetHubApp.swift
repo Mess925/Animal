@@ -6,14 +6,15 @@ import RevenueCat
 @main
 struct PetHubApp: App {
     @AppStorage("hasSeenOnboarding") var hasSeenOnboarding = false
-    @State private var isLoggedIn = false
-    @State private var isOnboarded = false
+    @AppStorage("needsUserOnboarding") var needsUserOnboarding = true
+    @AppStorage("isLoggedIn") var isLoggedIn = false
     @StateObject private var themeManager = ThemeManager()
-    @StateObject private var subscriptionManager = SubscriptionManager()
-
+    @StateObject private var subscriptionManager: SubscriptionManager
+    
     init() {
         Purchases.logLevel = .debug
         Purchases.configure(withAPIKey: "test_SawIEyfctZaetbkOBaLgIHHwOBZ")
+        _subscriptionManager = StateObject(wrappedValue: SubscriptionManager())
     }
 
     var body: some Scene {
@@ -25,7 +26,7 @@ struct PetHubApp: App {
                     NavigationStack {
                         WelcomeView()
                     }
-                } else if !isOnboarded {
+                } else if needsUserOnboarding {
                     UserOnboardingView()
                 } else {
                     MainTabView(subscriptionManager: subscriptionManager)
@@ -35,6 +36,13 @@ struct PetHubApp: App {
             .environmentObject(themeManager)
             .environmentObject(subscriptionManager)
             .task {
+                if !hasSeenOnboarding {
+                    try? await supabase.auth.signOut()
+                    isLoggedIn = false
+                    needsUserOnboarding = true
+                    return
+                }
+
                 isLoggedIn = supabase.auth.currentSession != nil
                 if let session = supabase.auth.currentSession {
                     await checkOnboarding(userId: session.user.id.uuidString)
@@ -44,7 +52,7 @@ struct PetHubApp: App {
                     if let session = state.session {
                         await checkOnboarding(userId: session.user.id.uuidString)
                     } else {
-                        isOnboarded = false
+                        needsUserOnboarding = true
                     }
                 }
             }
@@ -60,12 +68,12 @@ struct PetHubApp: App {
                 .single()
                 .execute()
                 .value
-            isOnboarded = profile.isOnboarded ?? false
             await MainActor.run {
-                subscriptionManager.update(from: profile)
+                needsUserOnboarding = !(profile.isOnboarded ?? false)
+                subscriptionManager.fetchCustomerInfo()
             }
         } catch {
-            isOnboarded = false
+            // Leave needsUserOnboarding as-is if the fetch fails
         }
     }
 }

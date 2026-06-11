@@ -12,6 +12,8 @@ struct SignUpView: View {
     @State private var name = ""
     @State private var email = ""
     @State private var password = ""
+    @AppStorage("needsUserOnboarding") var needsUserOnboarding = false
+    @AppStorage("isLoggedIn") var isLoggedIn = false
 
     @FocusState private var nameFocused: Bool
     @FocusState private var emailFocused: Bool
@@ -165,7 +167,8 @@ struct SignUpView: View {
                     "avatar_accent_hex": "AA9DFF",
                 ])
                 .execute()
-
+            needsUserOnboarding = true
+            isLoggedIn = true
             print("Signed up successfully!")
         } catch {
             print("Sign up error: \(error)")

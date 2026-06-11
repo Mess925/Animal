@@ -54,14 +54,10 @@ class SubscriptionManager: ObservableObject {
         }
     }
 
-    // MARK: - Supabase profile sync (keep existing)
-    func update(from profile: UserProfile) {
-        switch profile.subscriptionTier {
-        case "semi_pro": tier = .semiPro
-        case "pro": tier = .pro
-        default: tier = .free
-        }
-    }
+    // MARK: - Subscription source of truth
+    // Paid subscription state should come from RevenueCat, not Supabase.
+    // Supabase can still store profile/onboarding data, but do not let
+    // profiles.subscription_tier overwrite RevenueCat after login.
 
     // MARK: - RevenueCat
     func fetchCustomerInfo() {
