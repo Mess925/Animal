@@ -175,6 +175,17 @@ struct InviteMemberView: View {
                 ])
                 .execute()
 
+            // Activity V1: roomJoined
+            try? await supabase
+                .from("activities")
+                .insert([
+                    "type": "room_joined",
+                    "actor_id": userId.uuidString,
+                    "room_id": room.id.uuidString,
+                    "body": "\(user.name) joined \(room.name)'s room"
+                ])
+                .execute()
+
             successMessage = "Invited successfully! 🎉"
         } catch {
             errorMessage = "Something went wrong. Try again."

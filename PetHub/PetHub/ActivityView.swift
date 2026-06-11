@@ -9,11 +9,14 @@ import SwiftUI
 // MARK: - Activity Type
 
 enum ActivityType {
-    case photoPosted
-    case comment
-    case like
-    case newMember
-    case lostAnimal
+    case roomJoined
+    case roomLeft
+    case photoAdded
+    case photoLiked
+    case photoCommented
+    case directMessage
+    case mention
+    case possibleMatch
 }
 
 // MARK: - Supabase Activity Model
@@ -22,6 +25,7 @@ struct SupabaseActivity: Codable, Identifiable {
     let id: UUID
     let type: String
     let actorId: UUID
+    let recipientId: UUID?
     let roomId: UUID?
     let photoId: UUID?
     let body: String?
@@ -31,6 +35,7 @@ struct SupabaseActivity: Codable, Identifiable {
         case id
         case type
         case actorId = "actor_id"
+        case recipientId = "recipient_id"
         case roomId = "room_id"
         case photoId = "photo_id"
         case body
@@ -84,7 +89,7 @@ struct ActivityView: View {
                         Text("No activity yet")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundStyle(Color("AppWhiteText"))
-                        Text("Likes and comments will appear here")
+                        Text("Likes, comments, messages, and important room alerts will appear here")
                             .font(.system(size: 13))
                             .foregroundStyle(Color("AppPlaceholder"))
                     }
@@ -124,7 +129,7 @@ struct ActivityView: View {
                 }
             }
             .navigationBarHidden(true)
-        }   
+        }
         .onAppear {
             Task { await fetchActivities() }
         }
@@ -140,22 +145,40 @@ struct ActivityView: View {
 
             // Get all room IDs the user is part of
             let roomIds = store.rooms.map { $0.id.uuidString }
-            guard !roomIds.isEmpty else {
-                isLoading = false
-                return
+
+            // Fetch room activity first. Personal activity such as possible matches
+            // is fetched below through recipient_id.
+            let roomActivities: [SupabaseActivity]
+            if roomIds.isEmpty {
+                roomActivities = []
+            } else {
+                roomActivities = try await supabase
+                    .from("activities")
+                    .select()
+                    .in("room_id", values: roomIds)
+                    .order("created_at", ascending: false)
+                    .limit(50)
+                    .execute()
+                    .value
             }
 
-            // Fetch activities for those rooms, excluding current user's own actions
-            let activities: [SupabaseActivity] =
+            let personalActivities: [SupabaseActivity] =
                 try await supabase
                 .from("activities")
                 .select()
-                .in("room_id", values: roomIds)
-                .neq("actor_id", value: user.id.uuidString)
+                .eq("recipient_id", value: user.id.uuidString)
                 .order("created_at", ascending: false)
                 .limit(50)
                 .execute()
                 .value
+
+            let activities = (roomActivities + personalActivities)
+                .reduce(into: [UUID: SupabaseActivity]()) { partial, activity in
+                    partial[activity.id] = activity
+                }
+                .values
+                .sorted { $0.createdAt > $1.createdAt }
+                .prefix(50)
 
             // Build activity items with actor names
             var result: [ActivityItem] = []
@@ -183,21 +206,39 @@ struct ActivityView: View {
                 let activityType: ActivityType
 
                 switch activity.type {
-                case "like":
-                    detail = "\(actorName) liked a photo"
-                    activityType = .like
-                case "comment":
-                    detail = activity.body ?? "\(actorName) commented"
-                    activityType = .comment
-                case "photo_posted":
-                    detail = "\(actorName) posted a new photo"
-                    activityType = .photoPosted
-                case "new_member":
-                    detail = "\(actorName) joined \(roomName)'s room"
-                    activityType = .newMember
+                case "room_joined":
+                    if activity.actorId == user.id { continue }
+                    detail = activity.body ?? "\(actorName) joined \(roomName)'s room"
+                    activityType = .roomJoined
+                case "room_left":
+                    if activity.actorId == user.id { continue }
+                    detail = activity.body ?? "\(actorName) left \(roomName)'s room"
+                    activityType = .roomLeft
+                case "photo_added", "photo_posted":
+                    if activity.actorId == user.id { continue }
+                    detail = activity.body ?? "\(actorName) added a new photo to \(roomName)'s room"
+                    activityType = .photoAdded
+                case "photo_liked":
+                    if activity.actorId == user.id { continue }
+                    detail = activity.body ?? "\(actorName) liked your photo"
+                    activityType = .photoLiked
+                case "photo_commented":
+                    if activity.actorId == user.id { continue }
+                    detail = activity.body ?? "\(actorName) commented on your photo"
+                    activityType = .photoCommented
+                case "direct_message":
+                    if activity.actorId == user.id { continue }
+                    detail = activity.body ?? "\(actorName) sent you a message"
+                    activityType = .directMessage
+                case "mention":
+                    if activity.actorId == user.id { continue }
+                    detail = activity.body ?? "\(actorName) mentioned you"
+                    activityType = .mention
+                case "possible_match":
+                    detail = activity.body ?? "Possible match found for your lost pet"
+                    activityType = .possibleMatch
                 default:
-                    detail = "\(actorName) did something"
-                    activityType = .like
+                    continue
                 }
 
                 result.append(
@@ -327,21 +368,27 @@ struct ActivityRow: View {
 
     private var badgeIcon: String {
         switch item.type {
-        case .photoPosted: return "photo.fill"
-        case .comment: return "bubble.left.fill"
-        case .like: return "heart.fill"
-        case .newMember: return "person.fill.badge.plus"
-        case .lostAnimal: return "exclamationmark"
+        case .roomJoined: return "person.fill.badge.plus"
+        case .roomLeft: return "rectangle.portrait.and.arrow.right"
+        case .photoAdded: return "photo.fill"
+        case .photoLiked: return "heart.fill"
+        case .photoCommented: return "bubble.left.fill"
+        case .directMessage: return "message.fill"
+        case .mention: return "at"
+        case .possibleMatch: return "magnifyingglass.circle.fill"
         }
     }
 
     private var badgeColor: Color {
         switch item.type {
-        case .photoPosted: return Color(hex: "AA9DFF")
-        case .comment: return Color(hex: "7EC8C8")
-        case .like: return Color(hex: "FF6B6B")
-        case .newMember: return Color(hex: "06D6A0")
-        case .lostAnimal: return Color(hex: "E25718")
+        case .roomJoined: return Color(hex: "06D6A0")
+        case .roomLeft: return Color(hex: "E25718")
+        case .photoAdded: return Color(hex: "AA9DFF")
+        case .photoLiked: return Color(hex: "FF6B6B")
+        case .photoCommented: return Color(hex: "7EC8C8")
+        case .directMessage: return Color(hex: "AA9DFF")
+        case .mention: return Color(hex: "F4A84A")
+        case .possibleMatch: return Color(hex: "F4A84A")
         }
     }
 }

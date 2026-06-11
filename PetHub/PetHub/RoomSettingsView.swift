@@ -20,6 +20,7 @@ struct RoomSettingsView: View {
     @State private var notifyReactions = false
     @State private var selectedAccent: Color
     @State private var showDeleteAlert = false
+    @State private var showLeaveAlert = false
     @State private var showAddMember = false
     @State private var members: [Member]
 
@@ -225,13 +226,13 @@ struct RoomSettingsView: View {
                 .padding(.horizontal, 16)
 
                 // MARK: Danger zone
-                if isOwner {
-                    SettingsSectionLabel(title: "Danger zone")
-                        .padding(.horizontal, 20)
-                        .padding(.top, 28)
-                        .padding(.bottom, 12)
+                SettingsSectionLabel(title: "Room actions")
+                    .padding(.horizontal, 20)
+                    .padding(.top, 28)
+                    .padding(.bottom, 12)
 
-                    SettingsCard {
+                SettingsCard {
+                    if isOwner {
                         Button {
                             showDeleteAlert = true
                         } label: {
@@ -244,9 +245,41 @@ struct RoomSettingsView: View {
                                         .font(.system(size: 14))
                                         .foregroundStyle(Color(hex: "E25718"))
                                 }
-                                Text("Delete room")
-                                    .font(.system(size: 14))
-                                    .foregroundStyle(Color(hex: "E25718"))
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Delete room")
+                                        .font(.system(size: 14))
+                                        .foregroundStyle(Color(hex: "E25718"))
+                                    Text("Permanently removes this pet room")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(Color("AppWhiteText"))
+                                }
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 14)
+                        }
+                        .buttonStyle(.plain)
+                    } else {
+                        Button {
+                            showLeaveAlert = true
+                        } label: {
+                            HStack(spacing: 12) {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .fill(Color(hex: "E25718").opacity(0.1))
+                                        .frame(width: 34, height: 34)
+                                    Image(systemName: "rectangle.portrait.and.arrow.right")
+                                        .font(.system(size: 14))
+                                        .foregroundStyle(Color(hex: "E25718"))
+                                }
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Leave room")
+                                        .font(.system(size: 14))
+                                        .foregroundStyle(Color(hex: "E25718"))
+                                    Text("Remove this room from Joined Rooms")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(Color("AppWhiteText"))
+                                }
                                 Spacer()
                             }
                             .padding(.horizontal, 16)
@@ -254,8 +287,8 @@ struct RoomSettingsView: View {
                         }
                         .buttonStyle(.plain)
                     }
-                    .padding(.horizontal, 16)
                 }
+                .padding(.horizontal, 16)
 
                 Spacer().frame(height: 100)
             }
@@ -292,6 +325,14 @@ struct RoomSettingsView: View {
             Text(
                 "All photos and messages in \(room.name)'s room will be permanently deleted."
             )
+        }
+        .alert("Leave Room?", isPresented: $showLeaveAlert) {
+            Button("Leave", role: .destructive) {
+                Task { await leaveRoom() }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("You will stop seeing \(room.name)'s room in Joined Rooms.")
         }
     }
 
@@ -345,6 +386,36 @@ struct RoomSettingsView: View {
             }
         } catch {
             print("Fetch members error: \(error)")
+        }
+    }
+
+    private func leaveRoom() async {
+        do {
+            let user = try await supabase.auth.session.user
+
+            // Activity V1: roomLeft
+            try? await supabase
+                .from("activities")
+                .insert([
+                    "type": "room_left",
+                    "actor_id": user.id.uuidString,
+                    "room_id": room.id.uuidString
+                ])
+                .execute()
+
+            try await supabase
+                .from("room_members")
+                .delete()
+                .eq("room_id", value: room.id.uuidString)
+                .eq("user_id", value: user.id.uuidString)
+                .execute()
+
+            await MainActor.run {
+                store.rooms.removeAll { $0.id == room.id }
+                dismiss()
+            }
+        } catch {
+            print("Leave room error: \(error)")
         }
     }
 

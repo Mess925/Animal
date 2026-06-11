@@ -2,7 +2,7 @@
 //  WelcomeView.swift  (updated)
 //  PetHub
 //
-//  Changes: PetRoomCard now navigates to RoomView.
+//  Changes: My Pets opens the real pet room. Photos, chat, DMs, settings live inside the room. Report Lost is a room action.
 //           Color(hex:) extension included here.
 //
 
@@ -259,10 +259,19 @@ struct TabBarItem: View {
 
 // MARK: - Rooms View
 
+enum RoomsSegment: String, CaseIterable {
+    case myPets = "My Pets"
+    case joinedRooms = "Joined Rooms"
+}
+
 struct RoomsView: View {
     @EnvironmentObject private var store: RoomStore
     @EnvironmentObject private var subscriptionManager: SubscriptionManager
     @State private var searchText = ""
+    @State private var selectedSegment: RoomsSegment = .myPets
+    @State private var lostFoundPosts: [LostFoundPost] = []
+    @State private var currentUserId: UUID? = nil
+    @State private var isLoadingLostFound = false
 
     let columns = [
         GridItem(.flexible(), spacing: 12),
@@ -271,6 +280,19 @@ struct RoomsView: View {
 
     private var myRooms: [PetRoom] { store.rooms.filter { $0.isOwned } }
     private var memberRooms: [PetRoom] { store.rooms.filter { !$0.isOwned } }
+
+    private var activeLostPosts: [LostFoundPost] {
+        lostFoundPosts.filter { $0.reportType == "lost" && $0.isActive }
+    }
+
+    private var activeFoundPosts: [LostFoundPost] {
+        lostFoundPosts.filter { $0.reportType == "found" && $0.isActive }
+    }
+
+    private var myActiveLostPosts: [LostFoundPost] {
+        guard let currentUserId else { return [] }
+        return activeLostPosts.filter { $0.userId == currentUserId }
+    }
 
     private var filteredMyRooms: [PetRoom] {
         if searchText.isEmpty { return myRooms }
@@ -327,61 +349,35 @@ struct RoomsView: View {
                         .padding(.horizontal, 20)
                         .padding(.bottom, 20)
 
-                        // Lost & Found
-                        RoomsSectionLabel(title: "Lost & Found")
+                        RoomsSegmentedControl(selectedSegment: $selectedSegment)
                             .padding(.horizontal, 20)
-                            .padding(.bottom, 12)
+                            .padding(.bottom, 20)
 
-                        LostRoomCard()
+                        if selectedSegment == .myPets {
+                            LostRoomCard(
+                                lostCount: activeLostPosts.count,
+                                foundCount: activeFoundPosts.count,
+                                myLostCount: myActiveLostPosts.count,
+                                isLoading: isLoadingLostFound
+                            )
                             .environmentObject(subscriptionManager)
                             .environmentObject(store)
                             .padding(.horizontal, 16)
-                            .padding(.bottom, 28)
+                            .padding(.bottom, 22)
 
-                        // My Pets
-                        RoomsSectionLabel(title: "My Pets")
-                            .padding(.horizontal, 20)
-                            .padding(.bottom, 12)
-
-                        LazyVGrid(columns: columns, spacing: 12) {
-                            ForEach(filteredMyRooms) { room in
-                                NavigationLink(
-                                    destination:
-                                        RoomView(room: room)
-                                        .onAppear { store.isInRoom = true }
-                                        .onDisappear { store.isInRoom = false }
-                                ) {
-                                    PetRoomCard(
-                                        name: room.name,
-                                        breed: room.breed,
-                                        age: room.age,
-                                        icon: room.icon,
-                                        accentHex: room.accentHex,
-                                        lastMessage: room.lastMessage
-                                    )
-                                }
-                                .buttonStyle(.plain)
-                            }
-                            AddPetCard().environmentObject(store)
-                        }
-                        .padding(.horizontal, 16)
-
-                        // Member Rooms
-                        if !filteredMemberRooms.isEmpty {
-                            RoomsSectionLabel(title: "Joined Rooms")
+                            RoomsSectionLabel(title: "My Pets")
                                 .padding(.horizontal, 20)
-                                .padding(.top, 28)
                                 .padding(.bottom, 12)
 
                             LazyVGrid(columns: columns, spacing: 12) {
-                                ForEach(filteredMemberRooms) { room in
+                                ForEach(filteredMyRooms) { room in
                                     NavigationLink(
                                         destination:
                                             RoomView(room: room)
+                                            .environmentObject(store)
+                                            .environmentObject(subscriptionManager)
                                             .onAppear { store.isInRoom = true }
-                                            .onDisappear {
-                                                store.isInRoom = false
-                                            }
+                                            .onDisappear { store.isInRoom = false }
                                     ) {
                                         PetRoomCard(
                                             name: room.name,
@@ -394,8 +390,42 @@ struct RoomsView: View {
                                     }
                                     .buttonStyle(.plain)
                                 }
+                                AddPetCard().environmentObject(store)
                             }
                             .padding(.horizontal, 16)
+                        } else {
+                            RoomsSectionLabel(title: "Joined Rooms")
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, 12)
+
+                            if filteredMemberRooms.isEmpty {
+                                EmptyJoinedRoomsCard()
+                                    .padding(.horizontal, 16)
+                            } else {
+                                LazyVGrid(columns: columns, spacing: 12) {
+                                    ForEach(filteredMemberRooms) { room in
+                                        NavigationLink(
+                                            destination:
+                                                RoomView(room: room)
+                                                .environmentObject(store)
+                                                .environmentObject(subscriptionManager)
+                                                .onAppear { store.isInRoom = true }
+                                                .onDisappear { store.isInRoom = false }
+                                        ) {
+                                            PetRoomCard(
+                                                name: room.name,
+                                                breed: room.breed,
+                                                age: room.age,
+                                                icon: room.icon,
+                                                accentHex: room.accentHex,
+                                                lastMessage: room.lastMessage
+                                            )
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                                .padding(.horizontal, 16)
+                            }
                         }
 
                         Spacer().frame(height: 110)
@@ -404,9 +434,110 @@ struct RoomsView: View {
             }
             .navigationBarHidden(true)
             .onAppear {
-                Task { await store.fetchRooms() }
+                Task {
+                    await store.fetchRooms()
+                    await fetchLostFoundPosts()
+                }
             }
         }
+    }
+
+    private func fetchLostFoundPosts() async {
+        isLoadingLostFound = true
+
+        do {
+            async let userSession = supabase.auth.session
+
+            async let fetched: [LostFoundPost] = supabase
+                .from("lost_found")
+                .select()
+                .neq("status", value: "deleted")
+                .order("created_at", ascending: false)
+                .execute()
+                .value
+
+            let (session, results) = try await (userSession, fetched)
+
+            await MainActor.run {
+                currentUserId = session.user.id
+                lostFoundPosts = results
+                isLoadingLostFound = false
+            }
+        } catch {
+            print("Fetch rooms lost found summary error: \(error)")
+
+            await MainActor.run {
+                isLoadingLostFound = false
+            }
+        }
+    }
+}
+
+// MARK: - Rooms Segmented Control
+
+struct RoomsSegmentedControl: View {
+    @Binding var selectedSegment: RoomsSegment
+
+    var body: some View {
+        HStack(spacing: 6) {
+            ForEach(RoomsSegment.allCases, id: \.self) { segment in
+                Button {
+                    withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
+                        selectedSegment = segment
+                    }
+                } label: {
+                    Text(segment.rawValue)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(selectedSegment == segment ? Color("AppText") : Color("AppSubtext"))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(
+                            RoundedRectangle(cornerRadius: 13)
+                                .fill(selectedSegment == segment ? Color("AppSurface2") : Color.clear)
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(4)
+        .background(
+            RoundedRectangle(cornerRadius: 17)
+                .fill(Color("AppSurface"))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 17)
+                        .stroke(Color("AppBorder"), lineWidth: 0.5)
+                )
+        )
+    }
+}
+
+// MARK: - Empty Joined Rooms Card
+
+struct EmptyJoinedRoomsCard: View {
+    var body: some View {
+        VStack(spacing: 10) {
+            Image(systemName: "person.2.slash")
+                .font(.system(size: 26, weight: .medium))
+                .foregroundStyle(Color("AppPlaceholder"))
+            Text("No joined rooms yet")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Color("AppText"))
+            Text("Rooms you join from other pet parents will appear here.")
+                .font(.system(size: 12))
+                .foregroundStyle(Color("AppSubtext"))
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 28)
+        .padding(.horizontal, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color("AppSurface"))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color("AppBorder"), lineWidth: 0.5)
+                )
+        )
     }
 }
 
@@ -428,6 +559,18 @@ struct LostRoomCard: View {
     @EnvironmentObject private var subscriptionManager: SubscriptionManager
     @EnvironmentObject private var store: RoomStore
 
+    let lostCount: Int
+    let foundCount: Int
+    let myLostCount: Int
+    let isLoading: Bool
+
+    private var subtitle: String {
+        if isLoading { return "Loading latest lost and found posts..." }
+        if lostCount == 0 && foundCount == 0 { return "No active lost or found posts right now" }
+        if myLostCount > 0 { return "You have \(myLostCount) active lost pet alert\(myLostCount == 1 ? "" : "s")" }
+        return "\(lostCount) lost • \(foundCount) found active posts"
+    }
+
     var body: some View {
         NavigationLink {
             LostAndFoundView()
@@ -437,40 +580,56 @@ struct LostRoomCard: View {
                 .onAppear {
                     store.isInRoom = true
                 }
+                .onDisappear {
+                    store.isInRoom = false
+                }
         } label: {
-            HStack(spacing: 14) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 15)
-                        .fill(Color(hex: "E25718").opacity(0.15))
-                        .frame(width: 52, height: 52)
-                    Image(systemName: "mappin.and.ellipse")
-                        .font(.system(size: 22, weight: .medium))
-                        .foregroundStyle(Color(hex: "E25718"))
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(spacing: 14) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 15)
+                            .fill(Color(hex: "E25718").opacity(0.15))
+                            .frame(width: 52, height: 52)
+                        Image(systemName: myLostCount > 0 ? "exclamationmark.triangle.fill" : "pawprint.fill")
+                            .font(.system(size: 22, weight: .medium))
+                            .foregroundStyle(Color(hex: "E25718"))
+                    }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(myLostCount > 0 ? "Your Lost Pet Alert" : "Lost & Found")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(Color("AppText"))
+                        Text(subtitle)
+                            .font(.system(size: 11))
+                            .foregroundStyle(Color("AppSubtext"))
+                    }
+
+                    Spacer()
+
+                    if isLoading {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                    } else if myLostCount > 0 {
+                        Text("ACTIVE")
+                            .font(.system(size: 10, weight: .bold))
+                            .tracking(0.6)
+                            .foregroundStyle(Color(hex: "E25718"))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Capsule().fill(Color(hex: "E25718").opacity(0.15)))
+                    } else {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12))
+                            .foregroundStyle(Color("AppPlaceholder"))
+                    }
                 }
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Lost Animals")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(Color("AppText"))
-                    Text("Community · 12 reports nearby")
-                        .font(.system(size: 11))
-                        .foregroundStyle(Color("AppSubtext"))
+                if !isLoading && (lostCount > 0 || foundCount > 0) {
+                    HStack(spacing: 10) {
+                        LostFoundStatPill(title: "Lost", count: lostCount, icon: "exclamationmark.triangle.fill")
+                        LostFoundStatPill(title: "Found", count: foundCount, icon: "checkmark.circle.fill")
+                    }
                 }
-
-                Spacer()
-
-                Text("12")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(Color(hex: "E25718"))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(
-                        Capsule().fill(Color(hex: "E25718").opacity(0.15))
-                    )
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12))
-                    .foregroundStyle(Color("AppPlaceholder"))
             }
             .padding(16)
             .background(
@@ -478,14 +637,34 @@ struct LostRoomCard: View {
                     .fill(Color("AppSurface"))
                     .overlay(
                         RoundedRectangle(cornerRadius: 20)
-                            .stroke(
-                                Color(hex: "E25718").opacity(0.2),
-                                lineWidth: 0.5
-                            )
+                            .stroke(Color(hex: "E25718").opacity(myLostCount > 0 ? 0.35 : 0.16), lineWidth: 0.8)
                     )
             )
         }
         .buttonStyle(.plain)
+    }
+}
+
+struct LostFoundStatPill: View {
+    let title: String
+    let count: Int
+    let icon: String
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.system(size: 11, weight: .semibold))
+            Text("\(count) \(title)")
+                .font(.system(size: 11, weight: .semibold))
+        }
+        .foregroundStyle(Color("AppText"))
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .background(
+            Capsule()
+                .fill(Color("AppSurface2"))
+                .overlay(Capsule().stroke(Color("AppBorder"), lineWidth: 0.5))
+        )
     }
 }
 

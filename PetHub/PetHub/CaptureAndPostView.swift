@@ -167,14 +167,15 @@ struct CaptureAndPostView: View {
                 ])
                 .execute()
 
-            // Insert activity
+            // Activity V1: photoAdded
             try await supabase
                 .from("activities")
                 .insert([
-                    "type": "photo_posted",
+                    "type": "photo_added",
                     "actor_id": user.id.uuidString,
                     "room_id": roomId,
-                    "photo_id": photoId
+                    "photo_id": photoId,
+                    "body": "A new photo was added"
                 ])
                 .execute()
 

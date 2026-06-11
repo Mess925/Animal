@@ -55,6 +55,7 @@ struct ProfileView: View {
     @State private var showEditProfile = false
     @State private var showChangePassword = false
     @State private var showLogoutAlert = false
+    @State private var showDeleteAccount = false
     @EnvironmentObject private var themeManager: ThemeManager
 
     var body: some View {
@@ -162,6 +163,17 @@ struct ProfileView: View {
                             ) {
                                 showLogoutAlert = true
                             }
+
+                            ProfileDivider()
+
+                            ProfileActionRow(
+                                icon: "trash.fill",
+                                iconColor: Color(hex: "E25718"),
+                                label: "Delete Account",
+                                labelColor: Color(hex: "E25718")
+                            ) {
+                                showDeleteAccount = true
+                            }
                         }
                     }
                     .padding(.horizontal, 16)
@@ -185,6 +197,9 @@ struct ProfileView: View {
         }
         .sheet(isPresented: $showChangePassword) {
             ChangePasswordView()
+        }
+        .sheet(isPresented: $showDeleteAccount) {
+            DeleteAccountView()
         }
         .alert("Log Out?", isPresented: $showLogoutAlert) {
             Button("Log Out", role: .destructive) {
@@ -707,6 +722,144 @@ struct ChangePasswordView: View {
         } catch {
             print("Change password error: \(error)")
         }
+    }
+}
+
+
+// MARK: - Delete Account Sheet
+
+struct DeleteAccountView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var confirmText = ""
+    @State private var isDeleting = false
+    @State private var errorMessage: String?
+
+    private var canDelete: Bool {
+        confirmText.trimmingCharacters(in: .whitespacesAndNewlines).uppercased() == "DELETE"
+    }
+
+    var body: some View {
+        ZStack {
+            Color("AppBackground").ignoresSafeArea()
+
+            VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    Button {
+                        dismiss()
+                    } label: {
+                        ZStack {
+                            Circle()
+                                .fill(Color("AppDivider"))
+                                .frame(width: 36, height: 36)
+                            Image(systemName: "xmark")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(Color("AppAdaptiveWhite").opacity(0.8))
+                        }
+                    }
+                    .disabled(isDeleting)
+
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+                .padding(.bottom, 28)
+
+                Text("Delete Account")
+                    .font(.system(size: 28, weight: .semibold))
+                    .foregroundStyle(Color("AppText"))
+                    .padding(.horizontal, 20)
+
+                Text("This will permanently remove your PetHub account. Your profile, rooms, posts, messages, and lost/found records should be deleted by the Supabase delete_my_account() function.")
+                    .font(.system(size: 14))
+                    .foregroundStyle(Color("AppSubtext"))
+                    .lineSpacing(4)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 14)
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Type DELETE to confirm")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(Color("AppSubtext"))
+
+                    TextField(
+                        "DELETE",
+                        text: $confirmText
+                    )
+                    .textInputAutocapitalization(.characters)
+                    .autocorrectionDisabled()
+                    .foregroundStyle(Color("AppText"))
+                    .padding(16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 18)
+                            .fill(Color("AppSurface2"))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 18)
+                                    .stroke(Color("AppDivider"), lineWidth: 0.5)
+                            )
+                    )
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 32)
+
+                if let errorMessage {
+                    Text(errorMessage)
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color(hex: "E25718"))
+                        .padding(.horizontal, 20)
+                        .padding(.top, 12)
+                }
+
+                Button {
+                    Task { await deleteAccount() }
+                } label: {
+                    HStack {
+                        Spacer()
+                        if isDeleting {
+                            ProgressView()
+                                .tint(Color("AppAccentText"))
+                        } else {
+                            Text("Permanently Delete Account")
+                                .font(.system(size: 15, weight: .semibold))
+                        }
+                        Spacer()
+                    }
+                    .foregroundStyle(Color("AppAccentText"))
+                    .padding(.vertical, 15)
+                    .background(
+                        RoundedRectangle(cornerRadius: 18)
+                            .fill(canDelete ? Color(hex: "E25718") : Color("AppDivider"))
+                    )
+                }
+                .buttonStyle(.plain)
+                .disabled(!canDelete || isDeleting)
+                .padding(.horizontal, 20)
+                .padding(.top, 26)
+
+                Spacer()
+            }
+        }
+    }
+
+    private func deleteAccount() async {
+        guard canDelete else { return }
+        isDeleting = true
+        errorMessage = nil
+
+        do {
+            // Create this RPC in Supabase. It must delete the current user's related data
+            // and then delete auth.users where id = auth.uid().
+            try await supabase
+                .rpc("delete_my_account")
+                .execute()
+
+            try? await supabase.auth.signOut()
+        } catch {
+            errorMessage = "\(error)"
+            print("Delete account error: \(error)")
+        }
+
+        isDeleting = false
     }
 }
 
