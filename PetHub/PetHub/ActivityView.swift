@@ -218,11 +218,11 @@ struct ActivityView: View {
                     if activity.actorId == user.id { continue }
                     detail = activity.body ?? "\(actorName) added a new photo to \(roomName)'s room"
                     activityType = .photoAdded
-                case "photo_liked":
+                case "photo_liked" , "like":
                     if activity.actorId == user.id { continue }
                     detail = activity.body ?? "\(actorName) liked your photo"
                     activityType = .photoLiked
-                case "photo_commented":
+                case "photo_commented", "comment":
                     if activity.actorId == user.id { continue }
                     detail = activity.body ?? "\(actorName) commented on your photo"
                     activityType = .photoCommented

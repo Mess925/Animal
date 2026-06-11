@@ -57,6 +57,9 @@ struct ProfileView: View {
     @State private var showLogoutAlert = false
     @State private var showDeleteAccount = false
     @EnvironmentObject private var themeManager: ThemeManager
+    @EnvironmentObject private var subscriptionManager: SubscriptionManager
+    @State private var showUpgradeSheet = false
+    @State private var showTermsOfService = false
 
     var body: some View {
         ZStack {
@@ -149,6 +152,69 @@ struct ProfileView: View {
                     .padding(.horizontal, 16)
                     .padding(.top, 32)
 
+                    // MARK: Subscription
+                    VStack(alignment: .leading, spacing: 12) {
+                        ProfileSectionLabel(title: "Subscription")
+                            .padding(.horizontal, 4)
+
+                        ProfileCard {
+                            SubscriptionStatusRow(
+                                planName: currentPlanName,
+                                planDescription: currentPlanDescription,
+                                accentColor: currentPlanColor
+                            )
+
+                            ProfileDivider()
+
+                            ProfileActionRow(
+                                icon: subscriptionManager.isFree ? "sparkles" : "creditcard.fill",
+                                iconColor: subscriptionManager.isFree ? Color(hex: "AA9DFF") : Color(hex: "7EC8C8"),
+                                label: subscriptionManager.isFree ? "Upgrade Plan" : "Manage Subscription"
+                            ) {
+                                if subscriptionManager.isFree {
+                                    showUpgradeSheet = true
+                                } else {
+                                    openAppleSubscriptionSettings()
+                                }
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 24)
+                    
+                    // MARK: Legal
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        ProfileSectionLabel(title: "Legal")
+                            .padding(.horizontal, 4)
+
+                        ProfileCard {
+
+                            ProfileActionRow(
+                                icon: "doc.text.fill",
+                                iconColor: Color(hex: "7EC8C8"),
+                                label: "Privacy Policy"
+                            ) {
+                                if let url = URL(
+                                    string: "https://gist.githubusercontent.com/Mess925/8f03559c3b2ea299b29f37fbd580bd50/raw/537d1fd4b460bb08072630df554eb27133f8f650/pethub-privacy-policy.md"
+                                ) {
+                                    UIApplication.shared.open(url)
+                                }
+                            }
+
+                            ProfileDivider()
+
+                            ProfileActionRow(
+                                icon: "doc.plaintext.fill",
+                                iconColor: Color(hex: "AA9DFF"),
+                                label: "Terms of Service"
+                            ) {
+                                showTermsOfService = true
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 24)
                     // MARK: Danger
                     VStack(alignment: .leading, spacing: 12) {
                         ProfileSectionLabel(title: "Danger zone")
@@ -200,6 +266,13 @@ struct ProfileView: View {
         }
         .sheet(isPresented: $showDeleteAccount) {
             DeleteAccountView()
+        }
+        .sheet(isPresented: $showTermsOfService) {
+            TermsOfServiceView()
+        }
+        .sheet(isPresented: $showUpgradeSheet) {
+            UpgradeView()
+                .environmentObject(subscriptionManager)
         }
         .alert("Log Out?", isPresented: $showLogoutAlert) {
             Button("Log Out", role: .destructive) {
@@ -281,6 +354,44 @@ struct ProfileView: View {
 
     private var totalPhotos: Int {
         store.rooms.reduce(0) { $0 + $1.photos.count }
+    }
+
+    private var currentPlanName: String {
+        switch subscriptionManager.tier {
+        case .free:
+            return "Free"
+        case .semiPro:
+            return "Semi-Pro"
+        case .pro:
+            return "Pro"
+        }
+    }
+
+    private var currentPlanDescription: String {
+        switch subscriptionManager.tier {
+        case .free:
+            return "Browse Lost & Found, join rooms, and post found pets."
+        case .semiPro:
+            return "Lost posting and contact details are unlocked."
+        case .pro:
+            return "Possible Matches and premium recovery tools are unlocked."
+        }
+    }
+
+    private var currentPlanColor: Color {
+        switch subscriptionManager.tier {
+        case .free:
+            return Color(hex: "AA9DFF")
+        case .semiPro:
+            return Color(hex: "7EC8C8")
+        case .pro:
+            return Color(hex: "F4A84A")
+        }
+    }
+
+    private func openAppleSubscriptionSettings() {
+        guard let url = URL(string: "https://apps.apple.com/account/subscriptions") else { return }
+        UIApplication.shared.open(url)
     }
 
     private func fetchProfile() async {
@@ -367,6 +478,54 @@ struct PetChip: View {
                         .stroke(Color("AppDivider"), lineWidth: 0.5)
                 )
         )
+    }
+}
+
+// MARK: - Subscription Status Row
+
+struct SubscriptionStatusRow: View {
+    let planName: String
+    let planDescription: String
+    let accentColor: Color
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(accentColor.opacity(0.12))
+                    .frame(width: 34, height: 34)
+                Image(systemName: "crown.fill")
+                    .font(.system(size: 14))
+                    .foregroundStyle(accentColor)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 8) {
+                    Text("Current Plan")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color("AppSubtext"))
+
+                    Text(planName)
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(accentColor)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(
+                            Capsule()
+                                .fill(accentColor.opacity(0.12))
+                        )
+                }
+
+                Text(planDescription)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color("AppText").opacity(0.78))
+                    .lineSpacing(3)
+            }
+
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
     }
 }
 
@@ -855,7 +1014,7 @@ struct DeleteAccountView: View {
 
             try? await supabase.auth.signOut()
         } catch {
-            errorMessage = "\(error)"
+            errorMessage = "Could not delete account. Check that delete_my_account() exists in Supabase."
             print("Delete account error: \(error)")
         }
 

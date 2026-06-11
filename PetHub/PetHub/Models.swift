@@ -104,7 +104,7 @@ struct RoomMembership: Codable {
 struct PhotoPost: Identifiable {
     let id: UUID
     var image: UIImage? = nil
-    var imageUrl: String? = nil
+    var imageUrl: String?
     let emoji: String          // placeholder for real image
     let backgroundHex: String
     let caption: String

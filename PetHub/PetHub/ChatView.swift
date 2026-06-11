@@ -537,8 +537,20 @@ struct MessageBubble: View {
     let message: Message
     let isGroup: Bool
     let onReply: () -> Void
-
+    
     @State private var showActions = false
+    
+    private var fallbackPhoto: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color("AppDivider"))
+                .frame(width: 180, height: 140)
+
+            Image(systemName: "photo")
+                .font(.system(size: 32))
+                .foregroundStyle(Color("AppPlaceholder"))
+        }
+    }
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 8) {
@@ -583,7 +595,7 @@ struct MessageBubble: View {
                                     )
                             )
 
-                    case .photo:
+                    case .photo(let value):
                         if let img = message.image {
                             Image(uiImage: img)
                                 .resizable()
@@ -591,15 +603,38 @@ struct MessageBubble: View {
                                 .frame(width: 200, height: 160)
                                 .clipped()
                                 .clipShape(RoundedRectangle(cornerRadius: 16))
-                        } else {
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 16)
-                                    .fill(Color("AppDivider"))
-                                    .frame(width: 180, height: 140)
-                                Image(systemName: "photo")
-                                    .font(.system(size: 32))
-                                    .foregroundStyle(Color("AppPlaceholder"))
+
+                        } else if value.hasPrefix("http"),
+                                  let url = URL(string: value) {
+
+                            AsyncImage(url: url) { phase in
+                                switch phase {
+                                case .empty:
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .fill(Color("AppDivider"))
+                                            .frame(width: 200, height: 160)
+                                        ProgressView()
+                                    }
+
+                                case .success(let image):
+                                    image
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 200, height: 160)
+                                        .clipped()
+                                        .clipShape(RoundedRectangle(cornerRadius: 16))
+
+                                case .failure:
+                                    fallbackPhoto
+
+                                @unknown default:
+                                    fallbackPhoto
+                                }
                             }
+
+                        } else {
+                            fallbackPhoto
                         }
                     }
                 }
