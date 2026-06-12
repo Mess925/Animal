@@ -21,6 +21,8 @@ struct ChatView: View {
     let isLostFound: Bool
 
     @Environment(\.dismiss) private var dismiss
+    @State private var realtimeTask: Task<Void, Never>? = nil
+    @State private var realtimeChannel: RealtimeChannelV2? = nil
     @State private var messageText = ""
     @State private var replyingTo: Message? = nil
     @State private var allMessages: [Message]
@@ -144,63 +146,86 @@ struct ChatView: View {
                 )
             }  // ← closes VStack
         }
-        .onAppear {
-            Task { await fetchMessages() }
-        }
         .task {
             await fetchMessages()
 
-            if let recipientId = recipientId {
-                let user = try? await supabase.auth.session.user
-                let myId = user?.id.uuidString.lowercased() ?? ""
-                let ids = [myId, recipientId.lowercased()].sorted()
-                let channelName = "dm:\(ids[0]):\(ids[1])"
+            realtimeTask?.cancel()
 
-                let channel = supabase.realtimeV2.channel(
-                    "\(channelName)-\(Int(Date().timeIntervalSince1970))"
-                )
-                let changes = channel.postgresChange(
-                    AnyAction.self,
-                    schema: "public",
-                    table: "dm_messages"
-                )
-                await channel.subscribe()
-                for await _ in changes {
-                    await fetchMessages()
-                }
-            } else if isLostFound {
-                let channel = supabase.realtimeV2.channel(
-                    "lf-messages-\(roomId)-\(Int(Date().timeIntervalSince1970))"
-                )
-                let changes = channel.postgresChange(
-                    AnyAction.self,
-                    schema: "public",
-                    table: "lost_found_messages"
-                )
-                await channel.subscribe()
-                for await _ in changes {
-                    await fetchMessages()
-                }
-            }    else {
-                let channel = supabase.realtimeV2.channel(
-                    "room-messages-\(roomId)-\(Int(Date().timeIntervalSince1970))"
-                )
-                let changes = channel.postgresChange(
-                    AnyAction.self,
-                    schema: "public",
-                    table: "messages",
-                    filter: "room_id=eq.\(roomId.lowercased())"
-                )
-                await channel.subscribe()
-                for await _ in changes {
-                    await fetchMessages()
+            realtimeTask = Task {
+                await subscribeToMessages()
+            }
+        }
+        .onDisappear {
+            realtimeTask?.cancel()
+            realtimeTask = nil
+
+            if let channel = realtimeChannel {
+                Task {
+                    await channel.unsubscribe()
                 }
             }
+
+            realtimeChannel = nil
         }
         .sheet(isPresented: $showPhotoPicker) {
             PHPickerView { image in
                 selectedImage = image
             }
+        }
+    }
+    
+    private func subscribeToMessages() async {
+        do {
+            let channel: RealtimeChannelV2
+            let changes: AsyncStream<AnyAction>
+
+            if let recipientId = recipientId {
+                let user = try await supabase.auth.session.user
+                let myId = user.id.uuidString.lowercased()
+                let ids = [myId, recipientId.lowercased()].sorted()
+
+                channel = supabase.realtimeV2.channel("dm:\(ids[0]):\(ids[1])")
+                changes = channel.postgresChange(
+                    AnyAction.self,
+                    schema: "public",
+                    table: "dm_messages"
+                )
+
+            } else if isLostFound {
+                channel = supabase.realtimeV2.channel("lf-messages-\(roomId)")
+
+                changes = channel.postgresChange(
+                    AnyAction.self,
+                    schema: "public",
+                    table: "lost_found_messages"
+                )
+
+            } else {
+                channel = supabase.realtimeV2.channel("room-messages-\(roomId)")
+
+                changes = channel.postgresChange(
+                    AnyAction.self,
+                    schema: "public",
+                    table: "messages",
+                    filter: "room_id=eq.\(roomId.lowercased())"
+                )
+            }
+
+            await MainActor.run {
+                realtimeChannel = channel
+            }
+
+            await channel.subscribe()
+
+            for await _ in changes {
+                if Task.isCancelled { break }
+                await fetchMessages()
+            }
+
+            await channel.unsubscribe()
+
+        } catch {
+            print("Realtime subscribe error: \(error)")
         }
     }
 
@@ -285,10 +310,15 @@ struct ChatView: View {
                 await MainActor.run {
                     allMessages = fetched.map { m in
                         let isOwn = m.senderId == user.id
+
+                        let sender = isOwn
+                            ? Member.me
+                            : members.first { $0.id == m.senderId }
+
                         if let imageUrl = m.imageUrl {
                             return Message(
                                 id: m.id,
-                                sender: isOwn ? .me : members.first,
+                                sender: sender,
                                 content: .photo(imageUrl),
                                 timestamp: m.createdAt,
                                 isOwn: isOwn
@@ -296,7 +326,7 @@ struct ChatView: View {
                         } else {
                             return Message(
                                 id: m.id,
-                                sender: isOwn ? .me : members.first,
+                                sender: sender,
                                 content: .text(m.body ?? ""),
                                 timestamp: m.createdAt,
                                 isOwn: isOwn

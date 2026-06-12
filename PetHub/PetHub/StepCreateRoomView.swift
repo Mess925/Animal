@@ -2,8 +2,6 @@
 //  StepCreateRoomView.swift
 //  PetHub
 //
-//  Created by Han Min Thant on 4/6/26.
-//
 
 import Foundation
 import Supabase
@@ -13,28 +11,36 @@ struct StepCreateRoomView: View {
     let onFinish: () -> Void
 
     @AppStorage("needsUserOnboarding") var needsUserOnboarding = false
+
     @State private var petName = ""
     @State private var breed = ""
+    @State private var age = ""
     @State private var selectedIcon = "pawprint.fill"
     @State private var selectedAccent = "AA9DFF"
-
     @State private var isLoading = false
 
     @FocusState private var nameFocused: Bool
     @FocusState private var breedFocused: Bool
+    @FocusState private var ageFocused: Bool
 
     let icons = [
         "pawprint.fill", "bird.fill", "fish.fill", "ant.fill", "hare.fill",
         "tortoise.fill",
     ]
+
     let accents = ["AA9DFF", "7EC8C8", "F4A84A", "E25718", "6EE7B7", "F472B6"]
+
+    private var canFinish: Bool {
+        !petName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        !age.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        !isLoading
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
 
             Spacer()
 
-            // Header
             VStack(alignment: .leading, spacing: 6) {
                 Text("Step 3 of 3")
                     .font(.system(size: 13))
@@ -42,7 +48,7 @@ struct StepCreateRoomView: View {
 
                 Group {
                     Text("Add your ")
-                        + Text("first pet. 🐾")
+                    Text("first pet. 🐾")
                         .font(.custom("Georgia-Italic", size: 28))
                         .foregroundColor(Color(hex: "AA9DFF"))
                 }
@@ -55,7 +61,6 @@ struct StepCreateRoomView: View {
             }
             .padding(.bottom, 32)
 
-            // Fields
             VStack(spacing: 12) {
                 AuthField(
                     label: "Pet Name",
@@ -64,6 +69,7 @@ struct StepCreateRoomView: View {
                     isFocused: $nameFocused,
                     isSecure: false
                 )
+
                 AuthField(
                     label: "Breed",
                     placeholder: "e.g. Shiba Inu",
@@ -71,10 +77,17 @@ struct StepCreateRoomView: View {
                     isFocused: $breedFocused,
                     isSecure: false
                 )
+
+                AuthField(
+                    label: "Age",
+                    placeholder: "e.g. 2 years old",
+                    text: $age,
+                    isFocused: $ageFocused,
+                    isSecure: false
+                )
             }
             .padding(.bottom, 24)
 
-            // Icon picker
             VStack(alignment: .leading, spacing: 10) {
                 Text("ICON")
                     .font(.system(size: 10, weight: .medium))
@@ -90,17 +103,16 @@ struct StepCreateRoomView: View {
                                 .font(.system(size: 20))
                                 .foregroundStyle(
                                     selectedIcon == icon
-                                        ? Color(hex: selectedAccent)
-                                        : Color("AppSubtext")
+                                    ? Color(hex: selectedAccent)
+                                    : Color("AppSubtext")
                                 )
                                 .frame(width: 48, height: 48)
                                 .background(
                                     RoundedRectangle(cornerRadius: 12)
                                         .fill(
                                             selectedIcon == icon
-                                                ? Color(hex: selectedAccent)
-                                                    .opacity(0.15)
-                                                : Color("AppSurface")
+                                            ? Color(hex: selectedAccent).opacity(0.15)
+                                            : Color("AppSurface")
                                         )
                                 )
                         }
@@ -110,7 +122,6 @@ struct StepCreateRoomView: View {
             }
             .padding(.bottom, 20)
 
-            // Color picker
             VStack(alignment: .leading, spacing: 10) {
                 Text("COLOR")
                     .font(.system(size: 10, weight: .medium))
@@ -129,8 +140,7 @@ struct StepCreateRoomView: View {
                                     Circle()
                                         .stroke(
                                             Color.white,
-                                            lineWidth: selectedAccent == hex
-                                                ? 2 : 0
+                                            lineWidth: selectedAccent == hex ? 2 : 0
                                         )
                                         .padding(2)
                                 )
@@ -141,7 +151,6 @@ struct StepCreateRoomView: View {
             }
             .padding(.bottom, 32)
 
-            // Finish button
             Button {
                 Task { await completeOnboarding() }
             } label: {
@@ -159,23 +168,20 @@ struct StepCreateRoomView: View {
                 .padding(.vertical, 16)
                 .background(
                     RoundedRectangle(cornerRadius: 16)
-                        .fill(
-                            (petName.isEmpty || isLoading)
-                                ? Color(hex: "AA9DFF").opacity(0.4)
-                                : Color(hex: "AA9DFF")
-                        )
+                        .fill(canFinish ? Color(hex: "AA9DFF") : Color(hex: "AA9DFF").opacity(0.4))
                 )
             }
             .buttonStyle(.plain)
-            .disabled(petName.isEmpty || isLoading)
+            .disabled(!canFinish)
 
             Spacer()
         }
         .padding(.horizontal, 24)
     }
-    
+
     private func completeOnboarding() async {
-        guard !isLoading else { return }
+        guard canFinish else { return }
+
         isLoading = true
         defer { isLoading = false }
 
@@ -183,30 +189,28 @@ struct StepCreateRoomView: View {
             let user = try await supabase.auth.session.user
             let roomId = UUID()
 
-            // 1. Create room
             try await supabase
                 .from("rooms")
                 .insert([
                     "id": roomId.uuidString,
-                    "name": petName,
-                    "breed": breed,
-                    "age": "",
+                    "name": petName.trimmingCharacters(in: .whitespacesAndNewlines),
+                    "breed": breed.trimmingCharacters(in: .whitespacesAndNewlines),
+                    "age": age.trimmingCharacters(in: .whitespacesAndNewlines),
                     "icon": selectedIcon,
                     "accent_hex": selectedAccent,
                     "owner_id": user.id.uuidString,
                 ])
                 .execute()
 
-            // 2. Mark profile as onboarded
             try await supabase
                 .from("profiles")
                 .update(["is_onboarded": true])
                 .eq("id", value: user.id.uuidString)
                 .execute()
 
-            // 3. Done
             needsUserOnboarding = false
             onFinish()
+
         } catch {
             print("Complete onboarding error: \(error)")
         }

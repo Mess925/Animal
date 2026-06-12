@@ -101,41 +101,6 @@ struct RoomSettingsView: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 20)
 
-                // MARK: Room color
-                SettingsSectionLabel(title: "Room color")
-                    .padding(.horizontal, 20)
-                    .padding(.top, 28)
-                    .padding(.bottom, 12)
-
-                HStack(spacing: 12) {
-                    ForEach(colorOptions, id: \.1) { color, hex in
-                        let isSelected = selectedAccent == color
-                        Button {
-                            withAnimation(.spring(response: 0.25)) {
-                                selectedAccent = color
-                            }
-                        } label: {
-                            Circle()
-                                .fill(color)
-                                .frame(width: 30, height: 30)
-                                .overlay(
-                                    Circle()
-                                        .stroke(
-                                            Color.white.opacity(
-                                                isSelected ? 0.9 : 0
-                                            ),
-                                            lineWidth: 2
-                                        )
-                                        .padding(3)
-                                )
-                                .scaleEffect(isSelected ? 1.1 : 1.0)
-                        }
-                        .buttonStyle(.plain)
-                        .animation(.spring(response: 0.25), value: isSelected)
-                    }
-                    Spacer()
-                }
-                .padding(.horizontal, 20)
 
                 // MARK: Notifications
                 SettingsSectionLabel(title: "Notifications")
@@ -183,8 +148,8 @@ struct RoomSettingsView: View {
                             accentColor: selectedAccent,
                             canRemove: isOwner && !member.isOwner,
                             onRemove: {
-                                withAnimation {
-                                    members.removeAll { $0.id == member.id }
+                                Task {
+                                    await removeMember(member)
                                 }
                             }
                         )
@@ -293,8 +258,13 @@ struct RoomSettingsView: View {
                 Spacer().frame(height: 100)
             }
         }
-        .sheet(isPresented: $showEditRoom) {
-            EditRoomView(room: room).environmentObject(store)
+        .sheet(isPresented: $showEditRoom, onDismiss: {
+            if let updatedRoom = store.rooms.first(where: { $0.id == room.id }) {
+                selectedAccent = Color(hex: updatedRoom.accentHex)
+            }
+        }) {
+            EditRoomView(room: room)
+                .environmentObject(store)
         }
         .task {
             await fetchMembers()
@@ -313,7 +283,11 @@ struct RoomSettingsView: View {
                 isOwner = rows.first?.role == "owner"  // need role in RoomMembership
             }
         }
-        .sheet(isPresented: $showAddMember) {
+        .sheet(isPresented: $showAddMember, onDismiss: {
+            Task {
+                await fetchMembers()
+            }
+        }) {
             InviteMemberView(room: room)
         }
         .alert("Delete Room?", isPresented: $showDeleteAlert) {
@@ -333,6 +307,28 @@ struct RoomSettingsView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("You will stop seeing \(room.name)'s room in Joined Rooms.")
+        }
+    }
+    
+    private func removeMember(_ member: Member) async {
+        do {
+            guard !member.isOwner else { return }
+
+            try await supabase
+                .from("room_members")
+                .delete()
+                .eq("room_id", value: room.id.uuidString)
+                .eq("user_id", value: member.id.uuidString)
+                .execute()
+
+            await MainActor.run {
+                withAnimation {
+                    members.removeAll { $0.id == member.id }
+                }
+            }
+
+        } catch {
+            print("Remove member error: \(error)")
         }
     }
 

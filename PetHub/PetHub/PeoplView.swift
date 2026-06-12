@@ -12,10 +12,11 @@ struct PeopleView: View {
     let room: PetRoom
     @State private var openThread: ChatDestination? = nil
     @State private var currentUserId: UUID? = nil
+    @State private var members: [Member] = []
     @State private var lastDMMessages: [UUID: String] = [:]
 
     private var dmMembers: [Member] {
-        room.members.filter { $0.id != currentUserId }
+        members.filter { $0.id != currentUserId }
     }
 
     enum ChatDestination: Identifiable {
@@ -43,7 +44,7 @@ struct PeopleView: View {
                 Button {
                     openThread = .group
                 } label: {
-                    GroupChatRow(room: room)
+                    GroupChatRow(room: room, members: members)
                 }
                 .buttonStyle(.plain)
                 .padding(.horizontal, 16)
@@ -109,21 +110,27 @@ struct PeopleView: View {
         .task {
             if let session = try? await supabase.auth.session {
                 currentUserId = session.user.id
+                await fetchMembers()
                 await fetchLastDMMessages()
             }
         }
-        .sheet(item: $openThread) { destination in
+        .sheet(item: $openThread, onDismiss: {
+            Task {
+                await fetchLastDMMessages()
+            }
+        }) { destination in
             switch destination {
             case .group:
                 ChatView(
                     title: "\(room.name)'s Room",
-                    subtitle: "\(room.members.count) members",
+                    subtitle: "\(members.count) members",
                     accentHex: room.accentHex,
                     roomId: room.id.uuidString,
                     messages: room.groupMessages,
                     isGroup: true,
-                    members: room.members
+                    members: members
                 )
+
             case .dm(let thread):
                 ChatView(
                     title: thread.participant.name,
@@ -138,11 +145,67 @@ struct PeopleView: View {
             }
         }
     }
+    
+    private func fetchMembers() async {
+        do {
+            struct RoomMemberRow: Codable {
+                let userId: UUID
+                let role: String
+
+                enum CodingKeys: String, CodingKey {
+                    case userId = "user_id"
+                    case role
+                }
+            }
+
+            let rows: [RoomMemberRow] = try await supabase
+                .from("room_members")
+                .select()
+                .eq("room_id", value: room.id.uuidString)
+                .execute()
+                .value
+
+            var fetchedMembers: [Member] = []
+
+            for row in rows {
+                let profiles: [UserProfile] = try await supabase
+                    .from("profiles")
+                    .select()
+                    .eq("id", value: row.userId.uuidString)
+                    .execute()
+                    .value
+
+                if let profile = profiles.first {
+                    fetchedMembers.append(
+                        Member(
+                            id: row.userId,
+                            name: profile.name,
+                            initials: String(profile.name.prefix(1)),
+                            accentHex: profile.avatarAccentHex ?? "AA9DFF",
+                            isOnline: false,
+                            isOwner: row.role == "owner"
+                        )
+                    )
+                }
+            }
+
+            await MainActor.run {
+                members = fetchedMembers
+            }
+
+        } catch {
+            print("Fetch people members error: \(error)")
+        }
+    }
 
     private func fetchLastDMMessages() async {
         guard let currentUserId = currentUserId else { return }
 
-        for member in room.members where member.id != currentUserId {
+        await MainActor.run {
+            lastDMMessages = [:]
+        }
+
+        for member in members where member.id != currentUserId {
             struct DMMsg: Codable {
                 let body: String?
                 let imageUrl: String?
@@ -183,18 +246,17 @@ struct PeopleSectionLabel: View {
 }
 
 // MARK: - Group Chat Row
-
+    
 struct GroupChatRow: View {
-    let room: PetRoom
-
+        let room: PetRoom
+        let members: [Member]
     private var memberNames: String {
-        let names = room.members.map { $0.name }
+        let names = members.map { $0.name }
         if names.isEmpty { return "No members yet" }
         let preview = names.prefix(3).joined(separator: ", ")
         if names.count > 3 { return "\(preview) +\(names.count - 3) more" }
         return preview
     }
-
     var body: some View {
         HStack(spacing: 12) {
             ZStack {
