@@ -10,6 +10,7 @@ struct PetHubApp: App {
     @AppStorage("isLoggedIn") var isLoggedIn = false
     @StateObject private var themeManager = ThemeManager()
     @StateObject private var subscriptionManager: SubscriptionManager
+    @AppStorage("isResettingPassword") var isResettingPassword = false
     
     init() {
         Purchases.logLevel = .debug
@@ -48,11 +49,13 @@ struct PetHubApp: App {
                     await checkOnboarding(userId: session.user.id.uuidString)
                 }
                 for await state in supabase.auth.authStateChanges {
-                    isLoggedIn = state.session != nil
-                    if let session = state.session {
-                        await checkOnboarding(userId: session.user.id.uuidString)
-                    } else {
+                    if state.session == nil {
+                        isResettingPassword = false
+                        isLoggedIn = false
                         needsUserOnboarding = true
+                    } else if !isResettingPassword {
+                        isLoggedIn = true
+                        await checkOnboarding(userId: state.session!.user.id.uuidString)
                     }
                 }
             }

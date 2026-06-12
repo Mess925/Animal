@@ -167,9 +167,13 @@ struct ProfileView: View {
                             ProfileDivider()
 
                             ProfileActionRow(
-                                icon: subscriptionManager.isFree ? "sparkles" : "creditcard.fill",
-                                iconColor: subscriptionManager.isFree ? Color(hex: "AA9DFF") : Color(hex: "7EC8C8"),
-                                label: subscriptionManager.isFree ? "Upgrade Plan" : "Manage Subscription"
+                                icon: subscriptionManager.isFree
+                                    ? "sparkles" : "creditcard.fill",
+                                iconColor: subscriptionManager.isFree
+                                    ? Color(hex: "AA9DFF")
+                                    : Color(hex: "7EC8C8"),
+                                label: subscriptionManager.isFree
+                                    ? "Upgrade Plan" : "Manage Subscription"
                             ) {
                                 if subscriptionManager.isFree {
                                     showUpgradeSheet = true
@@ -181,7 +185,7 @@ struct ProfileView: View {
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 24)
-                    
+
                     // MARK: Legal
 
                     VStack(alignment: .leading, spacing: 12) {
@@ -196,7 +200,8 @@ struct ProfileView: View {
                                 label: "Privacy Policy"
                             ) {
                                 if let url = URL(
-                                    string: "https://gist.githubusercontent.com/Mess925/8f03559c3b2ea299b29f37fbd580bd50/raw/537d1fd4b460bb08072630df554eb27133f8f650/pethub-privacy-policy.md"
+                                    string:
+                                        "https://gist.githubusercontent.com/Mess925/8f03559c3b2ea299b29f37fbd580bd50/raw/537d1fd4b460bb08072630df554eb27133f8f650/pethub-privacy-policy.md"
                                 ) {
                                     UIApplication.shared.open(url)
                                 }
@@ -390,7 +395,11 @@ struct ProfileView: View {
     }
 
     private func openAppleSubscriptionSettings() {
-        guard let url = URL(string: "https://apps.apple.com/account/subscriptions") else { return }
+        guard
+            let url = URL(
+                string: "https://apps.apple.com/account/subscriptions"
+            )
+        else { return }
         UIApplication.shared.open(url)
     }
 
@@ -764,13 +773,18 @@ struct EditProfileView: View {
 // MARK: - Change Password Sheet
 
 struct ChangePasswordView: View {
+    var skipCurrentPassword: Bool = false
+    var onDismissAll: (() -> Void)? = nil
+    @AppStorage("isResettingPassword") var isResettingPassword = false
     @Environment(\.dismiss) private var dismiss
     @State private var current = ""
     @State private var newPass = ""
     @State private var confirm = ""
+    @State private var isSaving = false
 
     private var canSave: Bool {
-        !current.isEmpty && newPass.count >= 8 && newPass == confirm
+        (skipCurrentPassword || !current.isEmpty) && newPass.count >= 8
+            && newPass == confirm
     }
 
     var body: some View {
@@ -818,7 +832,6 @@ struct ChangePasswordView: View {
                     .buttonStyle(.plain)
                     .disabled(!canSave)
 
-                    
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
@@ -832,12 +845,14 @@ struct ChangePasswordView: View {
                     .padding(.bottom, 32)
 
                 VStack(spacing: 16) {
-                    ProfileInputField(
-                        title: "Current Password",
-                        placeholder: "••••••••",
-                        text: $current,
-                        isSecure: true
-                    )
+                    if !skipCurrentPassword {
+                        ProfileInputField(
+                            title: "Current Password",
+                            placeholder: "••••••••",
+                            text: $current,
+                            isSecure: true
+                        )
+                    }
                     ProfileInputField(
                         title: "New Password",
                         placeholder: "Min 8 characters",
@@ -871,19 +886,24 @@ struct ChangePasswordView: View {
             }
         }
     }
-    
+
     private func changePassword() async {
+        guard !isSaving else { return }
+        isSaving = true
         do {
             try await supabase.auth.update(
                 user: UserAttributes(password: newPass)
             )
+            isResettingPassword = false
             dismiss()
+            onDismissAll?()
+            try await supabase.auth.signOut()
         } catch {
+            isSaving = false
             print("Change password error: \(error)")
         }
     }
 }
-
 
 // MARK: - Delete Account Sheet
 
@@ -895,7 +915,8 @@ struct DeleteAccountView: View {
     @State private var errorMessage: String?
 
     private var canDelete: Bool {
-        confirmText.trimmingCharacters(in: .whitespacesAndNewlines).uppercased() == "DELETE"
+        confirmText.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+            == "DELETE"
     }
 
     var body: some View {
@@ -913,7 +934,9 @@ struct DeleteAccountView: View {
                                 .frame(width: 36, height: 36)
                             Image(systemName: "xmark")
                                 .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(Color("AppAdaptiveWhite").opacity(0.8))
+                                .foregroundStyle(
+                                    Color("AppAdaptiveWhite").opacity(0.8)
+                                )
                         }
                     }
                     .disabled(isDeleting)
@@ -929,12 +952,14 @@ struct DeleteAccountView: View {
                     .foregroundStyle(Color("AppText"))
                     .padding(.horizontal, 20)
 
-                Text("This will permanently remove your PetHub account. Your profile, rooms, posts, messages, and lost/found records should be deleted by the Supabase delete_my_account() function.")
-                    .font(.system(size: 14))
-                    .foregroundStyle(Color("AppSubtext"))
-                    .lineSpacing(4)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 14)
+                Text(
+                    "This will permanently remove your PetHub account. Your profile, rooms, posts, messages, and lost/found records should be deleted by the Supabase delete_my_account() function."
+                )
+                .font(.system(size: 14))
+                .foregroundStyle(Color("AppSubtext"))
+                .lineSpacing(4)
+                .padding(.horizontal, 20)
+                .padding(.top, 14)
 
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Type DELETE to confirm")
@@ -987,7 +1012,10 @@ struct DeleteAccountView: View {
                     .padding(.vertical, 15)
                     .background(
                         RoundedRectangle(cornerRadius: 18)
-                            .fill(canDelete ? Color(hex: "E25718") : Color("AppDivider"))
+                            .fill(
+                                canDelete
+                                    ? Color(hex: "E25718") : Color("AppDivider")
+                            )
                     )
                 }
                 .buttonStyle(.plain)
@@ -1014,7 +1042,8 @@ struct DeleteAccountView: View {
 
             try? await supabase.auth.signOut()
         } catch {
-            errorMessage = "Could not delete account. Check that delete_my_account() exists in Supabase."
+            errorMessage =
+                "Could not delete account. Check that delete_my_account() exists in Supabase."
             print("Delete account error: \(error)")
         }
 

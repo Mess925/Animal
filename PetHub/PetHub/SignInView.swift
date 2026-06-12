@@ -11,12 +11,10 @@ import Supabase
 struct SignInView: View {
     @State private var email = ""
     @State private var password = ""
-
     @AppStorage("isLoggedIn") var isLoggedIn = false
     @State private var isSigningIn = false
     @State private var authError: String?
     @State private var showForgotPassword = false
-
     @FocusState private var emailFocused: Bool
     @FocusState private var passwordFocused: Bool
 
@@ -220,12 +218,24 @@ struct SignInView: View {
 struct ForgotPasswordView: View {
     @Environment(\.dismiss) private var dismiss
 
-    @State private var email: String
-    @State private var isSending = false
-    @State private var didSend = false
-    @State private var errorMessage: String?
+    enum Step {
+        case enterEmail, enterOTP, enterNewPassword
+    }
 
+    @State private var step: Step = .enterEmail
+    @State private var email: String
+    @State private var otpCode = ""
+    @State private var newPassword = ""
+    @AppStorage("isResettingPassword") var isResettingPassword = false
+    @State private var confirmPassword = ""
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+    @State private var didSucceed = false
+    @State private var showChangePassword = false
     @FocusState private var emailFocused: Bool
+    @FocusState private var otpFocused: Bool
+    @FocusState private var passwordFocused: Bool
+    @FocusState private var confirmFocused: Bool
 
     init(prefilledEmail: String = "") {
         _email = State(initialValue: prefilledEmail)
@@ -235,16 +245,32 @@ struct ForgotPasswordView: View {
         email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 
-    private var canSend: Bool {
-        isValidEmail(cleanedEmail) && !isSending
-    }
-
     var body: some View {
         ZStack {
             Color("AppBackground").ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 0) {
+
+                // MARK: Top bar
                 HStack {
+                    if step != .enterEmail {
+                        Button {
+                            withAnimation { goBack() }
+                        } label: {
+                            ZStack {
+                                Circle()
+                                    .fill(Color("AppDivider"))
+                                    .frame(width: 36, height: 36)
+                                Image(systemName: "chevron.left")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundStyle(Color("AppAdaptiveWhite").opacity(0.8))
+                            }
+                        }
+                        .disabled(isLoading)
+                    }
+
+                    Spacer()
+
                     Button {
                         dismiss()
                     } label: {
@@ -257,115 +283,329 @@ struct ForgotPasswordView: View {
                                 .foregroundStyle(Color("AppAdaptiveWhite").opacity(0.8))
                         }
                     }
-                    .disabled(isSending)
-
-                    Spacer()
+                    .disabled(isLoading)
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
                 .padding(.bottom, 28)
 
-                Text("Reset Password")
-                    .font(.system(size: 28, weight: .semibold))
-                    .foregroundStyle(Color("AppText"))
-                    .padding(.horizontal, 20)
-
-                Text("Enter your email and we'll send you a password reset link.")
-                    .font(.system(size: 14))
-                    .foregroundStyle(Color("AppSubtext"))
-                    .lineSpacing(4)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 12)
-
-                VStack(spacing: 14) {
-                    AuthField(
-                        label: "Email",
-                        placeholder: "Enter your email",
-                        text: $email,
-                        isFocused: $emailFocused,
-                        isSecure: false
-                    )
-
-                    if let errorMessage {
-                        Text(errorMessage)
-                            .font(.system(size: 12))
-                            .foregroundStyle(Color(hex: "E25718"))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-
-                    if didSend {
-                        HStack(alignment: .top, spacing: 10) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 16))
-                                .foregroundStyle(Color(hex: "7EC8C8"))
-                            Text("Reset link sent. Check your inbox and spam folder.")
-                                .font(.system(size: 13))
-                                .foregroundStyle(Color("AppSubtext"))
-                                .lineSpacing(3)
-                        }
-                        .padding(14)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color(hex: "7EC8C8").opacity(0.10))
-                        )
-                    }
+                // MARK: Content
+                switch step {
+                case .enterEmail:
+                    emailStep
+                case .enterOTP:
+                    otpStep
+                case .enterNewPassword:
+                    newPasswordStep
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 32)
-
-                Button {
-                    Task { await sendResetEmail() }
-                } label: {
-                    HStack {
-                        Spacer()
-                        if isSending {
-                            ProgressView()
-                                .tint(Color("AppAccentText"))
-                        } else {
-                            Text(didSend ? "Send Again" : "Send Reset Link")
-                                .font(.system(size: 15, weight: .semibold))
-                        }
-                        Spacer()
-                    }
-                    .foregroundStyle(Color("AppAccentText"))
-                    .padding(.vertical, 15)
-                    .background(
-                        RoundedRectangle(cornerRadius: 18)
-                            .fill(canSend ? Color(hex: "AA9DFF") : Color("AppDivider"))
-                    )
-                }
-                .buttonStyle(.plain)
-                .disabled(!canSend)
-                .padding(.horizontal, 20)
-                .padding(.top, 24)
 
                 Spacer()
             }
         }
+        .sheet(isPresented: $showChangePassword) {
+            ChangePasswordView(skipCurrentPassword: true, onDismissAll: {
+                dismiss()
+            })
+        }
     }
 
-    private func sendResetEmail() async {
-        errorMessage = nil
-        didSend = false
+    // MARK: - Step 1: Email
 
-        guard isValidEmail(cleanedEmail) else {
-            errorMessage = "Please enter a valid email address."
+    private var emailStep: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Reset Password")
+                .font(.system(size: 28, weight: .semibold))
+                .foregroundStyle(Color("AppText"))
+                .padding(.horizontal, 20)
+
+            Text("Enter your email and we'll send you a 6-digit code.")
+                .font(.system(size: 14))
+                .foregroundStyle(Color("AppSubtext"))
+                .lineSpacing(4)
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+                .padding(.bottom, 32)
+
+            AuthField(
+                label: "Email",
+                placeholder: "Enter your email",
+                text: $email,
+                isFocused: $emailFocused,
+                isSecure: false
+            )
+            .padding(.horizontal, 20)
+
+            if let errorMessage {
+                Text(errorMessage)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color(hex: "E25718"))
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+            }
+
+            ctaButton(
+                label: "Send Code",
+                canProceed: isValidEmail(cleanedEmail) && !isLoading
+            ) {
+                Task { await sendOTP() }
+            }
+        }
+    }
+
+    // MARK: - Step 2: OTP
+
+    private var otpStep: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Check your email")
+                .font(.system(size: 28, weight: .semibold))
+                .foregroundStyle(Color("AppText"))
+                .padding(.horizontal, 20)
+
+            Text("We sent a 6-digit code to **\(cleanedEmail)**. Enter it below.")
+                .font(.system(size: 14))
+                .foregroundStyle(Color("AppSubtext"))
+                .lineSpacing(4)
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+                .padding(.bottom, 32)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("CODE")
+                    .font(.system(size: 10, weight: .medium))
+                    .tracking(1.2)
+                    .foregroundStyle(Color("AppSubtext").opacity(0.7))
+                    .padding(.horizontal, 20)
+
+                TextField("", text: $otpCode)
+                    .focused($otpFocused)
+                    .keyboardType(.numberPad)
+                    .textContentType(.oneTimeCode)
+                    .font(.system(size: 24, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(Color("AppText"))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(Color("AppSurface"))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .stroke(
+                                        otpFocused
+                                            ? Color(hex: "AA9DFF").opacity(0.45)
+                                            : Color("AppBorder"),
+                                        lineWidth: 0.5
+                                    )
+                            )
+                    )
+                    .padding(.horizontal, 20)
+                    .onChange(of: otpCode) { _, val in
+                        otpCode = String(val.filter(\.isNumber).prefix(8))
+                    }
+            }
+
+            if let errorMessage {
+                Text(errorMessage)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color(hex: "E25718"))
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+            }
+
+            // Resend
+            Button {
+                Task { await sendOTP() }
+            } label: {
+                Text("Resend code")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color(hex: "AA9DFF").opacity(0.75))
+            }
+            .buttonStyle(.plain)
+            .disabled(isLoading)
+            .padding(.horizontal, 20)
+            .padding(.top, 12)
+
+            ctaButton(
+                label: "Verify",
+                canProceed: otpCode.count == 8 && !isLoading
+            ) {
+                Task { await verifyOTP() }
+            }
+        }
+    }
+
+    // MARK: - Step 3: New Password
+
+    private var newPasswordStep: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("New Password")
+                .font(.system(size: 28, weight: .semibold))
+                .foregroundStyle(Color("AppText"))
+                .padding(.horizontal, 20)
+
+            Text("Choose a strong password for your account.")
+                .font(.system(size: 14))
+                .foregroundStyle(Color("AppSubtext"))
+                .lineSpacing(4)
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+                .padding(.bottom, 32)
+
+            VStack(spacing: 10) {
+                AuthField(
+                    label: "New Password",
+                    placeholder: "At least 8 characters",
+                    text: $newPassword,
+                    isFocused: $passwordFocused,
+                    isSecure: true
+                )
+
+                AuthField(
+                    label: "Confirm Password",
+                    placeholder: "Repeat your password",
+                    text: $confirmPassword,
+                    isFocused: $confirmFocused,
+                    isSecure: true
+                )
+            }
+            .padding(.horizontal, 20)
+
+            if let errorMessage {
+                Text(errorMessage)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color(hex: "E25718"))
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+            }
+
+            if didSucceed {
+                HStack(alignment: .top, spacing: 10) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 16))
+                        .foregroundStyle(Color(hex: "7EC8C8"))
+                    Text("Password updated! You can now sign in.")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color("AppSubtext"))
+                        .lineSpacing(3)
+                }
+                .padding(14)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color(hex: "7EC8C8").opacity(0.10))
+                )
+                .padding(.horizontal, 20)
+                .padding(.top, 16)
+            }
+
+            ctaButton(
+                label: didSucceed ? "Done" : "Update Password",
+                canProceed: newPassword.count >= 8 && newPassword == confirmPassword && !isLoading
+            ) {
+                if didSucceed {
+                    dismiss()
+                } else {
+                    Task { await updatePassword() }
+                }
+            }
+        }
+    }
+
+    // MARK: - Shared CTA Button
+
+    private func ctaButton(label: String, canProceed: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack {
+                Spacer()
+                if isLoading {
+                    ProgressView().tint(Color("AppAccentText"))
+                } else {
+                    Text(label)
+                        .font(.system(size: 15, weight: .semibold))
+                }
+                Spacer()
+            }
+            .foregroundStyle(Color("AppAccentText"))
+            .padding(.vertical, 15)
+            .background(
+                RoundedRectangle(cornerRadius: 18)
+                    .fill(canProceed ? Color(hex: "AA9DFF") : Color("AppDivider"))
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(!canProceed)
+        .padding(.horizontal, 20)
+        .padding(.top, 24)
+    }
+
+    // MARK: - Actions
+
+    private func goBack() {
+        errorMessage = nil
+        switch step {
+        case .enterOTP: step = .enterEmail
+        case .enterNewPassword: step = .enterOTP
+        default: break
+        }
+    }
+
+    private func sendOTP() async {
+        errorMessage = nil
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            try await supabase.auth.signInWithOTP(email: cleanedEmail, shouldCreateUser: false)
+            withAnimation { step = .enterOTP }
+        } catch {
+            errorMessage = friendlyAuthError(error)
+        }
+    }
+
+    private func verifyOTP() async {
+        errorMessage = nil
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            isResettingPassword = true  // ← move this here, before the call
+            try await supabase.auth.verifyOTP(
+                email: cleanedEmail,
+                token: otpCode,
+                type: .magiclink
+            )
+            showChangePassword = true
+        } catch {
+            isResettingPassword = false  // ← reset it if it fails
+            errorMessage = friendlyAuthError(error)
+        }
+    }
+    
+    private func updatePassword() async {
+        errorMessage = nil
+
+        guard newPassword == confirmPassword else {
+            errorMessage = "Passwords don't match."
             return
         }
 
-        isSending = true
-        defer { isSending = false }
+        guard newPassword.count >= 8 else {
+            errorMessage = "Password must be at least 8 characters."
+            return
+        }
+
+        isLoading = true
+        defer { isLoading = false }
 
         do {
-            try await supabase.auth.resetPasswordForEmail(cleanedEmail)
-            didSend = true
+            try await supabase.auth.update(
+                user: UserAttributes(password: newPassword)
+            )
+            didSucceed = true
         } catch {
             errorMessage = friendlyAuthError(error)
-            print("Forgot password error: \(error)")
         }
     }
 }
-
 // MARK: - Shared Auth Field
 
 struct AuthField: View {
