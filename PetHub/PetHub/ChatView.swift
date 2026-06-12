@@ -144,7 +144,7 @@ struct ChatView: View {
                     onSend: sendMessage,
                     onPhotoTap: { showPhotoPicker = true }
                 )
-            }  // ← closes VStack
+            }
         }
         .task {
             await fetchMessages()

@@ -4,17 +4,12 @@
 //
 //  Created by Han Min Thant on 7/6/26.
 //
-//
-//  SubscriptionManager.swift
-//  PetHub
-//
-//  Created by Han Min Thant on 7/6/26.
-//
 
 import Foundation
 import SwiftUI
 import Combine
 import RevenueCat
+import Supabase
 
 class SubscriptionManager: ObservableObject {
     @Published var tier: SubscriptionTier = .free
@@ -55,9 +50,10 @@ class SubscriptionManager: ObservableObject {
     }
 
     // MARK: - Subscription source of truth
-    // Paid subscription state should come from RevenueCat, not Supabase.
-    // Supabase can still store profile/onboarding data, but do not let
-    // profiles.subscription_tier overwrite RevenueCat after login.
+    // RevenueCat is the single source of truth for subscription state.
+    // profiles.subscription_tier in Supabase is written back purely for
+    // server-side convenience (RLS, edge functions, analytics). It must
+    // never be read back to set `tier` — RevenueCat owns that.
 
     // MARK: - RevenueCat
     func fetchCustomerInfo() {
@@ -73,17 +69,42 @@ class SubscriptionManager: ObservableObject {
     }
 
     private func updateTier(from customerInfo: CustomerInfo) {
+        let newTier: SubscriptionTier
+        if customerInfo.entitlements["pro"]?.isActive == true {
+            newTier = .pro
+        } else if customerInfo.entitlements["semi_pro"]?.isActive == true {
+            newTier = .semiPro
+        } else {
+            newTier = .free
+        }
+
         DispatchQueue.main.async {
-            if customerInfo.entitlements["pro"]?.isActive == true {
-                self.tier = .pro
-            } else if customerInfo.entitlements["semi_pro"]?.isActive == true {
-                self.tier = .semiPro
-            } else {
-                self.tier = .free
-            }
+            self.tier = newTier
+        }
+
+        // Write back to Supabase so server-side logic (RLS, edge functions,
+        // analytics) can use it. This is fire-and-forget — a failure here
+        // does not affect the in-app subscription state.
+        Task { await Self.syncTierToSupabase(newTier) }
+    }
+
+    // MARK: - Supabase write-back (fire-and-forget)
+    private static func syncTierToSupabase(_ tier: SubscriptionTier) async {
+        guard let userId = await supabase.auth.currentUser?.id.uuidString else { return }
+        let tierString = tier.supabaseValue
+        do {
+            try await supabase
+                .from("profiles")
+                .update(["subscription_tier": tierString])
+                .eq("id", value: userId)
+                .execute()
+        } catch {
+            // Non-fatal: RevenueCat remains the source of truth client-side.
+            print("[SubscriptionManager] Supabase tier sync failed: \(error)")
         }
     }
 
+    // MARK: - Purchase / Restore
     func purchase(_ package: Package) async throws {
         let result = try await Purchases.shared.purchase(package: package)
         updateTier(from: result.customerInfo)
@@ -98,6 +119,14 @@ class SubscriptionManager: ObservableObject {
 // MARK: - Tier Enum
 enum SubscriptionTier {
     case free, semiPro, pro
+
+    var supabaseValue: String {
+        switch self {
+        case .free: return "free"
+        case .semiPro: return "semi_pro"
+        case .pro: return "pro"
+        }
+    }
 }
 
 // MARK: - Purchases Delegate

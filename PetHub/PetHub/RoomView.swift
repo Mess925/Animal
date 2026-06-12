@@ -61,14 +61,14 @@ class RoomStore: ObservableObject {
                 ownedRooms.map { $0.toPetRoom(isOwned: true) }
                 + memberRooms.map { $0.toPetRoom(isOwned: false) }
 
-            struct LastMessage: Codable {
-                let createdAt: Date
-                let body: String?
-                enum CodingKeys: String, CodingKey {
-                    case createdAt = "created_at"
-                    case body
-                }
-            }
+//            struct LastMessage: Codable {
+//                let createdAt: Date
+//                let body: String?
+//                enum CodingKeys: String, CodingKey {
+//                    case createdAt = "created_at"
+//                    case body
+//                }
+//            }
 
             for i in allRooms.indices {
                 let roomId = allRooms[i].id.uuidString
@@ -790,5 +790,9 @@ struct ProfilePlaceholderView: View {
 // MARK: - Preview
 
 #Preview {
-    MainTabView(subscriptionManager: SubscriptionManager())
+    // Use a pre-configured instance so the preview doesn't trigger a live
+    // RevenueCat network call via SubscriptionManager.init().
+    let sm = SubscriptionManager()
+    return MainTabView(subscriptionManager: sm)
+        .task { sm.tier = .pro } // set a tier for richer preview state
 }
