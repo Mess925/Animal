@@ -21,10 +21,6 @@ struct RoomView: View {
     @EnvironmentObject private var store: RoomStore
     @EnvironmentObject private var subscriptionManager: SubscriptionManager
     @State private var currentRoom: PetRoom
-    @State private var showReportLost = false
-    @State private var showUpgrade = false
-    @State private var activeLostPost: LostFoundPost? = nil
-    @State private var selectedLostPost: LostFoundPost? = nil
 
     init(room: PetRoom, initialTab: RoomTab = .photos) {
         self.room = room
@@ -35,84 +31,17 @@ struct RoomView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            Color("AppBackground").ignoresSafeArea()
+            PHTheme.background.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Top bar
-                HStack(spacing: 12) {
-                    Button { dismiss() } label: {
-                        ZStack {
-                            Circle()
-                                .fill(Color("AppDivider"))
-                                .frame(width: 36, height: 36)
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 15, weight: .medium))
-                                .foregroundStyle(Color("AppAdaptiveWhite"))
-                        }
-                    }
+                RoomHeroHeader(room: currentRoom, onBack: { dismiss() })
+                    .padding(.horizontal, 16)
+                    .padding(.top, 10)
+                    .padding(.bottom, 10)
 
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("\(room.name) 🐾")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundStyle(Color("AppText"))
-                        Text("\(room.breed) · \(room.age)")
-                            .font(.system(size: 11))
-                            .foregroundStyle(Color("AppWhiteText"))
-                    }
-
-                    Spacer()
-
-                    if currentRoom.isOwned {
-                        Button {
-                            if subscriptionManager.canPostLostPet {
-                                showReportLost = true
-                            } else {
-                                showUpgrade = true
-                            }
-                        } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: "exclamationmark.triangle.fill")
-                                    .font(.system(size: 12, weight: .bold))
-                                Text("Report Lost")
-                                    .font(.system(size: 11, weight: .semibold))
-                            }
-                            .foregroundStyle(Color("AppAccentText"))
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 8)
-                            .background(
-                                Capsule()
-                                    .fill(Color(hex: "E25718"))
-                            )
-                        }
-                        .buttonStyle(.plain)
-                    }
-
-                    // Member avatar stack
-                    MemberAvatarStack(members: currentRoom.members)
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
-                .padding(.bottom, 14)
-
-                // Tab bar
                 RoomTabBar(selected: $selectedTab)
                     .padding(.horizontal, 16)
-                    .padding(.bottom, 8)
-
-                if let activeLostPost {
-                    LostPetRoomBanner(
-                        room: currentRoom,
-                        post: activeLostPost,
-                        canSeeMatches: subscriptionManager.isPro,
-                        onViewPost: { selectedLostPost = activeLostPost }
-                    )
-                    .padding(.horizontal, 16)
                     .padding(.bottom, 10)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-                }
-
-                Divider()
-                    .background(Color("AppDivider").opacity(0.6))
 
                 // Content
                 ZStack {
@@ -130,7 +59,6 @@ struct RoomView: View {
         }
         .task {
             await fetchMembers()
-            await fetchActiveLostPost()
         }
         .offset(x: max(0, dragOffset))
         .simultaneousGesture(
@@ -151,64 +79,7 @@ struct RoomView: View {
                 }
         )
         .navigationBarHidden(true)
-        .navigationDestination(item: $selectedLostPost) { post in
-            LostFoundDetailView(
-                post: post,
-                onPostUpdated: {
-                    Task { await fetchActiveLostPost() }
-                }
-            )
-            .environmentObject(subscriptionManager)
-        }
-        .sheet(isPresented: $showReportLost) {
-            AddLostFoundView(
-                initialType: "lost",
-                lockedType: "lost",
-                initialAnimalType: currentRoom.breed.isEmpty ? currentRoom.name : currentRoom.breed,
-                initialDescription: "Missing pet: \(currentRoom.name). Breed: \(currentRoom.breed). Age: \(currentRoom.age).",
-                onComplete: {
-                    Task { await fetchActiveLostPost() }
-                }
-            )
-            .environmentObject(subscriptionManager)
-        }
-        .sheet(isPresented: $showUpgrade) {
-            UpgradeView()
-        }
     }
-    
-    private func fetchActiveLostPost() async {
-        do {
-            let rows: [LostFoundPost] = try await supabase
-                .from("lost_found_posts")
-                .select()
-                .eq("type", value: "lost")
-                .eq("status", value: "active")
-                .execute()
-                .value
-
-            let roomName = currentRoom.name.lowercased()
-            let roomBreed = currentRoom.breed.lowercased()
-
-            let matchedPost = rows.first { post in
-                let animal = post.animalType.lowercased()
-                let description = (post.description ?? "").lowercased()
-
-                return animal.contains(roomName)
-                    || animal.contains(roomBreed)
-                    || description.contains(roomName)
-                    || (!roomBreed.isEmpty && description.contains(roomBreed))
-            }
-
-            await MainActor.run {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
-                    activeLostPost = matchedPost
-                }
-            }
-        } catch {
-        }
-    }
-
     private func fetchMembers() async {
         do {
             struct RoomMemberRow: Codable {
@@ -257,6 +128,110 @@ struct RoomView: View {
 }
 
 
+
+struct RoomHeroHeader: View {
+    let room: PetRoom
+    let onBack: () -> Void
+
+    var body: some View {
+        VStack(spacing: 14) {
+            HStack(spacing: 12) {
+                Button(action: onBack) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(PHTheme.text)
+                        .frame(width: 40, height: 40)
+                        .background(PHTheme.surface)
+                        .clipShape(Circle())
+                        .overlay(Circle().stroke(PHTheme.border, lineWidth: 0.7))
+                }
+                .buttonStyle(.plain)
+
+                HStack(spacing: 10) {
+                    Image(systemName: room.icon)
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(room.accent)
+                        .frame(width: 40, height: 40)
+                        .background(room.accent.opacity(0.13))
+                        .clipShape(Circle())
+
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("\(room.name)'s Room")
+                            .font(.system(size: 16, weight: .black, design: .rounded))
+                            .foregroundStyle(PHTheme.text)
+                            .lineLimit(1)
+                        Text("\(max(room.members.count, 1)) members")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(PHTheme.subtext)
+                    }
+                }
+
+                Spacer()
+            }
+
+            ZStack(alignment: .bottomLeading) {
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .fill(PHTheme.surface)
+                    .overlay(
+                        LinearGradient(
+                            colors: [room.accent.opacity(0.20), Color.clear],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                    )
+                    .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).stroke(PHTheme.border, lineWidth: 0.8))
+                    .shadow(color: Color.black.opacity(0.06), radius: 18, y: 10)
+
+                Image(systemName: room.icon)
+                    .font(.system(size: 86, weight: .bold))
+                    .foregroundStyle(room.accent.opacity(0.14))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+                    .padding(.trailing, 22)
+
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(spacing: 8) {
+                        Text(room.breed)
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(room.accent)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 7)
+                            .background(room.accent.opacity(0.13))
+                            .clipShape(Capsule())
+
+                        if !room.age.isEmpty {
+                            Text(room.age)
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundStyle(PHTheme.subtext)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 7)
+                                .background(PHTheme.surface2)
+                                .clipShape(Capsule())
+                        }
+                    }
+
+                    Text(room.name)
+                        .font(.system(size: 38, weight: .black, design: .rounded))
+                        .foregroundStyle(PHTheme.text)
+                        .lineLimit(1)
+
+                    HStack(spacing: 10) {
+                        MemberAvatarStack(members: room.members)
+                        Text("Room is active")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(PHTheme.subtext)
+                        Circle()
+                            .fill(PHTheme.success)
+                            .frame(width: 7, height: 7)
+                    }
+                }
+                .padding(18)
+            }
+            .frame(height: 164)
+        }
+    }
+}
+
 // MARK: - Lost Pet Room Banner
 
 struct LostPetRoomBanner: View {
@@ -277,27 +252,27 @@ struct LostPetRoomBanner: View {
             HStack(alignment: .top, spacing: 12) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 14)
-                        .fill(Color(hex: "E25718").opacity(0.18))
+                        .fill(PHTheme.danger.opacity(0.18))
                         .frame(width: 44, height: 44)
                     Image(systemName: "exclamationmark.triangle.fill")
                         .font(.system(size: 20, weight: .bold))
-                        .foregroundStyle(Color(hex: "E25718"))
+                        .foregroundStyle(PHTheme.danger)
                 }
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("\(room.name.uppercased()) IS MISSING")
                         .font(.system(size: 13, weight: .heavy))
                         .tracking(0.6)
-                        .foregroundStyle(Color(hex: "E25718"))
+                        .foregroundStyle(PHTheme.danger)
 
                     Text(daysMissingText)
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(Color("AppText"))
+                        .foregroundStyle(PHTheme.text)
 
                     if let location = post.location, !location.isEmpty {
                         Text(location)
                             .font(.system(size: 11))
-                            .foregroundStyle(Color("AppWhiteText"))
+                            .foregroundStyle(PHTheme.subtext)
                             .lineLimit(1)
                     }
                 }
@@ -314,7 +289,7 @@ struct LostPetRoomBanner: View {
                         .padding(.vertical, 10)
                         .background(
                             RoundedRectangle(cornerRadius: 12)
-                                .fill(Color(hex: "E25718"))
+                                .fill(PHTheme.danger)
                         )
                 }
                 .buttonStyle(.plain)
@@ -325,22 +300,22 @@ struct LostPetRoomBanner: View {
                     Text(canSeeMatches ? "Pro Matches" : "Pro")
                         .font(.system(size: 12, weight: .semibold))
                 }
-                .foregroundStyle(Color(hex: "AA9DFF"))
+                .foregroundStyle(PHTheme.accent)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(Color(hex: "AA9DFF").opacity(0.14))
+                        .fill(PHTheme.accent.opacity(0.14))
                 )
             }
         }
         .padding(14)
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(Color(hex: "E25718").opacity(0.08))
+                .fill(PHTheme.danger.opacity(0.08))
                 .overlay(
                     RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color(hex: "E25718").opacity(0.35), lineWidth: 0.8)
+                        .stroke(PHTheme.danger.opacity(0.35), lineWidth: 0.8)
                 )
         )
     }
@@ -352,21 +327,22 @@ struct RoomTabBar: View {
     @Binding var selected: RoomTab
 
     var body: some View {
-        HStack(spacing: 2) {
-            RoomTabItem(label: "Photos", tab: .photos, selected: $selected)
-            RoomTabItem(label: "Chat", tab: .chat, selected: $selected)
-            RoomTabItem(label: "Settings", tab: .settings, selected: $selected)
+        HStack(spacing: 8) {
+            RoomTabItem(label: "Photos", icon: "photo.on.rectangle", tab: .photos, selected: $selected)
+            RoomTabItem(label: "Chat", icon: "bubble.left.and.bubble.right.fill", tab: .chat, selected: $selected)
+            RoomTabItem(label: "Settings", icon: "slider.horizontal.3", tab: .settings, selected: $selected)
         }
-        .padding(4)
-        .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(Color("AppDivider"))
-        )
+        .padding(5)
+        .background(PHTheme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(PHTheme.border, lineWidth: 0.7))
+        .shadow(color: Color.black.opacity(0.04), radius: 12, y: 6)
     }
 }
 
 struct RoomTabItem: View {
     let label: String
+    let icon: String
     let tab: RoomTab
     @Binding var selected: RoomTab
 
@@ -374,19 +350,23 @@ struct RoomTabItem: View {
 
     var body: some View {
         Button {
-            withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+            withAnimation(.spring(response: 0.25, dampingFraction: 0.82)) {
                 selected = tab
             }
         } label: {
-            Text(label)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(isActive ? Color(hex: "AA9DFF") : Color("AppSubtext"))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 9)
-                .background(
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(isActive ? Color(hex: "AA9DFF").opacity(0.15) : Color.clear)
-                )
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 12, weight: .bold))
+                Text(label)
+                    .font(.system(size: 12, weight: .bold))
+            }
+            .foregroundStyle(isActive ? .white : PHTheme.subtext)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 15, style: .continuous)
+                    .fill(isActive ? PHTheme.accent : Color.clear)
+            )
         }
         .buttonStyle(.plain)
     }
@@ -405,7 +385,7 @@ struct MemberAvatarStack: View {
                 MemberAvatar(member: member, size: 26)
                     .overlay(
                         Circle()
-                            .stroke(Color("AppBackground"), lineWidth: 1.5)
+                            .stroke(PHTheme.background, lineWidth: 1.5)
                     )
                     .offset(x: CGFloat(i) * -8)
                     .zIndex(Double(displayed.count - i))
@@ -413,13 +393,13 @@ struct MemberAvatarStack: View {
             if overflow > 0 {
                 ZStack {
                     Circle()
-                        .fill(Color("AppBorder"))
+                        .fill(PHTheme.border)
                         .frame(width: 26, height: 26)
                     Text("+\(overflow)")
                         .font(.system(size: 9, weight: .semibold))
-                        .foregroundStyle(Color("AppWhiteText"))
+                        .foregroundStyle(PHTheme.subtext)
                 }
-                .overlay(Circle().stroke(Color("AppBackground"), lineWidth: 1.5))
+                .overlay(Circle().stroke(PHTheme.background, lineWidth: 1.5))
                 .offset(x: CGFloat(displayed.count) * -8)
             }
         }

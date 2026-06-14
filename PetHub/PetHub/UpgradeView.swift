@@ -27,9 +27,7 @@ struct UpgradeView: View {
     }
 
     var body: some View {
-        ZStack {
-            Color("AppBackground").ignoresSafeArea()
-
+        PHPage {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 22) {
                     topBar
@@ -47,7 +45,7 @@ struct UpgradeView: View {
 
                     if isLoading {
                         ProgressView()
-                            .tint(Color(hex: "AA9DFF"))
+                            .tint(PHTheme.accent)
                             .padding(.top, 36)
                     } else {
                         VStack(spacing: 14) {
@@ -57,7 +55,7 @@ struct UpgradeView: View {
                                 tier: .semiPro,
                                 name: "Semi-Pro",
                                 badge: "Best starter",
-                                accentColor: Color(hex: "5DCAA5"),
+                                accentColor: PHTheme.success,
                                 monthlyPrice: "$1.99",
                                 yearlyPrice: "$15.99",
                                 yearlySaving: "Save $7.89/year",
@@ -76,7 +74,7 @@ struct UpgradeView: View {
                                 tier: .pro,
                                 name: "Pro",
                                 badge: "Recovery tools",
-                                accentColor: Color(hex: "AA9DFF"),
+                                accentColor: PHTheme.accent,
                                 monthlyPrice: "$3.99",
                                 yearlyPrice: "$35.99",
                                 yearlySaving: "Save $11.89/year",
@@ -97,7 +95,7 @@ struct UpgradeView: View {
                     if let errorMessage {
                         Text(errorMessage)
                             .font(.system(size: 13))
-                            .foregroundStyle(Color(hex: "E25718"))
+                            .foregroundStyle(PHTheme.danger)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 20)
                     }
@@ -120,11 +118,11 @@ struct UpgradeView: View {
             } label: {
                 ZStack {
                     Circle()
-                        .fill(Color("AppSurface2"))
+                        .fill(PHTheme.surface2)
                         .frame(width: 38, height: 38)
                     Image(systemName: "xmark")
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Color("AppText"))
+                        .foregroundStyle(PHTheme.text)
                 }
             }
             .buttonStyle(.plain)
@@ -133,7 +131,7 @@ struct UpgradeView: View {
 
             Text("Plans")
                 .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(Color("AppText"))
+                .foregroundStyle(PHTheme.text)
 
             Spacer()
 
@@ -141,7 +139,7 @@ struct UpgradeView: View {
                 Task { await restore() }
             }
             .font(.system(size: 13, weight: .medium))
-            .foregroundStyle(Color(hex: "AA9DFF"))
+            .foregroundStyle(PHTheme.accent)
             .disabled(isPurchasing)
         }
     }
@@ -150,22 +148,22 @@ struct UpgradeView: View {
         VStack(spacing: 14) {
             ZStack {
                 RoundedRectangle(cornerRadius: 22)
-                    .fill(Color(hex: "1E1A3A"))
+                    .fill(PHTheme.accent)
                     .frame(width: 72, height: 72)
                 Image(systemName: "pawprint.fill")
                     .font(.system(size: 32))
-                    .foregroundStyle(Color(hex: "AA9DFF"))
+                    .foregroundStyle(PHTheme.accent)
             }
 
             VStack(spacing: 6) {
                 Text("Choose your PetHub plan")
                     .font(.system(size: 27, weight: .bold))
-                    .foregroundStyle(Color("AppText"))
+                    .foregroundStyle(PHTheme.text)
                     .multilineTextAlignment(.center)
 
                 Text("Free is for helping the community. Semi-Pro unlocks lost posting. Pro unlocks active recovery tools.")
                     .font(.system(size: 14))
-                    .foregroundStyle(Color("AppSubtext"))
+                    .foregroundStyle(PHTheme.subtext)
                     .multilineTextAlignment(.center)
                     .lineSpacing(3)
             }
@@ -177,41 +175,41 @@ struct UpgradeView: View {
         HStack(spacing: 12) {
             ZStack {
                 RoundedRectangle(cornerRadius: 14)
-                    .fill(Color(hex: "AA9DFF").opacity(0.14))
+                    .fill(PHTheme.accent.opacity(0.14))
                     .frame(width: 44, height: 44)
                 Image(systemName: "checkmark.seal.fill")
                     .font(.system(size: 20))
-                    .foregroundStyle(Color(hex: "AA9DFF"))
+                    .foregroundStyle(PHTheme.accent)
             }
 
             VStack(alignment: .leading, spacing: 3) {
                 Text("Current plan")
                     .font(.system(size: 12))
-                    .foregroundStyle(Color("AppSubtext"))
+                    .foregroundStyle(PHTheme.subtext)
                 Text(currentPlanName)
                     .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(Color("AppText"))
+                    .foregroundStyle(PHTheme.text)
             }
 
             Spacer()
 
             Text(subscriptionManager.tier == .free ? "Upgrade anytime" : "Active")
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(subscriptionManager.tier == .free ? Color(hex: "AA9DFF") : Color(hex: "5DCAA5"))
+                .foregroundStyle(subscriptionManager.tier == .free ? PHTheme.accent : PHTheme.success)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
                 .background(
-                    (subscriptionManager.tier == .free ? Color(hex: "AA9DFF") : Color(hex: "5DCAA5")).opacity(0.12),
+                    (subscriptionManager.tier == .free ? PHTheme.accent : PHTheme.success).opacity(0.12),
                     in: Capsule()
                 )
         }
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(Color("AppSurface2"))
+                .fill(PHTheme.surface2)
                 .overlay(
                     RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color("AppDivider"), lineWidth: 0.5)
+                        .stroke(PHTheme.divider, lineWidth: 0.5)
                 )
         )
     }
@@ -226,10 +224,10 @@ struct UpgradeView: View {
             }
         }
         .padding(4)
-        .background(Color("AppSurface2"), in: RoundedRectangle(cornerRadius: 16))
+        .background(PHTheme.surface2, in: RoundedRectangle(cornerRadius: 16))
         .overlay(
             RoundedRectangle(cornerRadius: 16)
-                .stroke(Color("AppDivider"), lineWidth: 0.5)
+                .stroke(PHTheme.divider, lineWidth: 0.5)
         )
     }
 
@@ -241,22 +239,22 @@ struct UpgradeView: View {
                 VStack(alignment: .leading, spacing: 5) {
                     Text("Free")
                         .font(.system(size: 21, weight: .bold))
-                        .foregroundStyle(Color("AppText"))
+                        .foregroundStyle(PHTheme.text)
                     Text("Community access")
                         .font(.system(size: 13))
-                        .foregroundStyle(Color("AppSubtext"))
+                        .foregroundStyle(PHTheme.subtext)
                 }
                 Spacer()
                 Text("$0")
                     .font(.system(size: 26, weight: .bold))
-                    .foregroundStyle(Color("AppText"))
+                    .foregroundStyle(PHTheme.text)
             }
 
             VStack(alignment: .leading, spacing: 10) {
-                FeatureRow(feature: PlanFeature(icon: "eye.fill", title: "View Lost & Found", subtitle: "Browse community reports", isIncluded: true), accentColor: Color("AppSubtext"))
-                FeatureRow(feature: PlanFeature(icon: "checkmark.circle.fill", title: "Post found pets", subtitle: "Help owners find missing pets", isIncluded: true), accentColor: Color("AppSubtext"))
-                FeatureRow(feature: PlanFeature(icon: "xmark.circle.fill", title: "Post lost pets", subtitle: "Upgrade to Semi-Pro", isIncluded: false), accentColor: Color("AppSubtext"))
-                FeatureRow(feature: PlanFeature(icon: "xmark.circle.fill", title: "Possible Matches", subtitle: "Upgrade to Pro", isIncluded: false), accentColor: Color("AppSubtext"))
+                FeatureRow(feature: PlanFeature(icon: "eye.fill", title: "View Lost & Found", subtitle: "Browse community reports", isIncluded: true), accentColor: PHTheme.subtext)
+                FeatureRow(feature: PlanFeature(icon: "checkmark.circle.fill", title: "Post found pets", subtitle: "Help owners find missing pets", isIncluded: true), accentColor: PHTheme.subtext)
+                FeatureRow(feature: PlanFeature(icon: "xmark.circle.fill", title: "Post lost pets", subtitle: "Upgrade to Semi-Pro", isIncluded: false), accentColor: PHTheme.subtext)
+                FeatureRow(feature: PlanFeature(icon: "xmark.circle.fill", title: "Possible Matches", subtitle: "Upgrade to Pro", isIncluded: false), accentColor: PHTheme.subtext)
             }
 
             currentPlanButton(for: .free)
@@ -264,10 +262,10 @@ struct UpgradeView: View {
         .padding(20)
         .background(
             RoundedRectangle(cornerRadius: 22)
-                .fill(Color("AppSurface2"))
+                .fill(PHTheme.surface2)
                 .overlay(
                     RoundedRectangle(cornerRadius: 22)
-                        .stroke(subscriptionManager.tier == .free ? Color(hex: "AA9DFF") : Color("AppDivider"), lineWidth: subscriptionManager.tier == .free ? 1.2 : 0.5)
+                        .stroke(subscriptionManager.tier == .free ? PHTheme.accent : PHTheme.divider, lineWidth: subscriptionManager.tier == .free ? 1.2 : 0.5)
                 )
         )
     }
@@ -294,19 +292,19 @@ struct UpgradeView: View {
                     HStack(spacing: 8) {
                         Text(name)
                             .font(.system(size: 22, weight: .bold))
-                            .foregroundStyle(Color("AppText"))
+                            .foregroundStyle(PHTheme.text)
 
                         Text(isCurrent ? "Current" : badge)
                             .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(isCurrent ? Color(hex: "5DCAA5") : accentColor)
+                            .foregroundStyle(isCurrent ? PHTheme.success : accentColor)
                             .padding(.horizontal, 9)
                             .padding(.vertical, 4)
-                            .background((isCurrent ? Color(hex: "5DCAA5") : accentColor).opacity(0.13), in: Capsule())
+                            .background((isCurrent ? PHTheme.success : accentColor).opacity(0.13), in: Capsule())
                     }
 
                     Text(isProCard ? "Active recovery tools for lost pets" : "Lost posting and contact access")
                         .font(.system(size: 13))
-                        .foregroundStyle(Color("AppSubtext"))
+                        .foregroundStyle(PHTheme.subtext)
                 }
 
                 Spacer()
@@ -314,14 +312,14 @@ struct UpgradeView: View {
                 VStack(alignment: .trailing, spacing: 2) {
                     Text(price)
                         .font(.system(size: 27, weight: .bold))
-                        .foregroundStyle(Color("AppText"))
+                        .foregroundStyle(PHTheme.text)
                     Text(isYearly ? "per year" : "per month")
                         .font(.system(size: 12))
-                        .foregroundStyle(Color("AppSubtext"))
+                        .foregroundStyle(PHTheme.subtext)
                     if isYearly {
                         Text(yearlySaving)
                             .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(Color(hex: "5DCAA5"))
+                            .foregroundStyle(PHTheme.success)
                     }
                 }
             }
@@ -347,18 +345,18 @@ struct UpgradeView: View {
                     Spacer()
                     if isPurchasing && !isCurrent {
                         ProgressView()
-                            .tint(isProCard ? Color(hex: "1A1050") : .white)
+                            .tint(isProCard ? PHTheme.text : .white)
                     } else {
                         Text(isCurrent ? "Current Plan" : buttonTitle(for: tier))
                             .font(.system(size: 15, weight: .semibold))
                     }
                     Spacer()
                 }
-                .foregroundStyle(isCurrent ? Color("AppSubtext") : (isProCard ? Color(hex: "1A1050") : .white))
+                .foregroundStyle(isCurrent ? PHTheme.subtext : (isProCard ? PHTheme.text : .white))
                 .padding(.vertical, 14)
                 .background(
                     RoundedRectangle(cornerRadius: 16)
-                        .fill(isCurrent ? Color("AppDivider").opacity(0.5) : accentColor)
+                        .fill(isCurrent ? PHTheme.divider.opacity(0.5) : accentColor)
                 )
             }
             .buttonStyle(.plain)
@@ -367,10 +365,10 @@ struct UpgradeView: View {
         .padding(20)
         .background(
             RoundedRectangle(cornerRadius: 22)
-                .fill(isProCard ? Color(hex: "0F0D1E") : Color("AppSurface2"))
+                .fill(isProCard ? PHTheme.surface : PHTheme.surface2)
                 .overlay(
                     RoundedRectangle(cornerRadius: 22)
-                        .stroke(isCurrent || isProCard ? accentColor.opacity(0.65) : Color("AppDivider"), lineWidth: isCurrent || isProCard ? 1.2 : 0.5)
+                        .stroke(isCurrent || isProCard ? accentColor.opacity(0.65) : PHTheme.divider, lineWidth: isCurrent || isProCard ? 1.2 : 0.5)
                 )
         )
     }
@@ -384,11 +382,11 @@ struct UpgradeView: View {
                 .font(.system(size: 15, weight: .semibold))
             Spacer()
         }
-        .foregroundStyle(Color("AppSubtext"))
+        .foregroundStyle(PHTheme.subtext)
         .padding(.vertical, 14)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color("AppDivider").opacity(0.45))
+                .fill(PHTheme.divider.opacity(0.45))
         )
     }
 
@@ -413,13 +411,13 @@ struct UpgradeView: View {
         VStack(spacing: 12) {
             Text("Subscriptions renew automatically unless cancelled. You can restore purchases anytime.")
                 .font(.system(size: 11))
-                .foregroundStyle(Color("AppSubtext"))
+                .foregroundStyle(PHTheme.subtext)
                 .multilineTextAlignment(.center)
                 .lineSpacing(3)
 
             Button("Maybe later") { dismiss() }
                 .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(Color("AppSubtext"))
+                .foregroundStyle(PHTheme.subtext)
                 .padding(.top, 2)
         }
     }
@@ -501,21 +499,21 @@ struct BillingToggleButton: View {
             HStack(spacing: 5) {
                 Text(title)
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(isSelected ? Color("AppText") : Color("AppSubtext"))
+                    .foregroundStyle(isSelected ? PHTheme.text : PHTheme.subtext)
 
                 if let badge {
                     Text(badge)
                         .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(Color(hex: "5DCAA5"))
+                        .foregroundStyle(PHTheme.success)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .background(Color(hex: "5DCAA5").opacity(0.12), in: Capsule())
+                        .background(PHTheme.success.opacity(0.12), in: Capsule())
                 }
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
             .background(
-                isSelected ? Color("AppBackground") : Color.clear,
+                isSelected ? PHTheme.background : Color.clear,
                 in: RoundedRectangle(cornerRadius: 12)
             )
         }
@@ -531,18 +529,18 @@ struct FeatureRow: View {
         HStack(alignment: .top, spacing: 11) {
             Image(systemName: feature.isIncluded ? feature.icon : "lock.fill")
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(feature.isIncluded ? accentColor : Color("AppSubtext").opacity(0.55))
+                .foregroundStyle(feature.isIncluded ? accentColor : PHTheme.subtext.opacity(0.55))
                 .frame(width: 20)
                 .padding(.top, 2)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(feature.title)
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(feature.isIncluded ? Color("AppText") : Color("AppSubtext"))
+                    .foregroundStyle(feature.isIncluded ? PHTheme.text : PHTheme.subtext)
 
                 Text(feature.subtitle)
                     .font(.system(size: 11))
-                    .foregroundStyle(Color("AppSubtext"))
+                    .foregroundStyle(PHTheme.subtext)
                     .lineLimit(2)
             }
 

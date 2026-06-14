@@ -76,22 +76,22 @@ struct ActivityView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color("AppBackground").ignoresSafeArea()
+                PHTheme.background.ignoresSafeArea()
 
                 if isLoading {
                     ProgressView()
-                        .tint(Color(hex: "AA9DFF"))
+                        .tint(PHTheme.accent)
                 } else if items.isEmpty {
                     VStack(spacing: 12) {
                         Image(systemName: "bell.slash")
                             .font(.system(size: 44))
-                            .foregroundStyle(Color("AppSubtext"))
+                            .foregroundStyle(PHTheme.subtext)
                         Text("No activity yet")
                             .font(.system(size: 16, weight: .medium))
-                            .foregroundStyle(Color("AppWhiteText"))
+                            .foregroundStyle(PHTheme.subtext)
                         Text("Likes, comments, messages, and important room alerts will appear here")
                             .font(.system(size: 13))
-                            .foregroundStyle(Color("AppPlaceholder"))
+                            .foregroundStyle(PHTheme.placeholder)
                     }
                 } else {
                     ScrollView {
@@ -99,7 +99,7 @@ struct ActivityView: View {
 
                             Text("Activity")
                                 .font(.system(size: 28, weight: .semibold))
-                                .foregroundStyle(Color("AppText"))
+                                .foregroundStyle(PHTheme.text)
                                 .padding(.horizontal, 20)
                                 .padding(.top, 20)
                                 .padding(.bottom, 24)
@@ -272,17 +272,17 @@ struct ActivityView: View {
                 ActivityRow(item: item)
                 if item.id != items.last?.id {
                     Divider()
-                        .background(Color("AppDivider"))
+                        .background(PHTheme.divider)
                         .padding(.leading, 68)
                 }
             }
         }
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(Color("AppSurface2"))
+                .fill(PHTheme.surface2)
                 .overlay(
                     RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color("AppDivider"), lineWidth: 0.5)
+                        .stroke(PHTheme.divider, lineWidth: 0.5)
                 )
         )
     }
@@ -296,7 +296,7 @@ struct ActivitySectionLabel: View {
         Text(title.uppercased())
             .font(.system(size: 10, weight: .medium))
             .tracking(1.4)
-            .foregroundStyle(Color("AppSubtext"))
+            .foregroundStyle(PHTheme.subtext)
     }
 }
 
@@ -320,7 +320,7 @@ struct ActivityRow: View {
 
                 ZStack {
                     Circle()
-                        .fill(Color("AppSurface2"))
+                        .fill(PHTheme.surface2)
                         .frame(width: 20, height: 20)
                     Image(systemName: badgeIcon)
                         .font(.system(size: 9, weight: .bold))
@@ -332,7 +332,7 @@ struct ActivityRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(item.detail)
                     .font(.system(size: 13))
-                    .foregroundStyle(Color("AppText"))
+                    .foregroundStyle(PHTheme.text)
                     .fixedSize(horizontal: false, vertical: true)
                     .multilineTextAlignment(.leading)
 
@@ -350,12 +350,12 @@ struct ActivityRow: View {
                     .background(Capsule().fill(item.roomAccent.opacity(0.1)))
 
                     Text("·")
-                        .foregroundStyle(Color("AppPlaceholder"))
+                        .foregroundStyle(PHTheme.placeholder)
                         .font(.system(size: 10))
 
                     Text(item.timestamp.relativeString())
                         .font(.system(size: 11))
-                        .foregroundStyle(Color("AppSubtext"))
+                        .foregroundStyle(PHTheme.subtext)
                 }
             }
 
@@ -380,14 +380,14 @@ struct ActivityRow: View {
 
     private var badgeColor: Color {
         switch item.type {
-        case .roomJoined: return Color(hex: "06D6A0")
-        case .roomLeft: return Color(hex: "E25718")
-        case .photoAdded: return Color(hex: "AA9DFF")
-        case .photoLiked: return Color(hex: "FF6B6B")
-        case .photoCommented: return Color(hex: "7EC8C8")
-        case .directMessage: return Color(hex: "AA9DFF")
-        case .mention: return Color(hex: "F4A84A")
-        case .possibleMatch: return Color(hex: "F4A84A")
+        case .roomJoined: return PHTheme.success
+        case .roomLeft: return PHTheme.danger
+        case .photoAdded: return PHTheme.accent
+        case .photoLiked: return PHTheme.accent3
+        case .photoCommented: return PHTheme.accent2
+        case .directMessage: return PHTheme.accent
+        case .mention: return PHTheme.warning
+        case .possibleMatch: return PHTheme.warning
         }
     }
 }
@@ -399,17 +399,17 @@ struct LostFoundPlaceholderView: View {
 
     var body: some View {
         ZStack {
-            Color("AppBackground").ignoresSafeArea()
+            PHTheme.background.ignoresSafeArea()
             VStack(spacing: 16) {
                 Image(systemName: "mappin.and.ellipse")
                     .font(.system(size: 48))
-                    .foregroundStyle(Color(hex: "E25718"))
+                    .foregroundStyle(PHTheme.danger)
                 Text("Lost & Found")
                     .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(Color("AppText"))
+                    .foregroundStyle(PHTheme.text)
                 Text("Coming soon")
                     .font(.system(size: 14))
-                    .foregroundStyle(Color("AppWhiteText"))
+                    .foregroundStyle(PHTheme.subtext)
             }
         }
     }

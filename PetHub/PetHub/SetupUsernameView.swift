@@ -24,20 +24,20 @@ struct StepUsernameView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Step 1 of 3")
                     .font(.system(size: 13))
-                    .foregroundStyle(Color("AppSubtext"))
+                    .foregroundStyle(PHTheme.subtext)
 
                 Group {
                     Text("Pick a ") +
                     Text("username. 🐾")
                         .font(.custom("Georgia-Italic", size: 28))
-                        .foregroundColor(Color(hex: "AA9DFF"))
+                        .foregroundColor(PHTheme.accent)
                 }
                 .font(.system(size: 26, weight: .bold))
-                .foregroundStyle(Color("AppText"))
+                .foregroundStyle(PHTheme.text)
 
                 Text("This is how others will find you")
                     .font(.system(size: 12))
-                    .foregroundStyle(Color("AppSubtext").opacity(0.7))
+                    .foregroundStyle(PHTheme.subtext.opacity(0.7))
             }
             .padding(.bottom, 32)
 
@@ -52,21 +52,13 @@ struct StepUsernameView: View {
             .padding(.bottom, 32)
 
             // Next button
-            Button {
+            PHButton(
+                "Continue",
+                icon: "arrow.right",
+                isDisabled: username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            ) {
                 Task { await saveUsername() }
-            } label: {
-                Text("Continue")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Color("AppAccentText"))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(username.isEmpty ? Color(hex: "AA9DFF").opacity(0.4) : Color(hex: "AA9DFF"))
-                    )
             }
-            .buttonStyle(.plain)
-            .disabled(username.isEmpty)
 
             Spacer()
         }

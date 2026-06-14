@@ -138,7 +138,7 @@ struct LostAndFoundView: View {
 
     var body: some View {
         ZStack {
-            Color("AppBackground").ignoresSafeArea()
+            PHTheme.background.ignoresSafeArea()
 
             VStack(spacing: 0) {
                 header
@@ -188,12 +188,12 @@ struct LostAndFoundView: View {
             } label: {
                 ZStack {
                     Circle()
-                        .fill(Color("AppSurface"))
+                        .fill(PHTheme.surface)
                         .frame(width: 36, height: 36)
 
                     Image(systemName: "chevron.left")
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(Color("AppText"))
+                        .foregroundStyle(PHTheme.text)
                 }
             }
 
@@ -201,7 +201,7 @@ struct LostAndFoundView: View {
 
             Text("Lost & Found")
                 .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(Color("AppText"))
+                .foregroundStyle(PHTheme.text)
 
             Spacer()
 
@@ -216,12 +216,12 @@ struct LostAndFoundView: View {
             } label: {
                 ZStack {
                     Circle()
-                        .fill(Color(hex: "E25718").opacity(0.15))
+                        .fill(PHTheme.danger.opacity(0.15))
                         .frame(width: 36, height: 36)
 
                     Image(systemName: "plus")
                         .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(Color(hex: "E25718"))
+                        .foregroundStyle(PHTheme.danger)
                 }
             }
             .buttonStyle(.plain)
@@ -243,16 +243,16 @@ struct LostAndFoundView: View {
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(
                             selectedFilter == filter
-                            ? Color("AppAccentText")
-                            : Color("AppSubtext")
+                            ? PHTheme.accent
+                            : PHTheme.subtext
                         )
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
                         .background(
                             Capsule().fill(
                                 selectedFilter == filter
-                                ? Color(hex: "E25718")
-                                : Color("AppSurface")
+                                ? PHTheme.danger
+                                : PHTheme.surface
                             )
                         )
                 }
@@ -277,21 +277,21 @@ struct LostAndFoundView: View {
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(
                             selectedTab == tab
-                            ? Color("AppText")
-                            : Color("AppSubtext")
+                            ? PHTheme.text
+                            : PHTheme.subtext
                         )
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
                         .background(
                             selectedTab == tab
-                            ? Color("AppSurface")
+                            ? PHTheme.surface
                             : Color.clear
                         )
                 }
                 .buttonStyle(.plain)
             }
         }
-        .background(Color("AppSurface2"))
+        .background(PHTheme.surface2)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .padding(.horizontal, 20)
         .padding(.bottom, 16)
@@ -303,7 +303,7 @@ struct LostAndFoundView: View {
     private var postsContent: some View {
         if isLoading {
             Spacer()
-            ProgressView().tint(Color(hex: "E25718"))
+            ProgressView().tint(PHTheme.danger)
             Spacer()
         } else if filteredPosts.isEmpty {
             Spacer()
@@ -311,15 +311,15 @@ struct LostAndFoundView: View {
             VStack(spacing: 12) {
                 Image(systemName: "mappin.and.ellipse")
                     .font(.system(size: 44))
-                    .foregroundStyle(Color(hex: "E25718").opacity(0.4))
+                    .foregroundStyle(PHTheme.danger.opacity(0.4))
 
                 Text("No reports yet")
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundStyle(Color("AppWhiteText"))
+                    .foregroundStyle(PHTheme.subtext)
 
                 Text("Tap + to report a lost or found animal")
                     .font(.system(size: 13))
-                    .foregroundStyle(Color("AppPlaceholder"))
+                    .foregroundStyle(PHTheme.placeholder)
             }
 
             Spacer()
@@ -552,28 +552,28 @@ struct MatchAlertCard: View {
         HStack(spacing: 14) {
             ZStack {
                 Circle()
-                    .fill(Color(hex: "AA9DFF").opacity(0.16))
+                    .fill(PHTheme.accent.opacity(0.16))
                     .frame(width: 46, height: 46)
 
                 Image(systemName: subscriptionManager.isPro ? "pawprint.fill" : "lock.fill")
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(Color(hex: "AA9DFF"))
+                    .foregroundStyle(PHTheme.accent)
             }
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("Possible match found")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Color("AppText"))
+                    .foregroundStyle(PHTheme.text)
 
                 if subscriptionManager.isPro {
                     Text("Found \(match.post.animalType) may match your lost \(match.lostPost.animalType)")
                         .font(.system(size: 12))
-                        .foregroundStyle(Color("AppSubtext"))
+                        .foregroundStyle(PHTheme.subtext)
                         .lineLimit(2)
                 } else {
                     Text("Upgrade to Pro to view the matching report")
                         .font(.system(size: 12))
-                        .foregroundStyle(Color("AppSubtext"))
+                        .foregroundStyle(PHTheme.subtext)
                         .lineLimit(2)
                 }
             }
@@ -582,20 +582,20 @@ struct MatchAlertCard: View {
 
             Text(subscriptionManager.isPro ? "\(match.score)%" : "PRO")
                 .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(Color(hex: "AA9DFF"))
+                .foregroundStyle(PHTheme.accent)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 5)
                 .background(
-                    Capsule().fill(Color(hex: "AA9DFF").opacity(0.14))
+                    Capsule().fill(PHTheme.accent.opacity(0.14))
                 )
         }
         .padding(15)
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(Color("AppSurface2"))
+                .fill(PHTheme.surface2)
                 .overlay(
                     RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color(hex: "AA9DFF").opacity(0.35), lineWidth: 1)
+                        .stroke(PHTheme.accent.opacity(0.35), lineWidth: 1)
                 )
         )
     }
@@ -614,8 +614,8 @@ struct LostFoundCard: View {
     private var isReunited: Bool { post.isReunited }
 
     private var accentColor: Color {
-        if isReunited { return Color(hex: "06D6A0") }
-        return isLost ? Color(hex: "E25718") : Color(hex: "06D6A0")
+        if isReunited { return PHTheme.success }
+        return isLost ? PHTheme.danger : PHTheme.success
     }
 
     var body: some View {
@@ -652,28 +652,28 @@ struct LostFoundCard: View {
 
                     Text(post.animalType)
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(Color("AppText"))
+                        .foregroundStyle(PHTheme.text)
                 }
 
                 HStack(spacing: 6) {
                     if isOwnPost {
                         BadgeText(
                             title: "YOUR POST",
-                            color: Color(hex: "AA9DFF")
+                            color: PHTheme.accent
                         )
                     }
 
                     if isReunited {
                         BadgeText(
                             title: "REUNITED",
-                            color: Color(hex: "06D6A0")
+                            color: PHTheme.success
                         )
                     }
 
                     if isPossibleMatch && subscriptionManager.isPro && !isReunited {
                         BadgeText(
                             title: "POSSIBLE MATCH",
-                            color: Color(hex: "AA9DFF")
+                            color: PHTheme.accent
                         )
                     }
                 }
@@ -681,7 +681,7 @@ struct LostFoundCard: View {
                 if let description = post.description, !description.isEmpty {
                     Text(description)
                         .font(.system(size: 12))
-                        .foregroundStyle(Color("AppSubtext"))
+                        .foregroundStyle(PHTheme.subtext)
                         .lineLimit(2)
                 }
 
@@ -689,38 +689,38 @@ struct LostFoundCard: View {
                     HStack(spacing: 4) {
                         Image(systemName: "mappin")
                             .font(.system(size: 10))
-                            .foregroundStyle(Color("AppPlaceholder"))
+                            .foregroundStyle(PHTheme.placeholder)
 
                         Text(location)
                             .font(.system(size: 11))
-                            .foregroundStyle(Color("AppPlaceholder"))
+                            .foregroundStyle(PHTheme.placeholder)
                     }
                 }
 
                 Text(post.createdAt.relativeString())
                     .font(.system(size: 10))
-                    .foregroundStyle(Color("AppPlaceholder"))
+                    .foregroundStyle(PHTheme.placeholder)
 
                 if let phone = post.contactPhone, !phone.isEmpty {
                     if subscriptionManager.isSemiPro || subscriptionManager.isPro {
                         HStack(spacing: 4) {
                             Image(systemName: "phone.fill")
                                 .font(.system(size: 10))
-                                .foregroundStyle(Color("AppPlaceholder"))
+                                .foregroundStyle(PHTheme.placeholder)
 
                             Text(phone)
                                 .font(.system(size: 11))
-                                .foregroundStyle(Color("AppPlaceholder"))
+                                .foregroundStyle(PHTheme.placeholder)
                         }
                     } else {
                         HStack(spacing: 4) {
                             Image(systemName: "lock.fill")
                                 .font(.system(size: 10))
-                                .foregroundStyle(Color("AppPlaceholder"))
+                                .foregroundStyle(PHTheme.placeholder)
 
                             Text("Upgrade to see contact")
                                 .font(.system(size: 11))
-                                .foregroundStyle(Color("AppPlaceholder"))
+                                .foregroundStyle(PHTheme.placeholder)
                         }
                     }
                 }
@@ -730,18 +730,18 @@ struct LostFoundCard: View {
 
             Image(systemName: "chevron.right")
                 .font(.system(size: 12))
-                .foregroundStyle(Color("AppPlaceholder"))
+                .foregroundStyle(PHTheme.placeholder)
         }
         .padding(14)
         .opacity(isReunited ? 0.82 : 1)
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(Color("AppSurface2"))
+                .fill(PHTheme.surface2)
                 .overlay(
                     RoundedRectangle(cornerRadius: 20)
                         .stroke(
                             isOwnPost
-                            ? Color(hex: "AA9DFF").opacity(0.7)
+                            ? PHTheme.accent.opacity(0.7)
                             : accentColor.opacity(0.2),
                             lineWidth: isOwnPost ? 1.2 : 0.5
                         )
@@ -791,11 +791,11 @@ struct LFDetailRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(Color("AppSubtext"))
+                    .foregroundStyle(PHTheme.subtext)
 
                 Text(value)
                     .font(.system(size: 13))
-                    .foregroundStyle(Color("AppText"))
+                    .foregroundStyle(PHTheme.text)
             }
 
             Spacer()
@@ -840,7 +840,7 @@ struct AddLostFoundView: View {
 
     var body: some View {
         ZStack {
-            Color("AppBackground").ignoresSafeArea()
+            PHTheme.background.ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 0) {
                 HStack {
@@ -849,12 +849,12 @@ struct AddLostFoundView: View {
                     } label: {
                         ZStack {
                             Circle()
-                                .fill(Color("AppSurface"))
+                                .fill(PHTheme.surface)
                                 .frame(width: 36, height: 36)
 
                             Image(systemName: "chevron.left")
                                 .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(Color("AppText"))
+                                .foregroundStyle(PHTheme.text)
                         }
                     }
 
@@ -865,16 +865,16 @@ struct AddLostFoundView: View {
                     } label: {
                         Group {
                             if isLoading {
-                                ProgressView().tint(Color("AppAccentText"))
+                                ProgressView().tint(PHTheme.accent)
                             } else {
                                 Text("Post")
                                     .font(.system(size: 14, weight: .semibold))
-                                    .foregroundStyle(Color("AppAccentText"))
+                                    .foregroundStyle(PHTheme.accent)
                             }
                         }
                         .padding(.horizontal, 20)
                         .padding(.vertical, 9)
-                        .background(Capsule().fill(Color(hex: "E25718")))
+                        .background(Capsule().fill(PHTheme.danger))
                     }
                     .buttonStyle(.plain)
                     .disabled(animalType.isEmpty || isLoading)
@@ -889,7 +889,7 @@ struct AddLostFoundView: View {
                             Text("TYPE")
                                 .font(.system(size: 10, weight: .medium))
                                 .tracking(1.2)
-                                .foregroundStyle(Color("AppSubtext"))
+                                .foregroundStyle(PHTheme.subtext)
 
                             HStack(spacing: 12) {
                                 ForEach(["lost", "found"], id: \.self) { t in
@@ -906,8 +906,8 @@ struct AddLostFoundView: View {
                                             .font(.system(size: 14, weight: .medium))
                                             .foregroundStyle(
                                                 type == t
-                                                ? Color("AppAccentText")
-                                                : Color("AppSubtext")
+                                                ? PHTheme.accent
+                                                : PHTheme.subtext
                                             )
                                             .frame(maxWidth: .infinity)
                                             .padding(.vertical, 12)
@@ -915,15 +915,15 @@ struct AddLostFoundView: View {
                                                 RoundedRectangle(cornerRadius: 12)
                                                     .fill(
                                                         type == t
-                                                        ? Color(hex: "E25718")
-                                                        : Color("AppSurface")
+                                                        ? PHTheme.danger
+                                                        : PHTheme.surface
                                                     )
                                             )
                                             .overlay(alignment: .topTrailing) {
                                                 if t == "lost" && !subscriptionManager.canPostLostPet {
                                                     Image(systemName: "lock.fill")
                                                         .font(.system(size: 10, weight: .semibold))
-                                                        .foregroundStyle(Color("AppSubtext"))
+                                                        .foregroundStyle(PHTheme.subtext)
                                                         .padding(8)
                                                 }
                                             }
@@ -939,14 +939,14 @@ struct AddLostFoundView: View {
                             Text("PHOTO")
                                 .font(.system(size: 10, weight: .medium))
                                 .tracking(1.2)
-                                .foregroundStyle(Color("AppSubtext"))
+                                .foregroundStyle(PHTheme.subtext)
 
                             Button {
                                 showImagePicker = true
                             } label: {
                                 ZStack {
                                     RoundedRectangle(cornerRadius: 16)
-                                        .fill(Color("AppSurface"))
+                                        .fill(PHTheme.surface)
                                         .frame(height: 140)
 
                                     if let img = selectedImage {
@@ -959,11 +959,11 @@ struct AddLostFoundView: View {
                                         VStack(spacing: 8) {
                                             Image(systemName: "camera.fill")
                                                 .font(.system(size: 28))
-                                                .foregroundStyle(Color("AppPlaceholder"))
+                                                .foregroundStyle(PHTheme.placeholder)
 
                                             Text("Add a photo")
                                                 .font(.system(size: 13))
-                                                .foregroundStyle(Color("AppPlaceholder"))
+                                                .foregroundStyle(PHTheme.placeholder)
                                         }
                                     }
                                 }
@@ -994,29 +994,29 @@ struct AddLostFoundView: View {
                             VStack(alignment: .leading, spacing: 10) {
                                 Text("Description")
                                     .font(.system(size: 12, weight: .medium))
-                                    .foregroundStyle(Color("AppSubtext"))
+                                    .foregroundStyle(PHTheme.subtext)
 
                                 ZStack(alignment: .topLeading) {
                                     if description.isEmpty {
                                         Text("Describe the animal, any identifying marks…")
                                             .font(.system(size: 14))
-                                            .foregroundStyle(Color("AppPlaceholder"))
+                                            .foregroundStyle(PHTheme.placeholder)
                                             .padding(.top, 14)
                                             .padding(.leading, 16)
                                     }
 
                                     TextEditor(text: $description)
                                         .scrollContentBackground(.hidden)
-                                        .foregroundStyle(Color("AppText"))
+                                        .foregroundStyle(PHTheme.text)
                                         .frame(height: 100)
                                         .padding(12)
                                 }
                                 .background(
                                     RoundedRectangle(cornerRadius: 18)
-                                        .fill(Color("AppSurface2"))
+                                        .fill(PHTheme.surface2)
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 18)
-                                                .stroke(Color("AppDivider"), lineWidth: 0.5)
+                                                .stroke(PHTheme.divider, lineWidth: 0.5)
                                         )
                                 )
                             }
@@ -1127,7 +1127,7 @@ struct LostFoundMessagesView: View {
         Group {
             if isLoading {
                 Spacer()
-                ProgressView().tint(Color(hex: "E25718"))
+                ProgressView().tint(PHTheme.danger)
                 Spacer()
             } else if conversations.isEmpty {
                 Spacer()
@@ -1135,15 +1135,15 @@ struct LostFoundMessagesView: View {
                 VStack(spacing: 12) {
                     Image(systemName: "bubble.left.and.bubble.right")
                         .font(.system(size: 44))
-                        .foregroundStyle(Color(hex: "E25718").opacity(0.4))
+                        .foregroundStyle(PHTheme.danger.opacity(0.4))
 
                     Text("No messages yet")
                         .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(Color("AppWhiteText"))
+                        .foregroundStyle(PHTheme.subtext)
 
                     Text("Messages from Lost & Found will appear here")
                         .font(.system(size: 13))
-                        .foregroundStyle(Color("AppPlaceholder"))
+                        .foregroundStyle(PHTheme.placeholder)
                         .multilineTextAlignment(.center)
                 }
                 .padding(.horizontal, 40)
@@ -1189,15 +1189,15 @@ struct LostFoundMessagesView: View {
                                     VStack(alignment: .leading, spacing: 3) {
                                         Text(conv.otherUserName)
                                             .font(.system(size: 14, weight: .semibold))
-                                            .foregroundStyle(Color("AppText"))
+                                            .foregroundStyle(PHTheme.text)
 
                                         Text("Re: \(conv.animalType)")
                                             .font(.system(size: 11))
-                                            .foregroundStyle(Color("AppPlaceholder"))
+                                            .foregroundStyle(PHTheme.placeholder)
 
                                         Text(conv.lastMessage)
                                             .font(.system(size: 12))
-                                            .foregroundStyle(Color("AppSubtext"))
+                                            .foregroundStyle(PHTheme.subtext)
                                             .lineLimit(1)
                                     }
 
@@ -1205,7 +1205,7 @@ struct LostFoundMessagesView: View {
 
                                     Text(conv.createdAt.relativeString())
                                         .font(.system(size: 10))
-                                        .foregroundStyle(Color("AppPlaceholder"))
+                                        .foregroundStyle(PHTheme.placeholder)
                                 }
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 12)
@@ -1213,13 +1213,13 @@ struct LostFoundMessagesView: View {
                             .buttonStyle(.plain)
 
                             Divider()
-                                .background(Color("AppDivider"))
+                                .background(PHTheme.divider)
                                 .padding(.leading, 72)
                         }
                     }
                     .background(
                         RoundedRectangle(cornerRadius: 20)
-                            .fill(Color("AppSurface2"))
+                            .fill(PHTheme.surface2)
                     )
                     .padding(.horizontal, 16)
                     .padding(.bottom, 40)

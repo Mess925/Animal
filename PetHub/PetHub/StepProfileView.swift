@@ -25,20 +25,20 @@ struct StepProfileView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Step 2 of 3")
                     .font(.system(size: 13))
-                    .foregroundStyle(Color("AppSubtext"))
+                    .foregroundStyle(PHTheme.subtext)
 
                 Group {
                     Text("Your ")
                         + Text("profile. 🧑")
                         .font(.custom("Georgia-Italic", size: 28))
-                        .foregroundColor(Color(hex: "AA9DFF"))
+                        .foregroundColor(PHTheme.accent)
                 }
                 .font(.system(size: 26, weight: .bold))
-                .foregroundStyle(Color("AppText"))
+                .foregroundStyle(PHTheme.text)
 
                 Text("Tell the pack a little about yourself")
                     .font(.system(size: 12))
-                    .foregroundStyle(Color("AppSubtext").opacity(0.7))
+                    .foregroundStyle(PHTheme.subtext.opacity(0.7))
             }
             .padding(.bottom, 32)
 
@@ -56,15 +56,15 @@ struct StepProfileView: View {
                                     Circle()
                                         .fill(
                                             avatarEmoji == emoji
-                                                ? Color(hex: "AA9DFF").opacity(
+                                                ? PHTheme.accent.opacity(
                                                     0.2
-                                                ) : Color("AppSurface")
+                                                ) : PHTheme.surface
                                         )
                                         .overlay(
                                             Circle()
                                                 .stroke(
                                                     avatarEmoji == emoji
-                                                        ? Color(hex: "AA9DFF")
+                                                        ? PHTheme.accent
                                                         : Color.clear,
                                                     lineWidth: 1.5
                                                 )
@@ -82,29 +82,29 @@ struct StepProfileView: View {
                 Text("BIO")
                     .font(.system(size: 10, weight: .medium))
                     .tracking(1.2)
-                    .foregroundStyle(Color("AppSubtext").opacity(0.7))
+                    .foregroundStyle(PHTheme.subtext.opacity(0.7))
 
                 ZStack(alignment: .topLeading) {
                     if bio.isEmpty {
                         Text("Tell people about yourself…")
                             .font(.system(size: 15))
-                            .foregroundStyle(Color("AppPlaceholder"))
+                            .foregroundStyle(PHTheme.placeholder)
                             .padding(.top, 14)
                             .padding(.leading, 16)
                     }
                     TextEditor(text: $bio)
                         .scrollContentBackground(.hidden)
-                        .foregroundStyle(Color("AppText"))
+                        .foregroundStyle(PHTheme.text)
                         .frame(height: 100)
                         .padding(12)
                 }
                 .background(
-                    RoundedRectangle(cornerRadius: 14)
-                        .fill(Color("AppSurface"))
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(PHTheme.surface)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 14)
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
                                 .stroke(
-                                    Color("AppBorder"),
+                                    PHTheme.border,
                                     lineWidth: 0.5
                                 )
                         )
@@ -113,20 +113,9 @@ struct StepProfileView: View {
             .padding(.bottom, 32)
 
             // Next button
-            Button {
+            PHButton("Continue", icon: "arrow.right") {
                 Task { await saveProfile() }
-            } label: {
-                Text("Continue")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Color("AppAccentText"))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(Color(hex: "AA9DFF"))
-                    )
             }
-            .buttonStyle(.plain)
 
             Spacer()
         }

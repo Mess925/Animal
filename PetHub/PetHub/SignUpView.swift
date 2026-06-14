@@ -2,8 +2,6 @@
 //  SignUpView.swift
 //  PetHub
 //
-//  Created by Han Min Thant on 29/5/26.
-//
 
 import Supabase
 import SwiftUI
@@ -12,6 +10,9 @@ struct SignUpView: View {
     @State private var name = ""
     @State private var email = ""
     @State private var password = ""
+    @State private var isCreating = false
+    @State private var authError: String?
+
     @AppStorage("needsUserOnboarding") var needsUserOnboarding = false
     @AppStorage("isLoggedIn") var isLoggedIn = false
 
@@ -19,128 +20,101 @@ struct SignUpView: View {
     @FocusState private var emailFocused: Bool
     @FocusState private var passwordFocused: Bool
 
+    private var cleanedEmail: String {
+        email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    private var cleanedName: String {
+        name.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var canCreate: Bool {
+        !cleanedName.isEmpty
+            && isValidEmail(cleanedEmail)
+            && password.count >= 8
+            && !isCreating
+    }
+
     var body: some View {
-        ZStack {
-            Color("AppBackground").ignoresSafeArea()
-
+        PHPage {
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: 22) {
+                    AuthHeroCard(
+                        eyebrow: "NEW HERE?",
+                        title: "Create your PetHub account",
+                        subtitle: "Start with your profile, then set up your first pet room.",
+                        icon: "person.crop.circle.badge.plus"
+                    )
+                    .padding(.top, 18)
 
-                    // Headline
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("New here?")
-                            .font(.system(size: 13))
-                            .foregroundStyle(Color("AppSubtext"))
-
-                        Group {
-                            Text("Join the ")
-                                + Text("pack. 🐾")
-                                .font(.custom("Georgia-Italic", size: 28))
-                                .foregroundColor(Color(hex: "AA9DFF"))
-                        }
-                        .font(.system(size: 26, weight: .bold))
-                        .foregroundStyle(Color("AppText"))
-                        .lineSpacing(2)
-
-                        Text("Create your account and get started")
-                            .font(.system(size: 12))
-                            .foregroundStyle(Color("AppSubtext").opacity(0.7))
-                    }
-                    .padding(.bottom, 32)
-
-                    // Fields
-                    VStack(spacing: 10) {
-                        AuthField(
-                            label: "Name",
-                            placeholder: "Enter your name",
-                            text: $name,
-                            isFocused: $nameFocused,
-                            isSecure: false
-                        )
-                        AuthField(
-                            label: "Email",
-                            placeholder: "Enter your email",
-                            text: $email,
-                            isFocused: $emailFocused,
-                            isSecure: false
-                        )
-                        AuthField(
-                            label: "Password",
-                            placeholder: "Create a password",
-                            text: $password,
-                            isFocused: $passwordFocused,
-                            isSecure: true
-                        )
-                    }
-                    .padding(.bottom, 24)
-
-                    // Create Account CTA
-                    Button {
-                        Task { await signUp() }
-                    } label: {
-                        Text("Create Account")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(Color("AppAccentText"))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .fill(Color(hex: "AA9DFF"))
+                    PHCard(padding: 20) {
+                        VStack(spacing: 18) {
+                            AuthField(
+                                label: "Name",
+                                placeholder: "Enter your name",
+                                text: $name,
+                                isFocused: $nameFocused,
+                                isSecure: false,
+                                keyboardType: .default,
+                                textContentType: .name
                             )
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.bottom, 16)
 
-                    // Divider
-                    AuthDivider()
-                        .padding(.bottom, 16)
+                            AuthField(
+                                label: "Email",
+                                placeholder: "Enter your email",
+                                text: $email,
+                                isFocused: $emailFocused,
+                                isSecure: false,
+                                keyboardType: .emailAddress,
+                                textContentType: .emailAddress
+                            )
 
-                    // Apple
-                    Button {
-                        signUpWithApple()
-                    } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: "apple.logo")
-                                .font(.system(size: 15, weight: .medium))
-                            Text("Continue with Apple")
-                                .font(.system(size: 14, weight: .medium))
+                            AuthField(
+                                label: "Password",
+                                placeholder: "At least 8 characters",
+                                text: $password,
+                                isFocused: $passwordFocused,
+                                isSecure: true,
+                                keyboardType: .default,
+                                textContentType: .newPassword
+                            )
                         }
-                        .foregroundStyle(Color("AppText"))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 15)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color("AppSurface"))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .stroke(
-                                            Color("AppBorder"),
-                                            lineWidth: 0.5
-                                        )
-                                )
-                        )
                     }
-                    .buttonStyle(.plain)
-                    .padding(.bottom, 32)
 
-                    // Sign in link
+                    if let authError {
+                        AuthErrorBanner(message: authError)
+                    }
+
+                    PHButton(
+                        "Create Account",
+                        icon: "pawprint.fill",
+                        isLoading: isCreating,
+                        isDisabled: !canCreate
+                    ) {
+                        Task { await signUp() }
+                    }
+
+                    AuthDivider()
+
+                    AuthSocialButton(title: "Continue with Apple", systemImage: "apple.logo") {
+                        signUpWithApple()
+                    }
+
                     HStack(spacing: 4) {
                         Spacer()
                         Text("Already have an account?")
-                            .font(.system(size: 12))
-                            .foregroundStyle(Color("AppSubtext"))
+                            .font(.system(size: 13))
+                            .foregroundStyle(PHTheme.subtext)
                         NavigationLink(destination: SignInView()) {
                             Text("Sign In")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundStyle(
-                                    Color(hex: "AA9DFF").opacity(0.75)
-                                )
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(PHTheme.accent)
                         }
                         Spacer()
                     }
+                    .padding(.top, 2)
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 20)
+                .padding(.horizontal, PHTheme.pagePadding)
                 .padding(.bottom, 40)
             }
         }
@@ -148,9 +122,19 @@ struct SignUpView: View {
     }
 
     private func signUp() async {
+        authError = nil
+
+        guard canCreate else {
+            authError = "Please enter your name, a valid email, and an 8+ character password."
+            return
+        }
+
+        isCreating = true
+        defer { isCreating = false }
+
         do {
             let response = try await supabase.auth.signUp(
-                email: email,
+                email: cleanedEmail,
                 password: password
             )
 
@@ -159,17 +143,18 @@ struct SignUpView: View {
                 .from("profiles")
                 .insert([
                     "id": user.id.uuidString,
-                    "name": name,
-                    "username":
-                        "@\(email.components(separatedBy: "@").first ?? "")",
+                    "name": cleanedName,
+                    "username": "@\(cleanedEmail.components(separatedBy: "@").first ?? "")",
                     "bio": "",
                     "avatar_emoji": "🧑",
                     "avatar_accent_hex": "AA9DFF",
                 ])
                 .execute()
+
             needsUserOnboarding = true
             isLoggedIn = true
         } catch {
+            authError = friendlyAuthError(error)
         }
     }
 

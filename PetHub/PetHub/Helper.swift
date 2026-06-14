@@ -12,12 +12,12 @@ struct AuthenticationField: View {
             Text(title.uppercased())
                 .font(.system(size: 9.5, weight: .medium))
                 .tracking(1.2)
-                .foregroundStyle(Color(hex: "AA9DFF").opacity(0.7))
+                .foregroundStyle(PHTheme.accent.opacity(0.7))
 
             HStack(spacing: 10) {
                 Image(systemName: isSecure ? "lock" : "envelope")
                     .font(.system(size: 13))
-                    .foregroundStyle(Color(hex: "AA9DFF").opacity(0.5))
+                    .foregroundStyle(PHTheme.accent.opacity(0.5))
                     .frame(width: 16)
 
                 Group {
@@ -26,14 +26,14 @@ struct AuthenticationField: View {
                             title,
                             text: $text,
                             prompt: Text(placeholder)
-                                .foregroundStyle(Color("AppPlaceholder"))
+                                .foregroundStyle(PHTheme.placeholder)
                         )
                     } else {
                         TextField(
                             title,
                             text: $text,
                             prompt: Text(placeholder)
-                                .foregroundStyle(Color("AppPlaceholder"))
+                                .foregroundStyle(PHTheme.placeholder)
                         )
                         .textInputAutocapitalization(.never)
                         .disableAutocorrection(true)
@@ -41,17 +41,17 @@ struct AuthenticationField: View {
                     }
                 }
                 .font(.system(size: 13))
-                .foregroundStyle(isFocused ? Color("AppText") : Color("AppText").opacity(0.6))
+                .foregroundStyle(isFocused ? PHTheme.text : PHTheme.text.opacity(0.6))
             }
             .focused($isFocused)
             .padding(.horizontal, 14)
             .padding(.vertical, 13)
-            .background(Color("AppDivider"))
+            .background(PHTheme.divider)
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
                     .stroke(
-                        isFocused ? Color(hex: "AA9DFF").opacity(0.5) : Color("AppBorder"),
+                        isFocused ? PHTheme.accent.opacity(0.5) : PHTheme.border,
                         lineWidth: 0.5
                     )
             )
@@ -66,14 +66,14 @@ struct OrDivider: View {
     var body: some View {
         HStack(spacing: 10) {
             Rectangle()
-                .fill(Color("AppBorder"))
+                .fill(PHTheme.border)
                 .frame(height: 0.5)
             Text("OR")
                 .font(.system(size: 10, weight: .regular))
                 .tracking(0.5)
-                .foregroundStyle(Color("AppSubtext"))
+                .foregroundStyle(PHTheme.subtext)
             Rectangle()
-                .fill(Color("AppBorder"))
+                .fill(PHTheme.border)
                 .frame(height: 0.5)
         }
     }

@@ -27,6 +27,7 @@ struct PetHubApp: App {
     var body: some Scene {
         WindowGroup {
             rootView
+                .tint(PHTheme.accent)
                 .preferredColorScheme(themeManager.theme.colorScheme)
                 .environmentObject(themeManager)
                 .environmentObject(subscriptionManager)
@@ -98,6 +99,9 @@ struct PetHubApp: App {
 
             subscriptionManager.fetchCustomerInfo()
         } catch {
+            #if DEBUG
+            print("Check onboarding error:", error)
+            #endif
         }
     }
 }

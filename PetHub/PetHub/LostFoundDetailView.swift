@@ -23,7 +23,7 @@ struct LostFoundDetailView: View {
     private var isLost: Bool { post.reportType == "lost" }
     private var isReunited: Bool { post.isReunited }
     private var accent: Color {
-        isReunited ? Color(hex: "06D6A0") : (isLost ? Color(hex: "E25718") : Color(hex: "06D6A0"))
+        isReunited ? PHTheme.success : (isLost ? PHTheme.danger : PHTheme.success)
     }
 
     private var isSemiPro: Bool { subscriptionManager.isSemiPro }
@@ -35,7 +35,7 @@ struct LostFoundDetailView: View {
 
     var body: some View {
         ZStack {
-            Color("AppBackground").ignoresSafeArea()
+            PHTheme.background.ignoresSafeArea()
 
             VStack(spacing: 0) {
                 header
@@ -112,12 +112,12 @@ struct LostFoundDetailView: View {
             } label: {
                 ZStack {
                     Circle()
-                        .fill(Color("AppSurface"))
+                        .fill(PHTheme.surface)
                         .frame(width: 36, height: 36)
 
                     Image(systemName: "chevron.left")
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(Color("AppText"))
+                        .foregroundStyle(PHTheme.text)
                 }
             }
 
@@ -125,7 +125,7 @@ struct LostFoundDetailView: View {
 
             Text(isLost ? "Lost Animal" : "Found Animal")
                 .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(Color("AppText"))
+                .foregroundStyle(PHTheme.text)
 
             Spacer()
 
@@ -186,22 +186,22 @@ struct LostFoundDetailView: View {
         HStack(spacing: 12) {
             ZStack {
                 Circle()
-                    .fill(Color(hex: "06D6A0").opacity(0.15))
+                    .fill(PHTheme.success.opacity(0.15))
                     .frame(width: 42, height: 42)
 
                 Image(systemName: "checkmark.seal.fill")
                     .font(.system(size: 18))
-                    .foregroundStyle(Color(hex: "06D6A0"))
+                    .foregroundStyle(PHTheme.success)
             }
 
             VStack(alignment: .leading, spacing: 3) {
                 Text("Reunited Successfully")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Color("AppText"))
+                    .foregroundStyle(PHTheme.text)
 
                 Text("This pet has been reunited with its family.")
                     .font(.system(size: 12))
-                    .foregroundStyle(Color("AppSubtext"))
+                    .foregroundStyle(PHTheme.subtext)
             }
 
             Spacer()
@@ -209,10 +209,10 @@ struct LostFoundDetailView: View {
         .padding(15)
         .background(
             RoundedRectangle(cornerRadius: 18)
-                .fill(Color("AppSurface2"))
+                .fill(PHTheme.surface2)
                 .overlay(
                     RoundedRectangle(cornerRadius: 18)
-                        .stroke(Color(hex: "06D6A0").opacity(0.35), lineWidth: 1)
+                        .stroke(PHTheme.success.opacity(0.35), lineWidth: 1)
                 )
         )
         .padding(.horizontal, 16)
@@ -263,10 +263,10 @@ struct LostFoundDetailView: View {
         }
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(Color("AppSurface2"))
+                .fill(PHTheme.surface2)
                 .overlay(
                     RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color("AppDivider"), lineWidth: 0.5)
+                        .stroke(PHTheme.divider, lineWidth: 0.5)
                 )
         )
         .padding(.horizontal, 16)
@@ -280,32 +280,32 @@ struct LostFoundDetailView: View {
             HStack(spacing: 12) {
                 ZStack {
                     Circle()
-                        .fill(Color("AppSurface"))
+                        .fill(PHTheme.surface)
                         .frame(width: 36, height: 36)
 
                     Image(systemName: "lock.fill")
                         .font(.system(size: 12))
-                        .foregroundStyle(Color("AppPlaceholder"))
+                        .foregroundStyle(PHTheme.placeholder)
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Contact info locked")
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(Color("AppText"))
+                        .foregroundStyle(PHTheme.text)
 
                     Text("Upgrade to Pro to unlock")
                         .font(.system(size: 11))
-                        .foregroundStyle(Color("AppPlaceholder"))
+                        .foregroundStyle(PHTheme.placeholder)
                 }
 
                 Spacer()
 
                 Text("Upgrade")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(Color(hex: "AA9DFF"))
+                    .foregroundStyle(PHTheme.accent)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
-                    .background(Color(hex: "AA9DFF").opacity(0.12), in: Capsule())
+                    .background(PHTheme.accent.opacity(0.12), in: Capsule())
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 13)
@@ -320,11 +320,11 @@ struct LostFoundDetailView: View {
                 Text("DESCRIPTION")
                     .font(.system(size: 10, weight: .medium))
                     .tracking(1.3)
-                    .foregroundStyle(Color("AppSubtext"))
+                    .foregroundStyle(PHTheme.subtext)
 
                 Text(description)
                     .font(.system(size: 14))
-                    .foregroundStyle(Color("AppText"))
+                    .foregroundStyle(PHTheme.text)
                     .lineSpacing(3)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -332,10 +332,10 @@ struct LostFoundDetailView: View {
             .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(Color("AppSurface2"))
+                    .fill(PHTheme.surface2)
                     .overlay(
                         RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color("AppDivider"), lineWidth: 0.5)
+                            .stroke(PHTheme.divider, lineWidth: 0.5)
                     )
             )
             .padding(.horizontal, 16)
@@ -361,11 +361,11 @@ struct LostFoundDetailView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Details locked")
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(Color("AppText"))
+                        .foregroundStyle(PHTheme.text)
 
                     Text("Upgrade to Semi-Pro to see location, description and more")
                         .font(.system(size: 12))
-                        .foregroundStyle(Color("AppPlaceholder"))
+                        .foregroundStyle(PHTheme.placeholder)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
@@ -373,12 +373,12 @@ struct LostFoundDetailView: View {
 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 12))
-                    .foregroundStyle(Color("AppBorder"))
+                    .foregroundStyle(PHTheme.border)
             }
             .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(Color("AppSurface2"))
+                    .fill(PHTheme.surface2)
                     .overlay(
                         RoundedRectangle(cornerRadius: 20)
                             .stroke(accent.opacity(0.2), lineWidth: 0.5)
@@ -406,7 +406,7 @@ struct LostFoundDetailView: View {
                     .padding(.vertical, 16)
                     .background(
                         RoundedRectangle(cornerRadius: 16)
-                            .fill(Color(hex: "06D6A0"))
+                            .fill(PHTheme.success)
                     )
                 }
                 .buttonStyle(.plain)
@@ -449,7 +449,7 @@ struct LostFoundDetailView: View {
             .padding(.vertical, 16)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(isLost ? Color(hex: "06D6A0") : Color(hex: "AA9DFF"))
+                    .fill(isLost ? PHTheme.success : PHTheme.accent)
             )
         }
         .buttonStyle(.plain)
@@ -467,12 +467,12 @@ struct LostFoundDetailView: View {
                 Text("Upgrade to Pro to respond")
                     .font(.system(size: 14, weight: .semibold))
             }
-            .foregroundStyle(Color("AppSubtext"))
+            .foregroundStyle(PHTheme.subtext)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color("AppSurface"))
+                    .fill(PHTheme.surface)
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
                             .stroke(accent.opacity(0.3), lineWidth: 1)
@@ -486,7 +486,7 @@ struct LostFoundDetailView: View {
     @ViewBuilder
     private var heroBg: some View {
         ZStack {
-            Color("AppSurface")
+            PHTheme.surface
 
             Image(systemName: "pawprint.fill")
                 .font(.system(size: 60))
@@ -557,7 +557,7 @@ struct LostFoundDetailView: View {
 private struct LFDivider: View {
     var body: some View {
         Divider()
-            .background(Color("AppDivider"))
+            .background(PHTheme.divider)
             .padding(.leading, 68)
     }
 }

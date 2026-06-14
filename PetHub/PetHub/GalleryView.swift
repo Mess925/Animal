@@ -66,10 +66,10 @@ struct GalleryView: View {
                             .foregroundStyle(room.accent.opacity(0.3))
                         Text("No photos yet")
                             .font(.system(size: 16, weight: .medium))
-                            .foregroundStyle(Color("AppWhiteText"))
+                            .foregroundStyle(PHTheme.subtext)
                         Text("Tap the camera to capture a moment")
                             .font(.system(size: 13))
-                            .foregroundStyle(Color("AppPlaceholder"))
+                            .foregroundStyle(PHTheme.placeholder)
                             .multilineTextAlignment(.center)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -107,7 +107,7 @@ struct GalleryView: View {
                         )
                     Image(systemName: "camera.fill")
                         .font(.system(size: 20))
-                        .foregroundStyle(Color("AppAccentText"))
+                        .foregroundStyle(PHTheme.accent)
                 }
             }
             .buttonStyle(.plain)
@@ -350,7 +350,7 @@ struct PhotoDetailView: View {
 
     var body: some View {
         ZStack {
-            Color("AppBackground").ignoresSafeArea()
+            PHTheme.background.ignoresSafeArea()
 
             VStack(spacing: 0) {
                 // Top bar
@@ -360,12 +360,12 @@ struct PhotoDetailView: View {
                     } label: {
                         ZStack {
                             Circle()
-                                .fill(Color("AppDivider"))
+                                .fill(PHTheme.divider)
                                 .frame(width: 36, height: 36)
                             Image(systemName: "xmark")
                                 .font(.system(size: 13, weight: .medium))
                                 .foregroundStyle(
-                                    Color("AppAdaptiveWhite").opacity(0.8)
+                                    PHTheme.textOnAccent.opacity(0.8)
                                 )
                         }
                     }
@@ -374,7 +374,7 @@ struct PhotoDetailView: View {
                     } label: {
                         Image(systemName: "square.and.arrow.up")
                             .font(.system(size: 17))
-                            .foregroundStyle(Color("AppWhiteText"))
+                            .foregroundStyle(PHTheme.subtext)
                     }
                 }
                 .padding(.horizontal, 20)
@@ -407,10 +407,10 @@ struct PhotoDetailView: View {
                         VStack(alignment: .leading, spacing: 1) {
                             Text(photo.postedBy.name)
                                 .font(.system(size: 13, weight: .semibold))
-                                .foregroundStyle(Color("AppText"))
+                                .foregroundStyle(PHTheme.text)
                             Text(photo.timestamp.relativeString())
                                 .font(.system(size: 11))
-                                .foregroundStyle(Color("AppWhiteText"))
+                                .foregroundStyle(PHTheme.subtext)
                         }
                         Spacer()
                         Button {
@@ -423,12 +423,12 @@ struct PhotoDetailView: View {
                                 .font(.system(size: 17))
                                 .foregroundStyle(
                                     isLiked
-                                        ? Color(hex: "FF6B6B")
-                                        : Color("AppSubtext")
+                                        ? PHTheme.accent3
+                                        : PHTheme.subtext
                                 )
                                 Text("\(likeCount)")
                                     .font(.system(size: 13, weight: .medium))
-                                    .foregroundStyle(Color("AppWhiteText"))
+                                    .foregroundStyle(PHTheme.subtext)
                             }
                         }
                         .buttonStyle(.plain)
@@ -437,14 +437,14 @@ struct PhotoDetailView: View {
                     if !photo.caption.isEmpty {
                         Text(photo.caption)
                             .font(.system(size: 14))
-                            .foregroundStyle(Color("AppText"))
+                            .foregroundStyle(PHTheme.text)
                     }
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 16)
 
                 Divider()
-                    .background(Color("AppDivider"))
+                    .background(PHTheme.divider)
                     .padding(.horizontal, 20)
                     .padding(.vertical, 14)
 
@@ -454,14 +454,14 @@ struct PhotoDetailView: View {
                         if commentsWithNames.isEmpty {
                             Text("No comments yet. Be first!")
                                 .font(.system(size: 13))
-                                .foregroundStyle(Color("AppPlaceholder"))
+                                .foregroundStyle(PHTheme.placeholder)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 24)
                         } else {
                             ForEach(commentsWithNames) { comment in
                                 HStack(alignment: .top, spacing: 10) {
                                     Circle()
-                                        .fill(Color(hex: "AA9DFF").opacity(0.2))
+                                        .fill(PHTheme.accent.opacity(0.2))
                                         .frame(width: 28, height: 28)
                                         .overlay(
                                             Text(
@@ -476,7 +476,7 @@ struct PhotoDetailView: View {
                                                 )
                                             )
                                             .foregroundStyle(
-                                                Color(hex: "AA9DFF")
+                                                PHTheme.accent
                                             )
                                         )
                                     VStack(alignment: .leading, spacing: 3) {
@@ -488,15 +488,15 @@ struct PhotoDetailView: View {
                                                 )
                                             )
                                             .foregroundStyle(
-                                                Color("AppSubtext")
+                                                PHTheme.subtext
                                             )
                                         Text(comment.body)
                                             .font(.system(size: 13))
-                                            .foregroundStyle(Color("AppText"))
+                                            .foregroundStyle(PHTheme.text)
                                         Text(comment.createdAt.relativeString())
                                             .font(.system(size: 10))
                                             .foregroundStyle(
-                                                Color("AppPlaceholder")
+                                                PHTheme.placeholder
                                             )
                                     }
                                     Spacer()
@@ -517,20 +517,20 @@ struct PhotoDetailView: View {
                         "",
                         text: $commentText,
                         prompt: Text("Add a comment…").foregroundStyle(
-                            Color("AppPlaceholder")
+                            PHTheme.placeholder
                         )
                     )
                     .focused($commentFocused)
-                    .foregroundStyle(Color("AppText"))
+                    .foregroundStyle(PHTheme.text)
                     .font(.system(size: 13))
                     .padding(.horizontal, 14)
                     .frame(height: 40)
                     .background(
                         RoundedRectangle(cornerRadius: 20)
-                            .fill(Color("AppDivider"))
+                            .fill(PHTheme.divider)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 20)
-                                    .stroke(Color("AppBorder"), lineWidth: 0.5)
+                                    .stroke(PHTheme.border, lineWidth: 0.5)
                             )
                     )
                     .onSubmit { submitComment() }
@@ -540,13 +540,13 @@ struct PhotoDetailView: View {
                             submitComment()
                         } label: {
                             ZStack {
-                                Circle().fill(Color(hex: "AA9DFF")).frame(
+                                Circle().fill(PHTheme.accent).frame(
                                     width: 34,
                                     height: 34
                                 )
                                 Image(systemName: "arrow.up")
                                     .font(.system(size: 14, weight: .semibold))
-                                    .foregroundStyle(Color("AppAccentText"))
+                                    .foregroundStyle(PHTheme.accent)
                             }
                         }
                         .buttonStyle(.plain)
@@ -557,10 +557,10 @@ struct PhotoDetailView: View {
                 .padding(.vertical, 12)
                 .background(
                     Rectangle()
-                        .fill(Color("AppBackground"))
+                        .fill(PHTheme.background)
                         .overlay(
                             Rectangle()
-                                .fill(Color("AppDivider").opacity(0.6))
+                                .fill(PHTheme.divider.opacity(0.6))
                                 .frame(height: 0.5),
                             alignment: .top
                         )
@@ -727,16 +727,16 @@ struct CommentRow: View {
                 if let sender = message.sender {
                     Text(sender.name)
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(Color("AppSubtext"))
+                        .foregroundStyle(PHTheme.subtext)
                 }
                 if case .text(let text) = message.content {
                     Text(text)
                         .font(.system(size: 13))
-                        .foregroundStyle(Color("AppText"))
+                        .foregroundStyle(PHTheme.text)
                 }
                 Text(message.timestamp.relativeString())
                     .font(.system(size: 10))
-                    .foregroundStyle(Color("AppPlaceholder"))
+                    .foregroundStyle(PHTheme.placeholder)
             }
             Spacer()
         }
@@ -748,5 +748,5 @@ struct CommentRow: View {
 
 #Preview {
     GalleryView(room: .mochi)
-        .background(Color("AppBackground"))
+        .background(PHTheme.background)
 }

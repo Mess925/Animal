@@ -69,7 +69,7 @@ struct OnboardingView: View {
             WelcomeView()
         } else {
             ZStack(alignment: .bottom) {
-                Color("AppBackground").ignoresSafeArea()
+                PHTheme.background.ignoresSafeArea()
 
                 // Slides
                 TabView(selection: $currentPage) {
@@ -87,7 +87,7 @@ struct OnboardingView: View {
                     HStack(spacing: 6) {
                         ForEach(pages.indices, id: \.self) { i in
                             Capsule()
-                                .fill(i == currentPage ? accent : Color("AppBorder").opacity(1.8))
+                                .fill(i == currentPage ? accent : PHTheme.border.opacity(1.8))
                                 .frame(width: i == currentPage ? 20 : 6, height: 6)
                                 .animation(.spring(response: 0.3, dampingFraction: 0.7), value: currentPage)
                         }
@@ -105,13 +105,14 @@ struct OnboardingView: View {
                         }
                     } label: {
                         Text(currentPage < pages.count - 1 ? "Continue" : "Get Started")
-                            .font(.system(size: 16, weight: .semibold))
+                            .font(.system(size: 16, weight: .bold, design: .rounded))
                             .foregroundStyle(ctaTextColor)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
                             .background(
-                                RoundedRectangle(cornerRadius: 20)
+                                RoundedRectangle(cornerRadius: 20, style: .continuous)
                                     .fill(accent)
+                                    .shadow(color: accent.opacity(0.22), radius: 12, x: 0, y: 6)
                             )
                     }
                     .buttonStyle(.plain)
@@ -123,8 +124,8 @@ struct OnboardingView: View {
                         finishOnboarding()
                     } label: {
                         Text("Skip")
-                            .font(.system(size: 13))
-                            .foregroundStyle(Color("AppPlaceholder"))
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(PHTheme.subtext)
                     }
                     .buttonStyle(.plain)
                     .padding(.top, 14)
@@ -134,7 +135,7 @@ struct OnboardingView: View {
                 }
                 .background(
                     LinearGradient(
-                        colors: [Color("AppBackground").opacity(0), Color("AppBackground")],
+                        colors: [PHTheme.background.opacity(0), PHTheme.background],
                         startPoint: .top,
                         endPoint: .init(x: 0.5, y: 0.25)
                     )
@@ -144,13 +145,7 @@ struct OnboardingView: View {
         }
     }
 
-    private var ctaTextColor: Color {
-        switch pages[currentPage].accentHex {
-        case "AA9DFF": return Color("AppAccentText")
-        case "7EC8C8": return Color("AppAccentText")
-        default:       return .white
-        }
-    }
+    private var ctaTextColor: Color { .white }
 
     private func finishOnboarding() {
         hasSeenOnboarding = true
@@ -196,8 +191,8 @@ private struct OnboardingSlide: View {
                         .frame(width: 46, height: 46)
                         .background(
                             Circle()
-                                .fill(Color("AppSurface"))
-                                .overlay(Circle().stroke(Color("AppBorder"), lineWidth: 0.5))
+                                .fill(PHTheme.surface)
+                                .overlay(Circle().stroke(PHTheme.border, lineWidth: 0.5))
                         )
                         .offset(
                             x: f.x * 86,
@@ -212,7 +207,7 @@ private struct OnboardingSlide: View {
             Text(page.title)
                 .font(.system(size: 24, weight: .bold))
                 .multilineTextAlignment(.center)
-                .foregroundStyle(Color("AppText"))
+                .foregroundStyle(PHTheme.text)
                 .lineSpacing(2)
                 .padding(.horizontal, 32)
                 .padding(.bottom, 14)
@@ -220,7 +215,7 @@ private struct OnboardingSlide: View {
             Text(page.body)
                 .font(.system(size: 14))
                 .multilineTextAlignment(.center)
-                .foregroundStyle(Color("AppSubtext"))
+                .foregroundStyle(PHTheme.subtext)
                 .lineSpacing(4)
                 .padding(.horizontal, 36)
                 .padding(.bottom, 28)

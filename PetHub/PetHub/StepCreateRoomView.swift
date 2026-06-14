@@ -44,20 +44,20 @@ struct StepCreateRoomView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Step 3 of 3")
                     .font(.system(size: 13))
-                    .foregroundStyle(Color("AppSubtext"))
+                    .foregroundStyle(PHTheme.subtext)
 
                 Group {
                     Text("Add your ")
                     Text("first pet. 🐾")
                         .font(.custom("Georgia-Italic", size: 28))
-                        .foregroundColor(Color(hex: "AA9DFF"))
+                        .foregroundColor(PHTheme.accent)
                 }
                 .font(.system(size: 26, weight: .bold))
-                .foregroundStyle(Color("AppText"))
+                .foregroundStyle(PHTheme.text)
 
                 Text("Create a room for your furry friend")
                     .font(.system(size: 12))
-                    .foregroundStyle(Color("AppSubtext").opacity(0.7))
+                    .foregroundStyle(PHTheme.subtext.opacity(0.7))
             }
             .padding(.bottom, 32)
 
@@ -80,10 +80,11 @@ struct StepCreateRoomView: View {
 
                 AuthField(
                     label: "Age",
-                    placeholder: "e.g. 2 years old",
+                    placeholder: "e.g. 2",
                     text: $age,
                     isFocused: $ageFocused,
-                    isSecure: false
+                    isSecure: false,
+                    keyboardType: .numberPad
                 )
             }
             .padding(.bottom, 24)
@@ -92,7 +93,7 @@ struct StepCreateRoomView: View {
                 Text("ICON")
                     .font(.system(size: 10, weight: .medium))
                     .tracking(1.2)
-                    .foregroundStyle(Color("AppSubtext").opacity(0.7))
+                    .foregroundStyle(PHTheme.subtext.opacity(0.7))
 
                 HStack(spacing: 12) {
                     ForEach(icons, id: \.self) { icon in
@@ -104,7 +105,7 @@ struct StepCreateRoomView: View {
                                 .foregroundStyle(
                                     selectedIcon == icon
                                     ? Color(hex: selectedAccent)
-                                    : Color("AppSubtext")
+                                    : PHTheme.subtext
                                 )
                                 .frame(width: 48, height: 48)
                                 .background(
@@ -112,7 +113,7 @@ struct StepCreateRoomView: View {
                                         .fill(
                                             selectedIcon == icon
                                             ? Color(hex: selectedAccent).opacity(0.15)
-                                            : Color("AppSurface")
+                                            : PHTheme.surface
                                         )
                                 )
                         }
@@ -126,7 +127,7 @@ struct StepCreateRoomView: View {
                 Text("COLOR")
                     .font(.system(size: 10, weight: .medium))
                     .tracking(1.2)
-                    .foregroundStyle(Color("AppSubtext").opacity(0.7))
+                    .foregroundStyle(PHTheme.subtext.opacity(0.7))
 
                 HStack(spacing: 12) {
                     ForEach(accents, id: \.self) { hex in
@@ -151,32 +152,22 @@ struct StepCreateRoomView: View {
             }
             .padding(.bottom, 32)
 
-            Button {
+            PHButton(
+                "Let's Go! 🐾",
+                icon: "checkmark",
+                isLoading: isLoading,
+                isDisabled: !canFinish
+            ) {
                 Task { await completeOnboarding() }
-            } label: {
-                Group {
-                    if isLoading {
-                        ProgressView()
-                            .tint(Color("AppAccentText"))
-                    } else {
-                        Text("Let's Go! 🐾")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(Color("AppAccentText"))
-                    }
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(canFinish ? Color(hex: "AA9DFF") : Color(hex: "AA9DFF").opacity(0.4))
-                )
             }
-            .buttonStyle(.plain)
-            .disabled(!canFinish)
 
             Spacer()
         }
         .padding(.horizontal, 24)
+        .onChange(of: age) { _, newValue in
+            let filtered = newValue.filter { $0.isNumber }
+            if filtered != newValue { age = filtered }
+        }
     }
 
     private func completeOnboarding() async {

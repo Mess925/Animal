@@ -58,7 +58,7 @@ struct PeopleView: View {
                 if dmMembers.isEmpty {
                     Text("No other members yet")
                         .font(.system(size: 13))
-                        .foregroundStyle(Color("AppPlaceholder"))
+                        .foregroundStyle(PHTheme.placeholder)
                         .padding(.horizontal, 20)
                         .padding(.vertical, 16)
                 } else {
@@ -88,17 +88,17 @@ struct PeopleView: View {
 
                             if member.id != dmMembers.last?.id {
                                 Divider()
-                                    .background(Color("AppDivider"))
+                                    .background(PHTheme.divider)
                                     .padding(.leading, 68)
                             }
                         }
                     }
                     .background(
                         RoundedRectangle(cornerRadius: 20)
-                            .fill(Color("AppSurface2"))
+                            .fill(PHTheme.surface2)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 20)
-                                    .stroke(Color("AppDivider"), lineWidth: 0.5)
+                                    .stroke(PHTheme.divider, lineWidth: 0.5)
                             )
                     )
                     .padding(.horizontal, 16)
@@ -240,7 +240,7 @@ struct PeopleSectionLabel: View {
         Text(title.uppercased())
             .font(.system(size: 10, weight: .medium))
             .tracking(1.2)
-            .foregroundStyle(Color("AppSubtext"))
+            .foregroundStyle(PHTheme.subtext)
     }
 }
 
@@ -270,10 +270,10 @@ struct GroupChatRow: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text("\(room.name)'s Room")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Color("AppText"))
+                    .foregroundStyle(PHTheme.text)
                 Text(memberNames)
                     .font(.system(size: 11))
-                    .foregroundStyle(Color("AppWhiteText"))
+                    .foregroundStyle(PHTheme.subtext)
                     .lineLimit(1)
             }
 
@@ -281,7 +281,7 @@ struct GroupChatRow: View {
 
             Image(systemName: "chevron.right")
                 .font(.system(size: 12))
-                .foregroundStyle(Color("AppDivider"))
+                .foregroundStyle(PHTheme.divider)
         }
         .padding(14)
         .background(
@@ -314,20 +314,20 @@ struct DMRow: View {
 
                 if thread.participant.isOnline {
                     Circle()
-                        .fill(Color(hex: "06D6A0"))
+                        .fill(PHTheme.success)
                         .frame(width: 11, height: 11)
-                        .overlay(Circle().stroke(Color("AppSurface2"), lineWidth: 2))
+                        .overlay(Circle().stroke(PHTheme.surface2, lineWidth: 2))
                 }
             }
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(thread.participant.name)
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Color("AppText"))
+                    .foregroundStyle(PHTheme.text)
 
                 Text(preview)
                     .font(.system(size: 12))
-                    .foregroundStyle(isEmpty ? Color("AppPlaceholder") : Color("AppSubtext"))
+                    .foregroundStyle(isEmpty ? PHTheme.placeholder : PHTheme.subtext)
                     .italic(isEmpty)
                     .lineLimit(1)
             }
@@ -336,7 +336,7 @@ struct DMRow: View {
 
             Image(systemName: "chevron.right")
                 .font(.system(size: 11))
-                .foregroundStyle(Color("AppDivider"))
+                .foregroundStyle(PHTheme.divider)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 13)
@@ -347,5 +347,5 @@ struct DMRow: View {
 
 #Preview {
     PeopleView(room: .mochi)
-        .background(Color("AppBackground"))
+        .background(PHTheme.background)
 }

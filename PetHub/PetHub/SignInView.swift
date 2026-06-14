@@ -26,153 +26,89 @@ struct SignInView: View {
         isValidEmail(cleanedEmail) && !password.isEmpty && !isSigningIn
     }
 
-    var greeting: AttributedString {
-        var text = AttributedString("Good to see you, pet parent. 🐾")
-
-        if let range = text.range(of: "pet parent. 🐾") {
-            text[range].font = .custom("Georgia-Italic", size: 28)
-            text[range].foregroundColor = Color(hex: "AA9DFF")
-        }
-
-        return text
-    }
-
     var body: some View {
-        ZStack {
-            Color("AppBackground").ignoresSafeArea()
-
+        PHPage {
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: 22) {
+                    AuthHeroCard(
+                        eyebrow: "WELCOME BACK",
+                        title: "Good to see you again",
+                        subtitle: "Sign in to continue caring for your pets.",
+                        icon: "pawprint.fill"
+                    )
+                    .padding(.top, 18)
 
-                    // MARK: Headline
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Welcome back")
-                            .font(.system(size: 13))
-                            .foregroundStyle(Color("AppSubtext"))
+                    PHCard(padding: 20) {
+                        VStack(spacing: 18) {
+                            AuthField(
+                                label: "Email",
+                                placeholder: "Enter your email",
+                                text: $email,
+                                isFocused: $emailFocused,
+                                isSecure: false,
+                                keyboardType: .emailAddress,
+                                textContentType: .emailAddress
+                            )
 
-                        Text(greeting)
-                            .font(.system(size: 26, weight: .bold))
-                            .foregroundStyle(Color("AppText"))
-                            .lineSpacing(2)
-
-                        Text("Your pets missed you")
-                            .font(.system(size: 12))
-                            .foregroundStyle(Color("AppSubtext").opacity(0.7))
+                            AuthField(
+                                label: "Password",
+                                placeholder: "Enter your password",
+                                text: $password,
+                                isFocused: $passwordFocused,
+                                isSecure: true,
+                                keyboardType: .default,
+                                textContentType: .password
+                            )
+                        }
                     }
-                    .padding(.bottom, 32)
 
-                    // MARK: Fields
-                    VStack(spacing: 10) {
-                        AuthField(
-                            label: "Email",
-                            placeholder: "Enter your email",
-                            text: $email,
-                            isFocused: $emailFocused,
-                            isSecure: false
-                        )
-
-                        AuthField(
-                            label: "Password",
-                            placeholder: "Enter your password",
-                            text: $password,
-                            isFocused: $passwordFocused,
-                            isSecure: true
-                        )
-                    }
-                    .padding(.bottom, 10)
-
-                    // MARK: Forgot Password
                     HStack {
                         Spacer()
                         Button {
                             showForgotPassword = true
                         } label: {
                             Text("Forgot password?")
-                                .font(.system(size: 11))
-                                .foregroundStyle(Color(hex: "AA9DFF").opacity(0.75))
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(PHTheme.accent)
                         }
                         .buttonStyle(.plain)
                     }
-                    .padding(.bottom, 16)
+                    .padding(.top, -8)
 
                     if let authError {
-                        Text(authError)
-                            .font(.system(size: 12))
-                            .foregroundStyle(Color(hex: "E25718"))
-                            .padding(.bottom, 12)
+                        AuthErrorBanner(message: authError)
                     }
 
-                    // MARK: Sign In CTA
-                    Button {
+                    PHButton(
+                        "Sign In",
+                        icon: "arrow.right",
+                        isLoading: isSigningIn,
+                        isDisabled: !canSignIn
+                    ) {
                         Task { await signIn() }
-                    } label: {
-                        HStack {
-                            Spacer()
-                            if isSigningIn {
-                                ProgressView()
-                                    .tint(Color("AppAccentText"))
-                            } else {
-                                Text("Sign In")
-                                    .font(.system(size: 15, weight: .semibold))
-                            }
-                            Spacer()
-                        }
-                        .foregroundStyle(Color("AppAccentText"))
-                        .padding(.vertical, 16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(canSignIn ? Color(hex: "AA9DFF") : Color("AppDivider"))
-                        )
                     }
-                    .buttonStyle(.plain)
-                    .disabled(!canSignIn)
-                    .padding(.bottom, 16)
 
-                    // MARK: Divider
                     AuthDivider()
-                        .padding(.bottom, 16)
 
-                    // MARK: Apple
-                    Button {
+                    AuthSocialButton(title: "Continue with Apple", systemImage: "apple.logo") {
                         signInWithApple()
-                    } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: "apple.logo")
-                                .font(.system(size: 15, weight: .medium))
-                            Text("Continue with Apple")
-                                .font(.system(size: 14, weight: .medium))
-                        }
-                        .foregroundStyle(Color("AppText"))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 15)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color("AppSurface"))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .stroke(Color("AppBorder"), lineWidth: 0.5)
-                                )
-                        )
                     }
-                    .buttonStyle(.plain)
-                    .padding(.bottom, 32)
 
-                    // MARK: Sign Up Link
                     HStack(spacing: 4) {
                         Spacer()
                         Text("Don't have an account?")
-                            .font(.system(size: 12))
-                            .foregroundStyle(Color("AppSubtext"))
+                            .font(.system(size: 13))
+                            .foregroundStyle(PHTheme.subtext)
                         NavigationLink(destination: SignUpView()) {
                             Text("Create one")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundStyle(Color(hex: "AA9DFF").opacity(0.75))
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(PHTheme.accent)
                         }
                         Spacer()
                     }
+                    .padding(.top, 2)
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 20)
+                .padding(.horizontal, PHTheme.pagePadding)
                 .padding(.bottom, 40)
             }
         }
@@ -244,24 +180,15 @@ struct ForgotPasswordView: View {
 
     var body: some View {
         ZStack {
-            Color("AppBackground").ignoresSafeArea()
+            PHTheme.background.ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 0) {
-
-                // MARK: Top bar
                 HStack {
                     if step != .enterEmail {
                         Button {
                             withAnimation { goBack() }
                         } label: {
-                            ZStack {
-                                Circle()
-                                    .fill(Color("AppDivider"))
-                                    .frame(width: 36, height: 36)
-                                Image(systemName: "chevron.left")
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundStyle(Color("AppAdaptiveWhite").opacity(0.8))
-                            }
+                            CircleIconButton(systemName: "chevron.left")
                         }
                         .disabled(isLoading)
                     }
@@ -271,14 +198,7 @@ struct ForgotPasswordView: View {
                     Button {
                         dismiss()
                     } label: {
-                        ZStack {
-                            Circle()
-                                .fill(Color("AppDivider"))
-                                .frame(width: 36, height: 36)
-                            Image(systemName: "xmark")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(Color("AppAdaptiveWhite").opacity(0.8))
-                        }
+                        CircleIconButton(systemName: "xmark")
                     }
                     .disabled(isLoading)
                 }
@@ -286,7 +206,6 @@ struct ForgotPasswordView: View {
                 .padding(.top, 20)
                 .padding(.bottom, 28)
 
-                // MARK: Content
                 switch step {
                 case .enterEmail:
                     emailStep
@@ -306,38 +225,23 @@ struct ForgotPasswordView: View {
         }
     }
 
-    // MARK: - Step 1: Email
-
     private var emailStep: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Reset Password")
-                .font(.system(size: 28, weight: .semibold))
-                .foregroundStyle(Color("AppText"))
-                .padding(.horizontal, 20)
-
-            Text("Enter your email and we'll send you a 6-digit code.")
-                .font(.system(size: 14))
-                .foregroundStyle(Color("AppSubtext"))
-                .lineSpacing(4)
-                .padding(.horizontal, 20)
-                .padding(.top, 12)
-                .padding(.bottom, 32)
+            SheetTitle(title: "Reset Password", subtitle: "Enter your email and we'll send you a 6-digit code.")
 
             AuthField(
                 label: "Email",
                 placeholder: "Enter your email",
                 text: $email,
                 isFocused: $emailFocused,
-                isSecure: false
+                isSecure: false,
+                keyboardType: .emailAddress,
+                textContentType: .emailAddress
             )
             .padding(.horizontal, 20)
 
             if let errorMessage {
-                Text(errorMessage)
-                    .font(.system(size: 12))
-                    .foregroundStyle(Color(hex: "E25718"))
-                    .padding(.horizontal, 20)
-                    .padding(.top, 8)
+                InlineError(message: errorMessage)
             }
 
             ctaButton(
@@ -349,73 +253,47 @@ struct ForgotPasswordView: View {
         }
     }
 
-    // MARK: - Step 2: OTP
-
     private var otpStep: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Check your email")
-                .font(.system(size: 28, weight: .semibold))
-                .foregroundStyle(Color("AppText"))
-                .padding(.horizontal, 20)
+            SheetTitle(title: "Check your email", subtitle: "We sent a 6-digit code to \(cleanedEmail). Enter it below.")
 
-            Text("We sent a 6-digit code to **\(cleanedEmail)**. Enter it below.")
-                .font(.system(size: 14))
-                .foregroundStyle(Color("AppSubtext"))
-                .lineSpacing(4)
-                .padding(.horizontal, 20)
-                .padding(.top, 12)
-                .padding(.bottom, 32)
-
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text("CODE")
-                    .font(.system(size: 10, weight: .medium))
-                    .tracking(1.2)
-                    .foregroundStyle(Color("AppSubtext").opacity(0.7))
-                    .padding(.horizontal, 20)
+                    .font(.system(size: 11, weight: .semibold))
+                    .tracking(1.1)
+                    .foregroundStyle(otpFocused ? PHTheme.accent : PHTheme.subtext)
 
                 TextField("", text: $otpCode)
                     .focused($otpFocused)
                     .keyboardType(.numberPad)
                     .textContentType(.oneTimeCode)
                     .font(.system(size: 24, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(Color("AppText"))
+                    .foregroundStyle(PHTheme.text)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 16)
-                    .padding(.vertical, 14)
-                    .background(
-                        RoundedRectangle(cornerRadius: 14)
-                            .fill(Color("AppSurface"))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 14)
-                                    .stroke(
-                                        otpFocused
-                                            ? Color(hex: "AA9DFF").opacity(0.45)
-                                            : Color("AppBorder"),
-                                        lineWidth: 0.5
-                                    )
-                            )
+                    .padding(.vertical, 15)
+                    .background(PHTheme.surface.opacity(0.96))
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(otpFocused ? PHTheme.accent.opacity(0.75) : PHTheme.border, lineWidth: 0.9)
                     )
-                    .padding(.horizontal, 20)
                     .onChange(of: otpCode) { _, val in
                         otpCode = String(val.filter(\.isNumber).prefix(8))
                     }
             }
+            .padding(.horizontal, 20)
 
             if let errorMessage {
-                Text(errorMessage)
-                    .font(.system(size: 12))
-                    .foregroundStyle(Color(hex: "E25718"))
-                    .padding(.horizontal, 20)
-                    .padding(.top, 8)
+                InlineError(message: errorMessage)
             }
 
-            // Resend
             Button {
                 Task { await sendOTP() }
             } label: {
                 Text("Resend code")
-                    .font(.system(size: 12))
-                    .foregroundStyle(Color(hex: "AA9DFF").opacity(0.75))
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(PHTheme.accent)
             }
             .buttonStyle(.plain)
             .disabled(isLoading)
@@ -431,30 +309,18 @@ struct ForgotPasswordView: View {
         }
     }
 
-    // MARK: - Step 3: New Password
-
     private var newPasswordStep: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("New Password")
-                .font(.system(size: 28, weight: .semibold))
-                .foregroundStyle(Color("AppText"))
-                .padding(.horizontal, 20)
+            SheetTitle(title: "New Password", subtitle: "Choose a strong password for your account.")
 
-            Text("Choose a strong password for your account.")
-                .font(.system(size: 14))
-                .foregroundStyle(Color("AppSubtext"))
-                .lineSpacing(4)
-                .padding(.horizontal, 20)
-                .padding(.top, 12)
-                .padding(.bottom, 32)
-
-            VStack(spacing: 10) {
+            VStack(spacing: 14) {
                 AuthField(
                     label: "New Password",
                     placeholder: "At least 8 characters",
                     text: $newPassword,
                     isFocused: $passwordFocused,
-                    isSecure: true
+                    isSecure: true,
+                    textContentType: .newPassword
                 )
 
                 AuthField(
@@ -462,33 +328,30 @@ struct ForgotPasswordView: View {
                     placeholder: "Repeat your password",
                     text: $confirmPassword,
                     isFocused: $confirmFocused,
-                    isSecure: true
+                    isSecure: true,
+                    textContentType: .newPassword
                 )
             }
             .padding(.horizontal, 20)
 
             if let errorMessage {
-                Text(errorMessage)
-                    .font(.system(size: 12))
-                    .foregroundStyle(Color(hex: "E25718"))
-                    .padding(.horizontal, 20)
-                    .padding(.top, 8)
+                InlineError(message: errorMessage)
             }
 
             if didSucceed {
                 HStack(alignment: .top, spacing: 10) {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 16))
-                        .foregroundStyle(Color(hex: "7EC8C8"))
+                        .foregroundStyle(PHTheme.accent2)
                     Text("Password updated! You can now sign in.")
-                        .font(.system(size: 13))
-                        .foregroundStyle(Color("AppSubtext"))
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(PHTheme.subtext)
                         .lineSpacing(3)
                 }
                 .padding(14)
                 .background(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(Color(hex: "7EC8C8").opacity(0.10))
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(PHTheme.accent2.opacity(0.10))
                 )
                 .padding(.horizontal, 20)
                 .padding(.top, 16)
@@ -507,25 +370,23 @@ struct ForgotPasswordView: View {
         }
     }
 
-    // MARK: - Shared CTA Button
-
     private func ctaButton(label: String, canProceed: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack {
                 Spacer()
                 if isLoading {
-                    ProgressView().tint(Color("AppAccentText"))
+                    ProgressView().tint(.white)
                 } else {
                     Text(label)
                         .font(.system(size: 15, weight: .semibold))
                 }
                 Spacer()
             }
-            .foregroundStyle(Color("AppAccentText"))
-            .padding(.vertical, 15)
+            .foregroundStyle(.white)
+            .padding(.vertical, 16)
             .background(
-                RoundedRectangle(cornerRadius: 18)
-                    .fill(canProceed ? Color(hex: "AA9DFF") : Color("AppDivider"))
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(canProceed ? PHTheme.accent : PHTheme.subtext.opacity(0.25))
             )
         }
         .buttonStyle(.plain)
@@ -533,8 +394,6 @@ struct ForgotPasswordView: View {
         .padding(.horizontal, 20)
         .padding(.top, 24)
     }
-
-    // MARK: - Actions
 
     private func goBack() {
         errorMessage = nil
@@ -564,7 +423,7 @@ struct ForgotPasswordView: View {
         defer { isLoading = false }
 
         do {
-            isResettingPassword = true  // ← move this here, before the call
+            isResettingPassword = true
             try await supabase.auth.verifyOTP(
                 email: cleanedEmail,
                 token: otpCode,
@@ -572,11 +431,11 @@ struct ForgotPasswordView: View {
             )
             showChangePassword = true
         } catch {
-            isResettingPassword = false  // ← reset it if it fails
+            isResettingPassword = false
             errorMessage = friendlyAuthError(error)
         }
     }
-    
+
     private func updatePassword() async {
         errorMessage = nil
 
@@ -594,16 +453,66 @@ struct ForgotPasswordView: View {
         defer { isLoading = false }
 
         do {
-            try await supabase.auth.update(
-                user: UserAttributes(password: newPassword)
-            )
+            try await supabase.auth.update(user: UserAttributes(password: newPassword))
             didSucceed = true
         } catch {
             errorMessage = friendlyAuthError(error)
         }
     }
 }
-// MARK: - Shared Auth Field
+
+// MARK: - Shared Auth UI
+
+struct AuthHeroCard: View {
+    let eyebrow: String
+    let title: String
+    let subtitle: String
+    let icon: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack {
+                ZStack {
+                    Circle()
+                        .fill(PHTheme.accent.opacity(0.14))
+                        .frame(width: 48, height: 48)
+                    Image(systemName: icon)
+                        .font(.system(size: 19, weight: .bold))
+                        .foregroundStyle(PHTheme.accent)
+                }
+                Spacer()
+            }
+
+            VStack(alignment: .leading, spacing: 9) {
+                Text(eyebrow)
+                    .font(.system(size: 11, weight: .black))
+                    .tracking(1.4)
+                    .foregroundStyle(PHTheme.accent)
+
+                Text(title)
+                    .font(.system(size: 34, weight: .black, design: .rounded))
+                    .foregroundStyle(PHTheme.text)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text(subtitle)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(PHTheme.subtext)
+                    .lineSpacing(3)
+            }
+        }
+        .padding(22)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 30, style: .continuous)
+                .fill(PHTheme.surface)
+                .shadow(color: Color.black.opacity(0.06), radius: 24, x: 0, y: 12)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 30, style: .continuous)
+                .stroke(PHTheme.border.opacity(0.9), lineWidth: 0.8)
+        )
+    }
+}
 
 struct AuthField: View {
     let label: String
@@ -611,75 +520,167 @@ struct AuthField: View {
     @Binding var text: String
     var isFocused: FocusState<Bool>.Binding
     var isSecure: Bool = false
+    var keyboardType: UIKeyboardType = .default
+    var textContentType: UITextContentType? = nil
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
             Text(label.uppercased())
-                .font(.system(size: 10, weight: .medium))
-                .tracking(1.2)
-                .foregroundStyle(Color("AppSubtext").opacity(0.7))
+                .font(.system(size: 11, weight: .semibold))
+                .tracking(1.1)
+                .foregroundStyle(isFocused.wrappedValue ? PHTheme.accent : PHTheme.subtext)
 
             ZStack(alignment: .leading) {
                 if text.isEmpty {
                     Text(placeholder)
-                        .font(.system(size: 15))
-                        .foregroundStyle(Color("AppPlaceholder"))
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(PHTheme.placeholder)
                         .padding(.horizontal, 16)
                 }
 
                 if isSecure {
                     SecureField("", text: $text)
                         .focused(isFocused)
-                        .font(.system(size: 15))
-                        .foregroundStyle(Color("AppText"))
-                        .textContentType(.password)
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(PHTheme.text)
+                        .textContentType(textContentType)
                         .padding(.horizontal, 16)
-                        .padding(.vertical, 14)
+                        .padding(.vertical, 16)
                 } else {
                     TextField("", text: $text)
                         .focused(isFocused)
-                        .keyboardType(.emailAddress)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .textContentType(.emailAddress)
-                        .font(.system(size: 15))
-                        .foregroundStyle(Color("AppText"))
+                        .keyboardType(keyboardType)
+                        .textInputAutocapitalization(keyboardType == .emailAddress ? .never : .words)
+                        .autocorrectionDisabled(keyboardType == .emailAddress)
+                        .textContentType(textContentType)
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(PHTheme.text)
                         .padding(.horizontal, 16)
-                        .padding(.vertical, 14)
+                        .padding(.vertical, 16)
                 }
             }
-            .background(
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(Color("AppSurface"))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14)
-                            .stroke(
-                                isFocused.wrappedValue
-                                    ? Color(hex: "AA9DFF").opacity(0.45)
-                                    : Color("AppBorder"),
-                                lineWidth: 0.5
-                            )
-                    )
+            .background(PHTheme.background.opacity(0.92))
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(isFocused.wrappedValue ? PHTheme.accent.opacity(0.85) : PHTheme.border, lineWidth: isFocused.wrappedValue ? 1.1 : 0.8)
             )
+            .shadow(color: isFocused.wrappedValue ? PHTheme.accent.opacity(0.10) : Color.black.opacity(0.025), radius: 14, x: 0, y: 7)
+            .animation(.easeInOut(duration: 0.18), value: isFocused.wrappedValue)
         }
     }
 }
-
-// MARK: - Or Divider
 
 struct AuthDivider: View {
     var body: some View {
         HStack(spacing: 12) {
             Rectangle()
-                .fill(Color("AppBorder"))
-                .frame(height: 0.5)
+                .fill(PHTheme.border)
+                .frame(height: 0.7)
             Text("or")
-                .font(.system(size: 11))
-                .foregroundStyle(Color("AppPlaceholder"))
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(PHTheme.placeholder)
             Rectangle()
-                .fill(Color("AppBorder"))
-                .frame(height: 0.5)
+                .fill(PHTheme.border)
+                .frame(height: 0.7)
         }
+    }
+}
+
+struct AuthSocialButton: View {
+    let title: String
+    let systemImage: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 16, weight: .semibold))
+                Text(title)
+                    .font(.system(size: 15, weight: .semibold))
+            }
+            .foregroundStyle(PHTheme.text)
+            .frame(maxWidth: .infinity)
+            .frame(height: 56)
+            .background(PHTheme.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(PHTheme.border, lineWidth: 0.8)
+            )
+            .shadow(color: Color.black.opacity(0.035), radius: 16, x: 0, y: 8)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+struct AuthErrorBanner: View {
+    let message: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "exclamationmark.circle.fill")
+                .font(.system(size: 15, weight: .semibold))
+            Text(message)
+                .font(.system(size: 13, weight: .medium))
+                .lineSpacing(2)
+        }
+        .foregroundStyle(PHTheme.danger)
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(PHTheme.danger.opacity(0.10))
+        )
+    }
+}
+
+private struct CircleIconButton: View {
+    let systemName: String
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(PHTheme.surface)
+                .frame(width: 38, height: 38)
+                .shadow(color: Color.black.opacity(0.05), radius: 12, x: 0, y: 6)
+            Image(systemName: systemName)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(PHTheme.text)
+        }
+    }
+}
+
+private struct SheetTitle: View {
+    let title: String
+    let subtitle: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(.system(size: 30, weight: .black, design: .rounded))
+                .foregroundStyle(PHTheme.text)
+
+            Text(subtitle)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(PHTheme.subtext)
+                .lineSpacing(4)
+        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 28)
+    }
+}
+
+private struct InlineError: View {
+    let message: String
+
+    var body: some View {
+        Text(message)
+            .font(.system(size: 12, weight: .medium))
+            .foregroundStyle(PHTheme.danger)
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
     }
 }
 

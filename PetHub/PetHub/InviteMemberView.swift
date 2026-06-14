@@ -19,7 +19,7 @@ struct InviteMemberView: View {
 
     var body: some View {
         ZStack {
-            Color("AppBackground").ignoresSafeArea()
+            PHTheme.background.ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 0) {
 
@@ -28,11 +28,11 @@ struct InviteMemberView: View {
                     Button { dismiss() } label: {
                         ZStack {
                             Circle()
-                                .fill(Color("AppSurface"))
+                                .fill(PHTheme.surface)
                                 .frame(width: 36, height: 36)
                             Image(systemName: "xmark")
                                 .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(Color("AppText"))
+                                .foregroundStyle(PHTheme.text)
                         }
                     }
                     Spacer()
@@ -50,11 +50,11 @@ struct InviteMemberView: View {
                             .foregroundColor(room.accent)
                     }
                     .font(.system(size: 26, weight: .bold))
-                    .foregroundStyle(Color("AppText"))
+                    .foregroundStyle(PHTheme.text)
 
                     Text("Enter their username to invite them")
                         .font(.system(size: 12))
-                        .foregroundStyle(Color("AppSubtext"))
+                        .foregroundStyle(PHTheme.subtext)
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 32)
@@ -64,20 +64,20 @@ struct InviteMemberView: View {
                     Text("USERNAME")
                         .font(.system(size: 10, weight: .medium))
                         .tracking(1.2)
-                        .foregroundStyle(Color("AppSubtext"))
+                        .foregroundStyle(PHTheme.subtext)
 
-                    TextField("", text: $username, prompt: Text("@username").foregroundStyle(Color("AppPlaceholder")))
+                    TextField("", text: $username, prompt: Text("@username").foregroundStyle(PHTheme.placeholder))
                         .autocapitalization(.none)
-                        .foregroundStyle(Color("AppText"))
+                        .foregroundStyle(PHTheme.text)
                         .font(.system(size: 15))
                         .padding(.horizontal, 16)
                         .frame(height: 52)
                         .background(
                             RoundedRectangle(cornerRadius: 14)
-                                .fill(Color("AppSurface"))
+                                .fill(PHTheme.surface)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 14)
-                                        .stroke(Color("AppBorder"), lineWidth: 0.5)
+                                        .stroke(PHTheme.border, lineWidth: 0.5)
                                 )
                         )
                 }
@@ -87,7 +87,7 @@ struct InviteMemberView: View {
                 if !errorMessage.isEmpty {
                     Text(errorMessage)
                         .font(.system(size: 12))
-                        .foregroundStyle(Color(hex: "E25718"))
+                        .foregroundStyle(PHTheme.danger)
                         .padding(.horizontal, 24)
                         .padding(.bottom, 12)
                 }
@@ -95,7 +95,7 @@ struct InviteMemberView: View {
                 if !successMessage.isEmpty {
                     Text(successMessage)
                         .font(.system(size: 12))
-                        .foregroundStyle(Color(hex: "06D6A0"))
+                        .foregroundStyle(PHTheme.success)
                         .padding(.horizontal, 24)
                         .padding(.bottom, 12)
                 }
@@ -106,18 +106,18 @@ struct InviteMemberView: View {
                 } label: {
                     Group {
                         if isLoading {
-                            ProgressView().tint(Color("AppAccentText"))
+                            ProgressView().tint(PHTheme.accent)
                         } else {
                             Text("Send Invite")
                                 .font(.system(size: 15, weight: .semibold))
-                                .foregroundStyle(Color("AppAccentText"))
+                                .foregroundStyle(PHTheme.accent)
                         }
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
                     .background(
                         RoundedRectangle(cornerRadius: 16)
-                            .fill(username.isEmpty ? Color(hex: "AA9DFF").opacity(0.4) : Color(hex: "AA9DFF"))
+                            .fill(username.isEmpty ? PHTheme.accent.opacity(0.4) : PHTheme.accent)
                     )
                 }
                 .buttonStyle(.plain)

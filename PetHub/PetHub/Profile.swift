@@ -62,9 +62,7 @@ struct ProfileView: View {
     @State private var showTermsOfService = false
 
     var body: some View {
-        ZStack {
-            Color("AppBackground").ignoresSafeArea()
-
+        PHPage {
             ScrollView {
                 VStack(spacing: 0) {
 
@@ -101,7 +99,7 @@ struct ProfileView: View {
                         ProfileCard {
                             ProfileActionRow(
                                 icon: "person.fill",
-                                iconColor: Color(hex: "AA9DFF"),
+                                iconColor: PHTheme.accent,
                                 label: "Edit Profile"
                             ) {
                                 showEditProfile = true
@@ -111,7 +109,7 @@ struct ProfileView: View {
 
                             ProfileActionRow(
                                 icon: "lock.fill",
-                                iconColor: Color(hex: "7EC8C8"),
+                                iconColor: PHTheme.accent2,
                                 label: "Change Password"
                             ) {
                                 showChangePassword = true
@@ -119,34 +117,9 @@ struct ProfileView: View {
 
                             ProfileDivider()
 
-                            // Theme picker
-                            HStack(spacing: 12) {
-                                ZStack {
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .fill(
-                                            Color(hex: "F4A84A").opacity(0.12)
-                                        )
-                                        .frame(width: 34, height: 34)
-                                    Image(systemName: "circle.lefthalf.filled")
-                                        .font(.system(size: 14))
-                                        .foregroundStyle(Color(hex: "F4A84A"))
-                                }
-                                Text("Appearance")
-                                    .font(.system(size: 14))
-                                    .foregroundStyle(Color("AppText"))
-                                Spacer()
-                                Picker("", selection: $themeManager.theme) {
-                                    ForEach(AppTheme.allCases, id: \.self) {
-                                        theme in
-                                        Text(theme.rawValue).tag(theme)
-                                    }
-                                }
-                                .pickerStyle(.segmented)
-                                .frame(width: 160)
-
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 14)
+                            AppearanceSelector(theme: $themeManager.theme)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 14)
                         }
                     }
                     .padding(.horizontal, 16)
@@ -170,8 +143,8 @@ struct ProfileView: View {
                                 icon: subscriptionManager.isFree
                                     ? "sparkles" : "creditcard.fill",
                                 iconColor: subscriptionManager.isFree
-                                    ? Color(hex: "AA9DFF")
-                                    : Color(hex: "7EC8C8"),
+                                    ? PHTheme.accent
+                                    : PHTheme.accent2,
                                 label: subscriptionManager.isFree
                                     ? "Upgrade Plan" : "Manage Subscription"
                             ) {
@@ -196,7 +169,7 @@ struct ProfileView: View {
 
                             ProfileActionRow(
                                 icon: "doc.text.fill",
-                                iconColor: Color(hex: "7EC8C8"),
+                                iconColor: PHTheme.accent2,
                                 label: "Privacy Policy"
                             ) {
                                 if let url = URL(
@@ -211,7 +184,7 @@ struct ProfileView: View {
 
                             ProfileActionRow(
                                 icon: "doc.plaintext.fill",
-                                iconColor: Color(hex: "AA9DFF"),
+                                iconColor: PHTheme.accent,
                                 label: "Terms of Service"
                             ) {
                                 showTermsOfService = true
@@ -228,9 +201,9 @@ struct ProfileView: View {
                         ProfileCard {
                             ProfileActionRow(
                                 icon: "rectangle.portrait.and.arrow.right",
-                                iconColor: Color(hex: "E25718"),
+                                iconColor: PHTheme.danger,
                                 label: "Log Out",
-                                labelColor: Color(hex: "E25718")
+                                labelColor: PHTheme.danger
                             ) {
                                 showLogoutAlert = true
                             }
@@ -239,9 +212,9 @@ struct ProfileView: View {
 
                             ProfileActionRow(
                                 icon: "trash.fill",
-                                iconColor: Color(hex: "E25718"),
+                                iconColor: PHTheme.danger,
                                 label: "Delete Account",
-                                labelColor: Color(hex: "E25718")
+                                labelColor: PHTheme.danger
                             ) {
                                 showDeleteAccount = true
                             }
@@ -253,7 +226,7 @@ struct ProfileView: View {
                     // Version tag
                     Text("PetHub v1.0.0")
                         .font(.system(size: 11))
-                        .foregroundStyle(Color("AppDivider"))
+                        .foregroundStyle(PHTheme.divider)
                         .padding(.top, 28)
 
                     Spacer().frame(height: 110)
@@ -301,7 +274,7 @@ struct ProfileView: View {
                 // Avatar
                 ZStack {
                     Circle()
-                        .fill(Color("AppBackground"))
+                        .fill(PHTheme.background)
                         .frame(width: 88, height: 88)
 
                     Circle()
@@ -318,7 +291,7 @@ struct ProfileView: View {
             VStack(spacing: 6) {
                 Text(profile.name)
                     .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(Color("AppText"))
+                    .foregroundStyle(PHTheme.text)
 
                 Text(profile.username)
                     .font(.system(size: 13))
@@ -327,7 +300,7 @@ struct ProfileView: View {
                 if !profile.bio.isEmpty {
                     Text(profile.bio)
                         .font(.system(size: 13))
-                        .foregroundStyle(Color("AppText"))
+                        .foregroundStyle(PHTheme.text)
                         .multilineTextAlignment(.center)
                         .lineSpacing(3)
                         .padding(.horizontal, 32)
@@ -349,10 +322,10 @@ struct ProfileView: View {
         }
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(Color("AppSurface2"))
+                .fill(PHTheme.surface2)
                 .overlay(
                     RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color("AppDivider"), lineWidth: 0.5)
+                        .stroke(PHTheme.divider, lineWidth: 0.5)
                 )
         )
     }
@@ -386,11 +359,11 @@ struct ProfileView: View {
     private var currentPlanColor: Color {
         switch subscriptionManager.tier {
         case .free:
-            return Color(hex: "AA9DFF")
+            return PHTheme.accent
         case .semiPro:
-            return Color(hex: "7EC8C8")
+            return PHTheme.accent2
         case .pro:
-            return Color(hex: "F4A84A")
+            return PHTheme.warning
         }
     }
 
@@ -430,10 +403,10 @@ struct StatCell: View {
         VStack(spacing: 4) {
             Text(value)
                 .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(Color("AppText"))
+                .foregroundStyle(PHTheme.text)
             Text(label)
                 .font(.system(size: 11))
-                .foregroundStyle(Color("AppWhiteText"))
+                .foregroundStyle(PHTheme.subtext)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 16)
@@ -443,7 +416,7 @@ struct StatCell: View {
 struct StatDivider: View {
     var body: some View {
         Rectangle()
-            .fill(Color("AppDivider"))
+            .fill(PHTheme.divider)
             .frame(width: 0.5)
             .padding(.vertical, 12)
     }
@@ -467,10 +440,10 @@ struct PetChip: View {
             VStack(spacing: 2) {
                 Text(room.name)
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Color("AppText"))
+                    .foregroundStyle(PHTheme.text)
                 Text(room.breed)
                     .font(.system(size: 10))
-                    .foregroundStyle(Color("AppWhiteText"))
+                    .foregroundStyle(PHTheme.subtext)
                     .lineLimit(1)
             }
         }
@@ -479,12 +452,83 @@ struct PetChip: View {
         .padding(.horizontal, 8)
         .background(
             RoundedRectangle(cornerRadius: 18)
-                .fill(Color("AppSurface2"))
+                .fill(PHTheme.surface2)
                 .overlay(
                     RoundedRectangle(cornerRadius: 18)
-                        .stroke(Color("AppDivider"), lineWidth: 0.5)
+                        .stroke(PHTheme.divider, lineWidth: 0.5)
                 )
         )
+    }
+}
+
+
+// MARK: - Appearance Selector
+
+struct AppearanceSelector: View {
+    @Binding var theme: AppTheme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(PHTheme.warning.opacity(0.12))
+                        .frame(width: 34, height: 34)
+                    Image(systemName: "circle.lefthalf.filled")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(PHTheme.warning)
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Appearance")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(PHTheme.text)
+                    Text("Choose how PetHub looks")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(PHTheme.subtext)
+                }
+                Spacer()
+            }
+
+            HStack(spacing: 10) {
+                AppearancePreviewCard(title: "System", icon: "circle.lefthalf.filled", isSelected: theme == .system) { theme = .system }
+                AppearancePreviewCard(title: "Light", icon: "sun.max.fill", isSelected: theme == .light) { theme = .light }
+                AppearancePreviewCard(title: "Dark", icon: "moon.fill", isSelected: theme == .dark) { theme = .dark }
+            }
+        }
+    }
+}
+
+struct AppearancePreviewCard: View {
+    let title: String
+    let icon: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(isSelected ? PHTheme.accent.opacity(0.16) : PHTheme.surface)
+                        .frame(height: 48)
+                    Image(systemName: icon)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(isSelected ? PHTheme.accent : PHTheme.subtext)
+                }
+                Text(title)
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(isSelected ? PHTheme.accent : PHTheme.subtext)
+            }
+            .padding(8)
+            .frame(maxWidth: .infinity)
+            .background(PHTheme.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(isSelected ? PHTheme.accent : PHTheme.border, lineWidth: isSelected ? 1.2 : 0.7)
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -510,7 +554,7 @@ struct SubscriptionStatusRow: View {
                 HStack(spacing: 8) {
                     Text("Current Plan")
                         .font(.system(size: 12))
-                        .foregroundStyle(Color("AppSubtext"))
+                        .foregroundStyle(PHTheme.subtext)
 
                     Text(planName)
                         .font(.system(size: 11, weight: .semibold))
@@ -525,7 +569,7 @@ struct SubscriptionStatusRow: View {
 
                 Text(planDescription)
                     .font(.system(size: 13))
-                    .foregroundStyle(Color("AppText").opacity(0.78))
+                    .foregroundStyle(PHTheme.text.opacity(0.78))
                     .lineSpacing(3)
             }
 
@@ -544,7 +588,7 @@ struct ProfileSectionLabel: View {
         Text(title.uppercased())
             .font(.system(size: 10, weight: .medium))
             .tracking(1.3)
-            .foregroundStyle(Color("AppSubtext"))
+            .foregroundStyle(PHTheme.subtext)
     }
 }
 
@@ -556,10 +600,10 @@ struct ProfileCard<Content: View>: View {
         VStack(spacing: 0) { content }
             .background(
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(Color("AppSurface2"))
+                    .fill(PHTheme.surface2)
                     .overlay(
                         RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color("AppDivider"), lineWidth: 0.5)
+                            .stroke(PHTheme.divider, lineWidth: 0.5)
                     )
             )
     }
@@ -568,7 +612,7 @@ struct ProfileCard<Content: View>: View {
 struct ProfileDivider: View {
     var body: some View {
         Rectangle()
-            .fill(Color("AppDivider"))
+            .fill(PHTheme.divider)
             .frame(height: 0.5)
             .padding(.leading, 62)
     }
@@ -578,7 +622,7 @@ struct ProfileActionRow: View {
     let icon: String
     let iconColor: Color
     let label: String
-    var labelColor: Color = Color("AppText")
+    var labelColor: Color = PHTheme.text
     let action: () -> Void
 
     var body: some View {
@@ -600,7 +644,7 @@ struct ProfileActionRow: View {
                 Spacer()
                 Image(systemName: "chevron.right")
                     .font(.system(size: 12))
-                    .foregroundStyle(Color("AppDivider"))
+                    .foregroundStyle(PHTheme.divider)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
@@ -628,7 +672,7 @@ struct EditProfileView: View {
 
     var body: some View {
         ZStack {
-            Color("AppBackground").ignoresSafeArea()
+            PHTheme.background.ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 0) {
 
@@ -639,12 +683,12 @@ struct EditProfileView: View {
                     } label: {
                         ZStack {
                             Circle()
-                                .fill(Color("AppDivider"))
+                                .fill(PHTheme.divider)
                                 .frame(width: 36, height: 36)
                             Image(systemName: "xmark")
                                 .font(.system(size: 13, weight: .medium))
                                 .foregroundStyle(
-                                    Color("AppAdaptiveWhite").opacity(0.8)
+                                    PHTheme.textOnAccent.opacity(0.8)
                                 )
                         }
                     }
@@ -654,10 +698,10 @@ struct EditProfileView: View {
                     } label: {
                         Text("Save")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(Color("AppAccentText"))
+                            .foregroundStyle(PHTheme.accent)
                             .padding(.horizontal, 20)
                             .padding(.vertical, 9)
-                            .background(Capsule().fill(Color(hex: "AA9DFF")))
+                            .background(Capsule().fill(PHTheme.accent))
                     }
                     .buttonStyle(.plain)
                 }
@@ -667,7 +711,7 @@ struct EditProfileView: View {
 
                 Text("Edit Profile")
                     .font(.system(size: 28, weight: .semibold))
-                    .foregroundStyle(Color("AppText"))
+                    .foregroundStyle(PHTheme.text)
                     .padding(.horizontal, 20)
                     .padding(.bottom, 28)
 
@@ -676,18 +720,18 @@ struct EditProfileView: View {
                     Spacer()
                     ZStack {
                         Circle()
-                            .fill(Color(hex: "AA9DFF").opacity(0.15))
+                            .fill(PHTheme.accent.opacity(0.15))
                             .frame(width: 80, height: 80)
                         Text(profile.avatarEmoji)
                             .font(.system(size: 36))
                         // Camera badge
                         ZStack {
                             Circle()
-                                .fill(Color(hex: "AA9DFF"))
+                                .fill(PHTheme.accent)
                                 .frame(width: 26, height: 26)
                             Image(systemName: "camera.fill")
                                 .font(.system(size: 11))
-                                .foregroundStyle(Color("AppAccentText"))
+                                .foregroundStyle(PHTheme.accent)
                         }
                         .offset(x: 26, y: 26)
                     }
@@ -710,29 +754,29 @@ struct EditProfileView: View {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Bio")
                             .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(Color("AppSubtext"))
+                            .foregroundStyle(PHTheme.subtext)
 
                         ZStack(alignment: .topLeading) {
                             if bio.isEmpty {
                                 Text("Tell people about yourself…")
                                     .font(.system(size: 14))
-                                    .foregroundStyle(Color("AppPlaceholder"))
+                                    .foregroundStyle(PHTheme.placeholder)
                                     .padding(.top, 14)
                                     .padding(.leading, 16)
                             }
                             TextEditor(text: $bio)
                                 .scrollContentBackground(.hidden)
-                                .foregroundStyle(Color("AppText"))
+                                .foregroundStyle(PHTheme.text)
                                 .frame(height: 100)
                                 .padding(12)
                         }
                         .background(
                             RoundedRectangle(cornerRadius: 18)
-                                .fill(Color("AppSurface2"))
+                                .fill(PHTheme.surface2)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 18)
                                         .stroke(
-                                            Color("AppDivider"),
+                                            PHTheme.divider,
                                             lineWidth: 0.5
                                         )
                                 )
@@ -786,7 +830,7 @@ struct ChangePasswordView: View {
 
     var body: some View {
         ZStack {
-            Color("AppBackground").ignoresSafeArea()
+            PHTheme.background.ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 0) {
 
@@ -797,7 +841,7 @@ struct ChangePasswordView: View {
                     } label: {
                         ZStack {
                             Circle()
-                                .fill(Color("AppDivider"))
+                                .fill(PHTheme.divider)
                                 .frame(width: 36, height: 36)
                             Image(systemName: "xmark")
                                 .font(.system(size: 13, weight: .medium))
@@ -821,7 +865,7 @@ struct ChangePasswordView: View {
                                 Capsule()
                                     .fill(
                                         canSave
-                                            ? Color(hex: "AA9DFF")
+                                            ? PHTheme.accent
                                             : Color.white.opacity(0.06)
                                     )
                             )
@@ -836,7 +880,7 @@ struct ChangePasswordView: View {
 
                 Text("Change\nPassword")
                     .font(.system(size: 28, weight: .semibold))
-                    .foregroundStyle(Color("AppText"))
+                    .foregroundStyle(PHTheme.text)
                     .lineSpacing(2)
                     .padding(.horizontal, 20)
                     .padding(.bottom, 32)
@@ -866,14 +910,14 @@ struct ChangePasswordView: View {
                     if !newPass.isEmpty && newPass.count < 8 {
                         Text("Password must be at least 8 characters")
                             .font(.system(size: 12))
-                            .foregroundStyle(Color(hex: "E25718"))
+                            .foregroundStyle(PHTheme.danger)
                             .padding(.horizontal, 4)
                     }
 
                     if !confirm.isEmpty && newPass != confirm {
                         Text("Passwords don't match")
                             .font(.system(size: 12))
-                            .foregroundStyle(Color(hex: "E25718"))
+                            .foregroundStyle(PHTheme.danger)
                             .padding(.horizontal, 4)
                     }
                 }
@@ -917,7 +961,7 @@ struct DeleteAccountView: View {
 
     var body: some View {
         ZStack {
-            Color("AppBackground").ignoresSafeArea()
+            PHTheme.background.ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 0) {
                 HStack {
@@ -926,12 +970,12 @@ struct DeleteAccountView: View {
                     } label: {
                         ZStack {
                             Circle()
-                                .fill(Color("AppDivider"))
+                                .fill(PHTheme.divider)
                                 .frame(width: 36, height: 36)
                             Image(systemName: "xmark")
                                 .font(.system(size: 13, weight: .medium))
                                 .foregroundStyle(
-                                    Color("AppAdaptiveWhite").opacity(0.8)
+                                    PHTheme.textOnAccent.opacity(0.8)
                                 )
                         }
                     }
@@ -945,14 +989,14 @@ struct DeleteAccountView: View {
 
                 Text("Delete Account")
                     .font(.system(size: 28, weight: .semibold))
-                    .foregroundStyle(Color("AppText"))
+                    .foregroundStyle(PHTheme.text)
                     .padding(.horizontal, 20)
 
                 Text(
                     "This will permanently remove your PetHub account. Your profile, rooms, posts, messages, and lost/found records should be deleted by the Supabase delete_my_account() function."
                 )
                 .font(.system(size: 14))
-                .foregroundStyle(Color("AppSubtext"))
+                .foregroundStyle(PHTheme.subtext)
                 .lineSpacing(4)
                 .padding(.horizontal, 20)
                 .padding(.top, 14)
@@ -960,7 +1004,7 @@ struct DeleteAccountView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Type DELETE to confirm")
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(Color("AppSubtext"))
+                        .foregroundStyle(PHTheme.subtext)
 
                     TextField(
                         "DELETE",
@@ -968,14 +1012,14 @@ struct DeleteAccountView: View {
                     )
                     .textInputAutocapitalization(.characters)
                     .autocorrectionDisabled()
-                    .foregroundStyle(Color("AppText"))
+                    .foregroundStyle(PHTheme.text)
                     .padding(16)
                     .background(
                         RoundedRectangle(cornerRadius: 18)
-                            .fill(Color("AppSurface2"))
+                            .fill(PHTheme.surface2)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 18)
-                                    .stroke(Color("AppDivider"), lineWidth: 0.5)
+                                    .stroke(PHTheme.divider, lineWidth: 0.5)
                             )
                     )
                 }
@@ -985,7 +1029,7 @@ struct DeleteAccountView: View {
                 if let errorMessage {
                     Text(errorMessage)
                         .font(.system(size: 12))
-                        .foregroundStyle(Color(hex: "E25718"))
+                        .foregroundStyle(PHTheme.danger)
                         .padding(.horizontal, 20)
                         .padding(.top, 12)
                 }
@@ -997,20 +1041,20 @@ struct DeleteAccountView: View {
                         Spacer()
                         if isDeleting {
                             ProgressView()
-                                .tint(Color("AppAccentText"))
+                                .tint(PHTheme.accent)
                         } else {
                             Text("Permanently Delete Account")
                                 .font(.system(size: 15, weight: .semibold))
                         }
                         Spacer()
                     }
-                    .foregroundStyle(Color("AppAccentText"))
+                    .foregroundStyle(PHTheme.accent)
                     .padding(.vertical, 15)
                     .background(
                         RoundedRectangle(cornerRadius: 18)
                             .fill(
                                 canDelete
-                                    ? Color(hex: "E25718") : Color("AppDivider")
+                                    ? PHTheme.danger : PHTheme.divider
                             )
                     )
                 }
@@ -1053,12 +1097,13 @@ struct ProfileInputField: View {
     let placeholder: String
     @Binding var text: String
     var isSecure: Bool = false
+    var keyboardType: UIKeyboardType = .default
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(title)
                 .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(Color("AppSubtext"))
+                .foregroundStyle(PHTheme.subtext)
 
             Group {
                 if isSecure {
@@ -1066,7 +1111,7 @@ struct ProfileInputField: View {
                         "",
                         text: $text,
                         prompt: Text(placeholder).foregroundStyle(
-                            Color("AppPlaceholder")
+                            PHTheme.placeholder
                         )
                     )
                 } else {
@@ -1074,21 +1119,22 @@ struct ProfileInputField: View {
                         "",
                         text: $text,
                         prompt: Text(placeholder).foregroundStyle(
-                            Color("AppPlaceholder")
+                            PHTheme.placeholder
                         )
                     )
                 }
             }
-            .foregroundStyle(Color("AppText"))
+            .keyboardType(keyboardType)
+            .foregroundStyle(PHTheme.text)
             .font(.system(size: 14))
             .padding(.horizontal, 16)
             .frame(height: 52)
             .background(
                 RoundedRectangle(cornerRadius: 18)
-                    .fill(Color("AppSurface2"))
+                    .fill(PHTheme.surface2)
                     .overlay(
                         RoundedRectangle(cornerRadius: 18)
-                            .stroke(Color("AppDivider"), lineWidth: 0.5)
+                            .stroke(PHTheme.divider, lineWidth: 0.5)
                     )
             )
         }

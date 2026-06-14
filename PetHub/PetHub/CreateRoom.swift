@@ -23,16 +23,16 @@ struct CreateRoomView: View {
     @State private var selectedImage: UIImage? = nil
     @State private var showImagePicker = false
 
-    @State private var selectedColor: Color = Color(hex: "AA9DFF")
+    @State private var selectedColor: Color = PHTheme.accent
 
     private let petTypes = ["Dog", "Cat", "Bird", "Rabbit", "Other"]
 
     private let roomColors: [(Color, String)] = [
-        (Color(hex: "AA9DFF"), "AA9DFF"),
-        (Color(hex: "FF6B6B"), "FF6B6B"),
+        (PHTheme.accent, "AA9DFF"),
+        (PHTheme.accent3, "FF6B6B"),
         (Color(hex: "4ECDC4"), "4ECDC4"),
         (Color(hex: "FFD166"), "FFD166"),
-        (Color(hex: "06D6A0"), "06D6A0"),
+        (PHTheme.success, "06D6A0"),
         (Color(hex: "F72585"), "F72585"),
     ]
 
@@ -50,7 +50,7 @@ struct CreateRoomView: View {
 
     var body: some View {
         ZStack {
-            Color("AppBackground")
+            PHTheme.background
                 .ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
@@ -64,11 +64,11 @@ struct CreateRoomView: View {
                             } label: {
                                 ZStack {
                                     Circle()
-                                        .fill(Color("AppDivider").opacity(0.6))
+                                        .fill(PHTheme.divider.opacity(0.6))
                                         .frame(width: 38, height: 38)
                                     Image(systemName: "chevron.left")
                                         .foregroundStyle(
-                                            Color("AppAdaptiveWhite")
+                                            PHTheme.textOnAccent
                                         )
                                 }
                             }
@@ -78,11 +78,11 @@ struct CreateRoomView: View {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Create Room")
                                 .font(.system(size: 32, weight: .semibold))
-                                .foregroundStyle(Color("AppText"))
+                                .foregroundStyle(PHTheme.text)
 
                             Text("Make a private space for your pet.")
                                 .font(.system(size: 14))
-                                .foregroundStyle(Color("AppSubtext"))
+                                .foregroundStyle(PHTheme.subtext)
                         }
                     }
 
@@ -126,11 +126,11 @@ struct CreateRoomView: View {
                             VStack(spacing: 4) {
                                 Text(petName.isEmpty ? "Your Pet" : petName)
                                     .font(.system(size: 20, weight: .semibold))
-                                    .foregroundStyle(Color("AppText"))
+                                    .foregroundStyle(PHTheme.text)
 
                                 Text(breedAgePreview)
                                     .font(.system(size: 12))
-                                    .foregroundStyle(Color("AppSubtext"))
+                                    .foregroundStyle(PHTheme.subtext)
                             }
                         }
                     }
@@ -141,7 +141,7 @@ struct CreateRoomView: View {
                         // Colors
                         VStack(alignment: .leading, spacing: 10) {
                             Text("Room Color")
-                                .foregroundStyle(Color("AppSubtext"))
+                                .foregroundStyle(PHTheme.subtext)
 
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 12) {
@@ -169,7 +169,7 @@ struct CreateRoomView: View {
                         // Pet Type
                         VStack(alignment: .leading, spacing: 10) {
                             Text("Pet Type")
-                                .foregroundStyle(Color("AppSubtext"))
+                                .foregroundStyle(PHTheme.subtext)
 
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 10) {
@@ -184,7 +184,7 @@ struct CreateRoomView: View {
                                             Text(type)
                                                 .foregroundStyle(
                                                     petType == type
-                                                        ? Color(hex: "AA9DFF")
+                                                        ? PHTheme.accent
                                                         : .white.opacity(0.45)
                                                 )
                                                 .padding(.horizontal, 16)
@@ -235,16 +235,16 @@ struct CreateRoomView: View {
                             HStack {
                                 Text("Bio").font(
                                     .system(size: 12, weight: .medium)
-                                ).foregroundStyle(Color("AppSubtext"))
+                                ).foregroundStyle(PHTheme.subtext)
                                 Text("optional").font(.system(size: 10))
-                                    .foregroundStyle(Color("AppPlaceholder"))
+                                    .foregroundStyle(PHTheme.placeholder)
                             }
                             ZStack(alignment: .topLeading) {
                                 if bio.isEmpty {
                                     Text("Tell something about your pet...")
                                         .font(.system(size: 14))
                                         .foregroundStyle(
-                                            Color("AppPlaceholder")
+                                            PHTheme.placeholder
                                         ).padding(.top, 14).padding(
                                             .leading,
                                             16
@@ -252,15 +252,15 @@ struct CreateRoomView: View {
                                 }
                                 TextEditor(text: $bio).scrollContentBackground(
                                     .hidden
-                                ).foregroundStyle(Color("AppText")).frame(
+                                ).foregroundStyle(PHTheme.text).frame(
                                     height: 120
                                 ).padding(12)
                             }.background(
                                 RoundedRectangle(cornerRadius: 18).fill(
-                                    Color("AppSurface2")
+                                    PHTheme.surface2
                                 ).overlay(
                                     RoundedRectangle(cornerRadius: 18).stroke(
-                                        Color("AppDivider"),
+                                        PHTheme.divider,
                                         lineWidth: 0.5
                                     )
                                 )
@@ -278,11 +278,11 @@ struct CreateRoomView: View {
                             .padding()
                             .background(
                                 canCreate
-                                    ? Color(hex: "AA9DFF")
-                                    : Color("AppBorder")
+                                    ? PHTheme.accent
+                                    : PHTheme.border
                             )
                             .foregroundStyle(
-                                canCreate ? .black : .white.opacity(0.3)
+                                canCreate ? .white : PHTheme.placeholder
                             )
                             .cornerRadius(20)
                     }
@@ -292,6 +292,10 @@ struct CreateRoomView: View {
                 }
                 .padding(.horizontal, 20)
             }
+        }
+        .onChange(of: age) { _, newValue in
+            let filtered = newValue.filter { $0.isNumber }
+            if filtered != newValue { age = filtered }
         }
         .sheet(isPresented: $showImagePicker) {
             ImagePicker(image: $selectedImage)
@@ -370,9 +374,9 @@ struct CreateRoomInput: View {
         TextField(title, text: $text)
             .keyboardType(keyboardType)
             .padding()
-            .background(Color("AppSurface2"))
+            .background(PHTheme.surface2)
             .cornerRadius(18)
-            .foregroundStyle(.white)
+            .foregroundStyle(PHTheme.text)
     }
 }
 

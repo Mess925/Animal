@@ -35,7 +35,7 @@ struct EditRoomView: View {
 
     var body: some View {
         ZStack {
-            Color("AppBackground").ignoresSafeArea()
+            PHTheme.background.ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 0) {
 
@@ -44,11 +44,11 @@ struct EditRoomView: View {
                     Button { dismiss() } label: {
                         ZStack {
                             Circle()
-                                .fill(Color("AppSurface"))
+                                .fill(PHTheme.surface)
                                 .frame(width: 36, height: 36)
                             Image(systemName: "xmark")
                                 .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(Color("AppText"))
+                                .foregroundStyle(PHTheme.text)
                         }
                     }
                     Spacer()
@@ -57,16 +57,16 @@ struct EditRoomView: View {
                     } label: {
                         Group {
                             if isLoading {
-                                ProgressView().tint(Color("AppAccentText"))
+                                ProgressView().tint(.white)
                             } else {
                                 Text("Save")
                                     .font(.system(size: 14, weight: .semibold))
-                                    .foregroundStyle(Color("AppAccentText"))
+                                    .foregroundStyle(.white)
                             }
                         }
                         .padding(.horizontal, 20)
                         .padding(.vertical, 9)
-                        .background(Capsule().fill(Color(hex: "AA9DFF")))
+                        .background(Capsule().fill(PHTheme.accent))
                     }
                     .buttonStyle(.plain)
                 }
@@ -86,7 +86,7 @@ struct EditRoomView: View {
                                     .foregroundColor(Color(hex: selectedAccent))
                             }
                             .font(.system(size: 26, weight: .bold))
-                            .foregroundStyle(Color("AppText"))
+                            .foregroundStyle(PHTheme.text)
                         }
                         .padding(.horizontal, 24)
 
@@ -94,7 +94,7 @@ struct EditRoomView: View {
                         VStack(spacing: 12) {
                             ProfileInputField(title: "Pet Name", placeholder: "e.g. Mochi", text: $petName)
                             ProfileInputField(title: "Breed", placeholder: "e.g. Golden Retriever", text: $breed)
-                            ProfileInputField(title: "Age", placeholder: "e.g. 2y", text: $age)
+                            ProfileInputField(title: "Age", placeholder: "e.g. 2", text: $age, keyboardType: .numberPad)
                         }
                         .padding(.horizontal, 24)
 
@@ -103,7 +103,7 @@ struct EditRoomView: View {
                             Text("ICON")
                                 .font(.system(size: 10, weight: .medium))
                                 .tracking(1.2)
-                                .foregroundStyle(Color("AppSubtext"))
+                                .foregroundStyle(PHTheme.subtext)
 
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 12) {
@@ -113,11 +113,11 @@ struct EditRoomView: View {
                                         } label: {
                                             Image(systemName: icon)
                                                 .font(.system(size: 20))
-                                                .foregroundStyle(selectedIcon == icon ? Color(hex: selectedAccent) : Color("AppSubtext"))
+                                                .foregroundStyle(selectedIcon == icon ? Color(hex: selectedAccent) : PHTheme.subtext)
                                                 .frame(width: 48, height: 48)
                                                 .background(
                                                     RoundedRectangle(cornerRadius: 12)
-                                                        .fill(selectedIcon == icon ? Color(hex: selectedAccent).opacity(0.15) : Color("AppSurface"))
+                                                        .fill(selectedIcon == icon ? Color(hex: selectedAccent).opacity(0.15) : PHTheme.surface)
                                                 )
                                         }
                                         .buttonStyle(.plain)
@@ -132,7 +132,7 @@ struct EditRoomView: View {
                             Text("COLOR")
                                 .font(.system(size: 10, weight: .medium))
                                 .tracking(1.2)
-                                .foregroundStyle(Color("AppSubtext"))
+                                .foregroundStyle(PHTheme.subtext)
 
                             HStack(spacing: 12) {
                                 ForEach(accents, id: \.self) { hex in
@@ -158,7 +158,10 @@ struct EditRoomView: View {
                 }
             }
         }
-        .preferredColorScheme(.dark)
+        .onChange(of: age) { _, newValue in
+            let filtered = newValue.filter { $0.isNumber }
+            if filtered != newValue { age = filtered }
+        }
     }
 
     private func saveRoom() async {

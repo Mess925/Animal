@@ -1,8 +1,8 @@
 //
-//  AppButton.swift
-//  personal
+//  Button.swift
+//  PetHub
 //
-//  Created by Han Min Thant on 25/5/26.
+//  Shared app buttons. Updated to use the PetHub adaptive design system.
 //
 
 import SwiftUI
@@ -10,8 +10,8 @@ import SwiftUI
 // MARK: - Button Style Enum
 
 enum AppButtonStyle {
-    case primary    // Gold gradient — main CTA
-    case secondary  // Glass — Apple, Email, etc.
+    case primary
+    case secondary
 }
 
 // MARK: - Reusable App Button (Action)
@@ -22,12 +22,7 @@ struct AppButton: View {
     let icon: String?
     let action: () -> Void
 
-    init(
-        _ title: String,
-        style: AppButtonStyle = .primary,
-        icon: String? = nil,
-        action: @escaping () -> Void
-    ) {
+    init(_ title: String, style: AppButtonStyle = .primary, icon: String? = nil, action: @escaping () -> Void) {
         self.title = title
         self.style = style
         self.icon = icon
@@ -36,62 +31,58 @@ struct AppButton: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 8) {
-                if let icon {
-                    Image(systemName: icon)
-                        .font(.system(size: 14, weight: .regular))
-                }
-                Text(title)
-                    .font(.system(size: 13, weight: .medium))
-                    .tracking(0.3)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
-            .background(backgroundView)
-            .foregroundStyle(foregroundColor)
-            .clipShape(RoundedRectangle(cornerRadius: 14))
-            .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(borderColor, lineWidth: 0.5)
-            )
+            label
         }
         .buttonStyle(.plain)
+    }
+
+    private var label: some View {
+        HStack(spacing: 9) {
+            if let icon {
+                Image(systemName: icon)
+                    .font(.system(size: 15, weight: .semibold))
+            }
+            Text(title)
+                .font(.system(size: 15, weight: .semibold))
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 54)
+        .foregroundStyle(foregroundColor)
+        .background(backgroundView)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(borderColor, lineWidth: 0.7)
+        )
+        .shadow(color: shadowColor, radius: style == .primary ? 9 : 0, x: 0, y: 5)
     }
 
     @ViewBuilder
     private var backgroundView: some View {
         switch style {
         case .primary:
-            LinearGradient(
-                colors: [Color(hex: "AA9DFF"), Color(hex: "8B7EE0")],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .overlay(alignment: .top) {
-                LinearGradient(
-                    colors: [Color("AppBorder"), Color.clear],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 14))
-            }
+            LinearGradient(colors: [PHTheme.accent, PHTheme.accent], startPoint: .topLeading, endPoint: .bottomTrailing)
         case .secondary:
-            Color("AppDivider").opacity(0.6)
+            PHTheme.surface
         }
     }
 
     private var foregroundColor: Color {
         switch style {
-        case .primary:   return Color("AppBackground")
-        case .secondary: return Color("AppText").opacity(0.75)
+        case .primary: return .white
+        case .secondary: return PHTheme.text
         }
     }
 
     private var borderColor: Color {
         switch style {
-        case .primary:   return Color.clear
-        case .secondary: return Color("AppBorder")
+        case .primary: return .clear
+        case .secondary: return PHTheme.border
         }
+    }
+
+    private var shadowColor: Color {
+        style == .primary ? PHTheme.accent.opacity(0.12) : .clear
     }
 }
 
@@ -103,12 +94,7 @@ struct AppNavButton<Destination: View>: View {
     let icon: String?
     let destination: Destination
 
-    init(
-        _ title: String,
-        style: AppButtonStyle = .secondary,
-        icon: String? = nil,
-        destination: Destination
-    ) {
+    init(_ title: String, style: AppButtonStyle = .secondary, icon: String? = nil, destination: Destination) {
         self.title = title
         self.style = style
         self.icon = icon
@@ -117,23 +103,22 @@ struct AppNavButton<Destination: View>: View {
 
     var body: some View {
         NavigationLink(destination: destination) {
-            HStack(spacing: 8) {
+            HStack(spacing: 9) {
                 if let icon {
                     Image(systemName: icon)
-                        .font(.system(size: 14, weight: .regular))
+                        .font(.system(size: 15, weight: .semibold))
                 }
                 Text(title)
-                    .font(.system(size: 13, weight: .medium))
-                    .tracking(0.3)
+                    .font(.system(size: 15, weight: .semibold))
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
+            .frame(height: 54)
+            .foregroundStyle(style == .primary ? .white : PHTheme.text)
             .background(backgroundView)
-            .foregroundStyle(foregroundColor)
-            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(borderColor, lineWidth: 0.5)
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(style == .primary ? .clear : PHTheme.border, lineWidth: 0.7)
             )
         }
         .buttonStyle(.plain)
@@ -143,35 +128,9 @@ struct AppNavButton<Destination: View>: View {
     private var backgroundView: some View {
         switch style {
         case .primary:
-            LinearGradient(
-                colors: [Color(hex: "AA9DFF"), Color(hex: "8B7EE0")],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .overlay(alignment: .top) {
-                LinearGradient(
-                    colors: [Color("AppBorder"), Color.clear],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 14))
-            }
+            LinearGradient(colors: [PHTheme.accent, PHTheme.accent], startPoint: .topLeading, endPoint: .bottomTrailing)
         case .secondary:
-            Color("AppDivider").opacity(0.6)
-        }
-    }
-
-    private var foregroundColor: Color {
-        switch style {
-        case .primary:   return Color("AppBackground")
-        case .secondary: return Color("AppText").opacity(0.75)
-        }
-    }
-
-    private var borderColor: Color {
-        switch style {
-        case .primary:   return Color.clear
-        case .secondary: return Color("AppBorder")
+            PHTheme.surface
         }
     }
 }
@@ -209,7 +168,7 @@ extension Color {
 #Preview {
     NavigationStack {
         ZStack {
-            Color("AppBackground").ignoresSafeArea()
+            PHTheme.background.ignoresSafeArea()
 
             VStack(spacing: 12) {
 

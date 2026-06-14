@@ -58,7 +58,7 @@ struct ChatView: View {
 
     var body: some View {
         ZStack {
-            Color("AppBackground").ignoresSafeArea()
+            PHTheme.background.ignoresSafeArea()
 
             VStack(spacing: 0) {
                 ChatTopBar(
@@ -70,7 +70,7 @@ struct ChatView: View {
                     onDismiss: { dismiss() }
                 )
 
-                Divider().background(Color("AppDivider").opacity(0.6))
+                Divider().background(PHTheme.divider.opacity(0.6))
 
                 ScrollViewReader { proxy in
                     ScrollView {
@@ -78,7 +78,7 @@ struct ChatView: View {
                             Text("TODAY")
                                 .font(.system(size: 10))
                                 .tracking(0.8)
-                                .foregroundStyle(Color("AppPlaceholder"))
+                                .foregroundStyle(PHTheme.placeholder)
                                 .padding(.vertical, 14)
 
                             ForEach(allMessages) { message in
@@ -133,7 +133,7 @@ struct ChatView: View {
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)
-                    .background(Color("AppSurface2"))
+                    .background(PHTheme.surface2)
                 }
 
                 ChatInputBar(
@@ -490,11 +490,11 @@ struct ChatTopBar: View {
             } label: {
                 ZStack {
                     Circle()
-                        .fill(Color("AppDivider"))
+                        .fill(PHTheme.divider)
                         .frame(width: 36, height: 36)
                     Image(systemName: "chevron.left")
                         .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(Color("AppAdaptiveWhite"))
+                        .foregroundStyle(PHTheme.textOnAccent)
                 }
             }
 
@@ -512,11 +512,11 @@ struct ChatTopBar: View {
                     MemberAvatar(member: member, size: 38)
                     if member.isOnline {
                         Circle()
-                            .fill(Color(hex: "06D6A0"))
+                            .fill(PHTheme.success)
                             .frame(width: 10, height: 10)
                             .overlay(
                                 Circle().stroke(
-                                    Color("AppBackground"),
+                                    PHTheme.background,
                                     lineWidth: 1.5
                                 )
                             )
@@ -527,20 +527,20 @@ struct ChatTopBar: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Color("AppText"))
+                    .foregroundStyle(PHTheme.text)
 
                 HStack(spacing: 4) {
                     if !isGroup, let member = members.first, member.isOnline {
                         Circle()
-                            .fill(Color(hex: "06D6A0"))
+                            .fill(PHTheme.success)
                             .frame(width: 6, height: 6)
                     }
                     Text(subtitle)
                         .font(.system(size: 11))
                         .foregroundStyle(
                             !isGroup && members.first?.isOnline == true
-                                ? Color(hex: "06D6A0")
-                                : Color("AppWhiteText")
+                                ? PHTheme.success
+                                : PHTheme.subtext
                         )
                 }
             }
@@ -565,12 +565,12 @@ struct MessageBubble: View {
     private var fallbackPhoto: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color("AppDivider"))
+                .fill(PHTheme.divider)
                 .frame(width: 180, height: 140)
 
             Image(systemName: "photo")
                 .font(.system(size: 32))
-                .foregroundStyle(Color("AppPlaceholder"))
+                .foregroundStyle(PHTheme.placeholder)
         }
     }
 
@@ -601,7 +601,7 @@ struct MessageBubble: View {
                             .font(.system(size: 14))
                             .foregroundStyle(
                                 message.isOwn
-                                    ? Color("AppAccentText") : Color("AppText")
+                                    ? PHTheme.accent : PHTheme.text
                             )
                             .padding(.horizontal, 14)
                             .padding(.vertical, 10)
@@ -613,7 +613,7 @@ struct MessageBubble: View {
                                                 hex: message.sender?.accentHex
                                                     ?? "AA9DFF"
                                             )
-                                            : Color("AppBorder")
+                                            : PHTheme.border
                                     )
                             )
 
@@ -634,7 +634,7 @@ struct MessageBubble: View {
                                 case .empty:
                                     ZStack {
                                         RoundedRectangle(cornerRadius: 16)
-                                            .fill(Color("AppDivider"))
+                                            .fill(PHTheme.divider)
                                             .frame(width: 200, height: 160)
                                         ProgressView()
                                     }
@@ -682,16 +682,16 @@ struct MessageBubble: View {
                                     .padding(.vertical, 4)
                                     .background(
                                         Capsule()
-                                            .fill(Color("AppBorder"))
+                                            .fill(PHTheme.border)
                                             .overlay(
                                                 Capsule().stroke(
-                                                    Color("AppBorder"),
+                                                    PHTheme.border,
                                                     lineWidth: 0.5
                                                 )
                                             )
                                     )
                                     .foregroundStyle(
-                                        Color("AppAdaptiveWhite").opacity(0.8)
+                                        PHTheme.textOnAccent.opacity(0.8)
                                     )
                             }
                         }
@@ -700,7 +700,7 @@ struct MessageBubble: View {
 
                 Text(message.timestamp.timeString())
                     .font(.system(size: 9))
-                    .foregroundStyle(Color("AppPlaceholder"))
+                    .foregroundStyle(PHTheme.placeholder)
                     .padding(.horizontal, 4)
             }
 
@@ -743,14 +743,14 @@ struct ReplyReference: View {
                     }
                 }
                 .font(.system(size: 11))
-                .foregroundStyle(Color("AppSubtext"))
+                .foregroundStyle(PHTheme.subtext)
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 5)
         }
         .background(
             RoundedRectangle(cornerRadius: 8).fill(
-                Color("AppDivider").opacity(0.6)
+                PHTheme.divider.opacity(0.6)
             )
         )
         .clipShape(RoundedRectangle(cornerRadius: 8))
@@ -783,7 +783,7 @@ struct ReplyPreviewBar: View {
                     }
                 }
                 .font(.system(size: 12))
-                .foregroundStyle(Color("AppSubtext"))
+                .foregroundStyle(PHTheme.subtext)
             }
 
             Spacer()
@@ -793,14 +793,14 @@ struct ReplyPreviewBar: View {
             } label: {
                 Image(systemName: "xmark.circle.fill")
                     .font(.system(size: 18))
-                    .foregroundStyle(Color("AppSubtext"))
+                    .foregroundStyle(PHTheme.subtext)
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(Color("AppSurface2"))
+        .background(PHTheme.surface2)
         .overlay(
-            Rectangle().fill(Color("AppDivider").opacity(0.6)).frame(
+            Rectangle().fill(PHTheme.divider.opacity(0.6)).frame(
                 height: 0.5
             ),
             alignment: .top
@@ -832,14 +832,14 @@ struct ChatInputBar: View {
             } label: {
                 ZStack {
                     Circle()
-                        .fill(Color("AppDivider"))
+                        .fill(PHTheme.divider)
                         .overlay(
-                            Circle().stroke(Color("AppBorder"), lineWidth: 0.5)
+                            Circle().stroke(PHTheme.border, lineWidth: 0.5)
                         )
                         .frame(width: 38, height: 38)
                     Image(systemName: "photo")
                         .font(.system(size: 16))
-                        .foregroundStyle(Color("AppSubtext"))
+                        .foregroundStyle(PHTheme.subtext)
                 }
             }
             .buttonStyle(.plain)
@@ -848,20 +848,20 @@ struct ChatInputBar: View {
                 "",
                 text: $text,
                 prompt: Text("Message…").foregroundStyle(
-                    Color("AppPlaceholder")
+                    PHTheme.placeholder
                 )
             )
             .focused($isFocused)
-            .foregroundStyle(Color("AppText"))
+            .foregroundStyle(PHTheme.text)
             .font(.system(size: 14))
             .padding(.horizontal, 16)
             .frame(minHeight: 40)
             .background(
                 RoundedRectangle(cornerRadius: 22)
-                    .fill(Color("AppDivider"))
+                    .fill(PHTheme.divider)
                     .overlay(
                         RoundedRectangle(cornerRadius: 22)
-                            .stroke(Color("AppBorder"), lineWidth: 0.5)
+                            .stroke(PHTheme.border, lineWidth: 0.5)
                     )
             )
 
@@ -871,7 +871,7 @@ struct ChatInputBar: View {
             } label: {
                 ZStack {
                     Circle()
-                        .fill(canSend ? accent : Color("AppBorder"))
+                        .fill(canSend ? accent : PHTheme.border)
                         .frame(width: 38, height: 38)
                     Image(systemName: canSend ? "arrow.up" : "mic.fill")
                         .font(
@@ -882,7 +882,7 @@ struct ChatInputBar: View {
                         )
                         .foregroundStyle(
                             text.isEmpty
-                                ? Color("AppWhiteText") : Color("AppAccentText")
+                                ? PHTheme.subtext : PHTheme.accent
                         )
                 }
             }
@@ -893,9 +893,9 @@ struct ChatInputBar: View {
         .padding(.vertical, 12)
         .background(
             Rectangle()
-                .fill(Color("AppBackground"))
+                .fill(PHTheme.background)
                 .overlay(
-                    Rectangle().fill(Color("AppDivider").opacity(0.6)).frame(
+                    Rectangle().fill(PHTheme.divider.opacity(0.6)).frame(
                         height: 0.5
                     ),
                     alignment: .top

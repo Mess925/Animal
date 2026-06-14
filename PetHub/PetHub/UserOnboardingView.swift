@@ -17,7 +17,7 @@ struct UserOnboardingView: View {
 
     var body: some View {
         ZStack {
-            Color("AppBackground").ignoresSafeArea()
+            PHTheme.background.ignoresSafeArea()
 
             switch step {
             case 1:

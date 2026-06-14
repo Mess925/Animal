@@ -25,11 +25,11 @@ struct RoomSettingsView: View {
     @State private var members: [Member]
 
     private let colorOptions: [(Color, String)] = [
-        (Color(hex: "AA9DFF"), "AA9DFF"),
-        (Color(hex: "FF6B6B"), "FF6B6B"),
+        (PHTheme.accent, "AA9DFF"),
+        (PHTheme.accent3, "FF6B6B"),
         (Color(hex: "4ECDC4"), "4ECDC4"),
         (Color(hex: "FFD166"), "FFD166"),
-        (Color(hex: "06D6A0"), "06D6A0"),
+        (PHTheme.success, "06D6A0"),
         (Color(hex: "F72585"), "F72585"),
     ]
 
@@ -57,10 +57,10 @@ struct RoomSettingsView: View {
                     VStack(alignment: .leading, spacing: 3) {
                         Text(room.name)
                             .font(.system(size: 18, weight: .semibold))
-                            .foregroundStyle(Color("AppText"))
+                            .foregroundStyle(PHTheme.text)
                         Text("\(room.breed) · \(room.age)")
                             .font(.system(size: 12))
-                            .foregroundStyle(Color("AppSubtext"))
+                            .foregroundStyle(PHTheme.subtext)
                     }
 
                     Spacer()
@@ -119,7 +119,7 @@ struct RoomSettingsView: View {
                     SettingsDivider()
                     SettingsToggleRow(
                         icon: "bubble.left.fill",
-                        iconColor: Color(hex: "7EC8C8"),
+                        iconColor: PHTheme.accent2,
                         label: "Chat messages",
                         sublabel: "New messages in room",
                         isOn: $notifyMessages
@@ -127,7 +127,7 @@ struct RoomSettingsView: View {
                     SettingsDivider()
                     SettingsToggleRow(
                         icon: "heart.fill",
-                        iconColor: Color(hex: "F4A84A"),
+                        iconColor: PHTheme.warning,
                         label: "Reactions & comments",
                         sublabel: nil,
                         isOn: $notifyReactions
@@ -172,15 +172,15 @@ struct RoomSettingsView: View {
                                             dash: [4, 3]
                                         )
                                     )
-                                    .foregroundStyle(Color("AppDivider"))
+                                    .foregroundStyle(PHTheme.divider)
                                     .frame(width: 38, height: 38)
                                 Image(systemName: "plus")
                                     .font(.system(size: 14))
-                                    .foregroundStyle(Color("AppSubtext"))
+                                    .foregroundStyle(PHTheme.subtext)
                             }
                             Text("Invite someone")
                                 .font(.system(size: 14))
-                                .foregroundStyle(Color("AppWhiteText"))
+                                .foregroundStyle(PHTheme.subtext)
                             Spacer()
                         }
                         .padding(.horizontal, 16)
@@ -204,19 +204,19 @@ struct RoomSettingsView: View {
                             HStack(spacing: 12) {
                                 ZStack {
                                     RoundedRectangle(cornerRadius: 10)
-                                        .fill(Color(hex: "E25718").opacity(0.1))
+                                        .fill(PHTheme.danger.opacity(0.1))
                                         .frame(width: 34, height: 34)
                                     Image(systemName: "trash.fill")
                                         .font(.system(size: 14))
-                                        .foregroundStyle(Color(hex: "E25718"))
+                                        .foregroundStyle(PHTheme.danger)
                                 }
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text("Delete room")
                                         .font(.system(size: 14))
-                                        .foregroundStyle(Color(hex: "E25718"))
+                                        .foregroundStyle(PHTheme.danger)
                                     Text("Permanently removes this pet room")
                                         .font(.system(size: 11))
-                                        .foregroundStyle(Color("AppWhiteText"))
+                                        .foregroundStyle(PHTheme.subtext)
                                 }
                                 Spacer()
                             }
@@ -231,19 +231,19 @@ struct RoomSettingsView: View {
                             HStack(spacing: 12) {
                                 ZStack {
                                     RoundedRectangle(cornerRadius: 10)
-                                        .fill(Color(hex: "E25718").opacity(0.1))
+                                        .fill(PHTheme.danger.opacity(0.1))
                                         .frame(width: 34, height: 34)
                                     Image(systemName: "rectangle.portrait.and.arrow.right")
                                         .font(.system(size: 14))
-                                        .foregroundStyle(Color(hex: "E25718"))
+                                        .foregroundStyle(PHTheme.danger)
                                 }
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text("Leave room")
                                         .font(.system(size: 14))
-                                        .foregroundStyle(Color(hex: "E25718"))
+                                        .foregroundStyle(PHTheme.danger)
                                     Text("Remove this room from Joined Rooms")
                                         .font(.system(size: 11))
-                                        .foregroundStyle(Color("AppWhiteText"))
+                                        .foregroundStyle(PHTheme.subtext)
                                 }
                                 Spacer()
                             }
@@ -436,7 +436,7 @@ struct SettingsSectionLabel: View {
         Text(title.uppercased())
             .font(.system(size: 10, weight: .medium))
             .tracking(1.2)
-            .foregroundStyle(Color("AppSubtext"))
+            .foregroundStyle(PHTheme.subtext)
     }
 }
 
@@ -448,10 +448,10 @@ struct SettingsCard<Content: View>: View {
         VStack(spacing: 0) { content }
             .background(
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(Color("AppSurface2"))
+                    .fill(PHTheme.surface2)
                     .overlay(
                         RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color("AppDivider"), lineWidth: 0.5)
+                            .stroke(PHTheme.divider, lineWidth: 0.5)
                     )
             )
     }
@@ -460,7 +460,7 @@ struct SettingsCard<Content: View>: View {
 struct SettingsDivider: View {
     var body: some View {
         Rectangle()
-            .fill(Color("AppDivider"))
+            .fill(PHTheme.divider)
             .frame(height: 0.5)
             .padding(.leading, 62)
     }
@@ -487,18 +487,18 @@ struct SettingsToggleRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
                     .font(.system(size: 14))
-                    .foregroundStyle(Color("AppText"))
+                    .foregroundStyle(PHTheme.text)
                 if let sub = sublabel {
                     Text(sub)
                         .font(.system(size: 11))
-                        .foregroundStyle(Color("AppWhiteText"))
+                        .foregroundStyle(PHTheme.subtext)
                 }
             }
 
             Spacer()
 
             Toggle("", isOn: $isOn)
-                .tint(Color(hex: "AA9DFF"))
+                .tint(PHTheme.accent)
                 .labelsHidden()
         }
         .padding(.horizontal, 16)
@@ -519,10 +519,10 @@ struct MemberSettingsRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(member.name)
                     .font(.system(size: 14))
-                    .foregroundStyle(Color("AppText"))
+                    .foregroundStyle(PHTheme.text)
                 Text(member.isOwner ? "Owner" : "Member")
                     .font(.system(size: 11))
-                    .foregroundStyle(Color("AppWhiteText"))
+                    .foregroundStyle(PHTheme.subtext)
             }
 
             Spacer()
@@ -537,15 +537,15 @@ struct MemberSettingsRow: View {
                 } label: {
                     Text("Remove")
                         .font(.system(size: 12))
-                        .foregroundStyle(Color(hex: "E25718"))
+                        .foregroundStyle(PHTheme.danger)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 5)
                         .background(
                             Capsule()
-                                .fill(Color(hex: "E25718").opacity(0.1))
+                                .fill(PHTheme.danger.opacity(0.1))
                                 .overlay(
                                     Capsule().stroke(
-                                        Color(hex: "E25718").opacity(0.2),
+                                        PHTheme.danger.opacity(0.2),
                                         lineWidth: 0.5
                                     )
                                 )
@@ -563,5 +563,5 @@ struct MemberSettingsRow: View {
 
 #Preview {
     RoomSettingsView(room: .mochi)
-        .background(Color("AppBackground"))
+        .background(PHTheme.background)
 }

@@ -20,7 +20,7 @@ struct CaptureAndPostView: View {
 
     var body: some View {
         ZStack {
-            Color("AppBackground").ignoresSafeArea()
+            PHTheme.background.ignoresSafeArea()
 
             if let img = capturedImage {
                 // Caption screen
@@ -40,19 +40,19 @@ struct CaptureAndPostView: View {
                             "",
                             text: $caption,
                             prompt: Text("Add a caption…")
-                                .foregroundStyle(Color("AppSubtext"))
+                                .foregroundStyle(PHTheme.subtext)
                         )
-                        .foregroundStyle(Color("AppText"))
+                        .foregroundStyle(PHTheme.text)
                         .font(.system(size: 15))
                         .padding(.horizontal, 16)
                         .frame(height: 52)
                         .background(
                             RoundedRectangle(cornerRadius: 16)
-                                .fill(Color("AppSurface"))
+                                .fill(PHTheme.surface)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 16)
                                         .stroke(
-                                            Color("AppBorder"),
+                                            PHTheme.border,
                                             lineWidth: 0.5
                                         )
                                 )
@@ -64,13 +64,13 @@ struct CaptureAndPostView: View {
                             Group {
                                 if isUploading {
                                     ProgressView()
-                                        .tint(Color("AppAccentText"))
+                                        .tint(PHTheme.accent)
                                 } else {
                                     Text("Post")
                                         .font(
                                             .system(size: 15, weight: .semibold)
                                         )
-                                        .foregroundStyle(Color("AppAccentText"))
+                                        .foregroundStyle(PHTheme.accent)
                                 }
                             }
                             .frame(maxWidth: .infinity)
@@ -91,7 +91,7 @@ struct CaptureAndPostView: View {
                     } label: {
                         Text("Retake")
                             .font(.system(size: 13))
-                            .foregroundStyle(Color("AppSubtext"))
+                            .foregroundStyle(PHTheme.subtext)
                     }
                     .buttonStyle(.plain)
                     .padding(.bottom, 44)
