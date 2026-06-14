@@ -1,14 +1,30 @@
 //
-//  WelcomeView.swift  (updated)
+//  RoomView.swift
 //  PetHub
-//
-//  Changes: My Pets opens the real pet room. Photos, chat, DMs, settings live inside the room. Report Lost is a room action.
-//           Color(hex:) extension included here.
 //
 
 import Combine
 import Supabase
 import SwiftUI
+
+// MARK: - Debug Logging
+
+private func phLog(_ message: String) {
+#if DEBUG
+    print("[PetHub] \(message)")
+#endif
+}
+
+// MARK: - Room Activity (file-scope, replaces duplicate local struct)
+
+private struct RoomActivity: Codable {
+    let createdAt: Date
+    let body: String?
+    enum CodingKeys: String, CodingKey {
+        case createdAt = "created_at"
+        case body
+    }
+}
 
 // MARK: - Room Store
 
@@ -23,33 +39,30 @@ class RoomStore: ObservableObject {
     func fetchRooms() async {
         do {
             let user = try await supabase.auth.session.user
-            print("Fetching rooms for user: \(user.id)")
+            phLog("Fetching rooms for user: \(user.id)")
 
-            let ownedRooms: [SupabaseRoom] =
-                try await supabase
+            let ownedRooms: [SupabaseRoom] = try await supabase
                 .from("rooms")
                 .select()
                 .eq("owner_id", value: user.id.uuidString)
                 .execute()
                 .value
-            print("Owned rooms: \(ownedRooms.count)")
+            phLog("Owned rooms: \(ownedRooms.count)")
 
-            let memberships: [RoomMembership] =
-                try await supabase
+            let memberships: [RoomMembership] = try await supabase
                 .from("room_members")
                 .select()
                 .eq("user_id", value: user.id.uuidString.lowercased())
                 .eq("role", value: "member")
                 .execute()
                 .value
-            print("Memberships: \(memberships.count)")
+            phLog("Memberships: \(memberships.count)")
 
             let memberRoomIds = memberships.map { $0.roomId.uuidString }
 
             var memberRooms: [SupabaseRoom] = []
             if !memberRoomIds.isEmpty {
-                memberRooms =
-                    try await supabase
+                memberRooms = try await supabase
                     .from("rooms")
                     .select()
                     .in("id", values: memberRoomIds)
@@ -61,70 +74,63 @@ class RoomStore: ObservableObject {
                 ownedRooms.map { $0.toPetRoom(isOwned: true) }
                 + memberRooms.map { $0.toPetRoom(isOwned: false) }
 
-//            struct LastMessage: Codable {
-//                let createdAt: Date
-//                let body: String?
-//                enum CodingKeys: String, CodingKey {
-//                    case createdAt = "created_at"
-//                    case body
-//                }
-//            }
+            // Fetch last activity for all rooms concurrently instead of serially
+            try await withThrowingTaskGroup(of: (Int, Date?, String?).self) { group in
+                for (i, room) in allRooms.enumerated() {
+                    let roomId = room.id.uuidString
+                    group.addTask {
+                        async let lastMsg: [RoomActivity] = (try? await supabase
+                            .from("messages")
+                            .select("created_at, body")
+                            .eq("room_id", value: roomId)
+                            .order("created_at", ascending: false)
+                            .limit(1)
+                            .execute()
+                            .value) ?? []
 
-            for i in allRooms.indices {
-                let roomId = allRooms[i].id.uuidString
+                        async let lastPhoto: [RoomActivity] = (try? await supabase
+                            .from("photo_posts")
+                            .select("created_at")
+                            .eq("room_id", value: roomId)
+                            .order("created_at", ascending: false)
+                            .limit(1)
+                            .execute()
+                            .value) ?? []
 
-                struct LastMessage: Codable {
-                    let createdAt: Date
-                    let body: String?
-                    enum CodingKeys: String, CodingKey {
-                        case createdAt = "created_at"
-                        case body
+                        async let lastActivity: [RoomActivity] = (try? await supabase
+                            .from("activities")
+                            .select("created_at")
+                            .eq("room_id", value: roomId)
+                            .order("created_at", ascending: false)
+                            .limit(1)
+                            .execute()
+                            .value) ?? []
+
+                        let (msg, photo, act) = try await (lastMsg, lastPhoto, lastActivity)
+
+                        let latestDate = [msg.first?.createdAt, photo.first?.createdAt, act.first?.createdAt]
+                            .compactMap { $0 }
+                            .max()
+
+                        return (i, latestDate, msg.first?.body)
                     }
                 }
 
-                // Get latest activity from messages, photos, comments, likes
-                let lastMsg: [LastMessage] =
-                    (try? await supabase.from("messages").select().eq(
-                        "room_id",
-                        value: roomId
-                    ).order("created_at", ascending: false).limit(1).execute()
-                        .value) ?? []
-
-                allRooms[i].lastMessage = lastMsg.first?.body ?? ""  // ← after lastMsg
-
-                let lastPhoto: [LastMessage] =
-                    (try? await supabase.from("photo_posts").select().eq(
-                        "room_id",
-                        value: roomId
-                    ).order("created_at", ascending: false).limit(1).execute()
-                        .value) ?? []
-
-                let lastActivity: [LastMessage] =
-                    (try? await supabase.from("activities").select().eq(
-                        "room_id",
-                        value: roomId
-                    ).order("created_at", ascending: false).limit(1).execute()
-                        .value) ?? []
-
-                let dates = [
-                    lastMsg.first?.createdAt,
-                    lastPhoto.first?.createdAt,
-                    lastActivity.first?.createdAt,
-                ].compactMap { $0 }
-
-                allRooms[i].lastActivity = dates.max() ?? Date.distantPast
-            }
-
-            await MainActor.run {
-                self.rooms = allRooms.sorted {
-                    $0.lastActivity > $1.lastActivity
+                for try await (i, latestDate, lastBody) in group {
+                    allRooms[i].lastActivity = latestDate ?? Date.distantPast
+                    allRooms[i].lastMessage  = lastBody ?? ""
                 }
             }
+
+            let sorted = allRooms.sorted { $0.lastActivity > $1.lastActivity }
+            await MainActor.run { self.rooms = sorted }
+
         } catch {
-            print("Fetch rooms error: \(error)")
+            phLog("Fetch rooms error: \(error)")
         }
     }
 }
+
 // MARK: - Tab Enum
 
 enum AppTab {
@@ -147,10 +153,10 @@ struct MainTabView: View {
                         .environmentObject(store)
                         .environmentObject(subscriptionManager)
                 case .activity:
-                    ActivityPlaceholderView()
+                    ActivityView()
                         .environmentObject(store)
                 case .profile:
-                    ProfilePlaceholderView()
+                    ProfileView()
                         .environmentObject(store)
                 }
             }
@@ -181,24 +187,9 @@ struct FloatingTabBar: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            TabBarItem(
-                icon: "house.fill",
-                label: "Rooms",
-                tab: .rooms,
-                selected: $selectedTab
-            )
-            TabBarItem(
-                icon: "bolt.fill",
-                label: "Activity",
-                tab: .activity,
-                selected: $selectedTab
-            )
-            TabBarItem(
-                icon: "person.crop.circle.fill",
-                label: "Profile",
-                tab: .profile,
-                selected: $selectedTab
-            )
+            TabBarItem(icon: "house.fill",             label: "Rooms",    tab: .rooms,    selected: $selectedTab)
+            TabBarItem(icon: "bolt.fill",              label: "Activity", tab: .activity, selected: $selectedTab)
+            TabBarItem(icon: "person.crop.circle.fill", label: "Profile",  tab: .profile,  selected: $selectedTab)
         }
         .padding(.vertical, 12)
         .padding(.horizontal, 8)
@@ -231,25 +222,16 @@ struct TabBarItem: View {
             VStack(spacing: 4) {
                 Image(systemName: icon)
                     .font(.system(size: 20, weight: .medium))
-                    .foregroundStyle(
-                        isActive
-                            ? Color(hex: "AA9DFF") : Color("AppWhiteText")
-                    )
+                    .foregroundStyle(isActive ? Color(hex: "AA9DFF") : Color("AppWhiteText"))
                 Text(label)
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(
-                        isActive
-                            ? Color(hex: "AA9DFF") : Color("AppWhiteText")
-                    )
+                    .foregroundStyle(isActive ? Color(hex: "AA9DFF") : Color("AppWhiteText"))
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 4)
             .background(
                 RoundedRectangle(cornerRadius: 18)
-                    .fill(
-                        isActive
-                            ? Color(hex: "AA9DFF").opacity(0.12) : Color.clear
-                    )
+                    .fill(isActive ? Color(hex: "AA9DFF").opacity(0.12) : Color.clear)
                     .padding(.horizontal, 4)
             )
         }
@@ -278,7 +260,7 @@ struct RoomsView: View {
         GridItem(.flexible(), spacing: 12),
     ]
 
-    private var myRooms: [PetRoom] { store.rooms.filter { $0.isOwned } }
+    private var myRooms: [PetRoom]     { store.rooms.filter { $0.isOwned } }
     private var memberRooms: [PetRoom] { store.rooms.filter { !$0.isOwned } }
 
     private var activeLostPosts: [LostFoundPost] {
@@ -323,16 +305,15 @@ struct RoomsView: View {
                             Text("Rooms")
                                 .font(.system(size: 28, weight: .semibold))
                                 .foregroundStyle(Color("AppText"))
-                            Text(
-                                "\(store.rooms.count) room\(store.rooms.count == 1 ? "" : "s") active"
-                            )
-                            .font(.system(size: 13))
-                            .foregroundStyle(Color("AppWhiteText"))
+                            Text("\(store.rooms.count) room\(store.rooms.count == 1 ? "" : "s") active")
+                                .font(.system(size: 13))
+                                .foregroundStyle(Color("AppWhiteText"))
                         }
                         .padding(.horizontal, 20)
                         .padding(.top, 20)
                         .padding(.bottom, 24)
 
+                        // Search
                         HStack(spacing: 10) {
                             Image(systemName: "magnifyingglass")
                                 .foregroundStyle(Color("AppPlaceholder"))
@@ -390,9 +371,12 @@ struct RoomsView: View {
                                     }
                                     .buttonStyle(.plain)
                                 }
-                                AddPetCard().environmentObject(store)
+                                AddPetCard()
+                                    .environmentObject(store)
+                                    .environmentObject(subscriptionManager)
                             }
                             .padding(.horizontal, 16)
+
                         } else {
                             RoomsSectionLabel(title: "Joined Rooms")
                                 .padding(.horizontal, 20)
@@ -444,10 +428,8 @@ struct RoomsView: View {
 
     private func fetchLostFoundPosts() async {
         isLoadingLostFound = true
-
         do {
             async let userSession = supabase.auth.session
-
             async let fetched: [LostFoundPost] = supabase
                 .from("lost_found")
                 .select()
@@ -464,11 +446,8 @@ struct RoomsView: View {
                 isLoadingLostFound = false
             }
         } catch {
-            print("Fetch rooms lost found summary error: \(error)")
-
-            await MainActor.run {
-                isLoadingLostFound = false
-            }
+            phLog("Fetch lost found summary error: \(error)")
+            await MainActor.run { isLoadingLostFound = false }
         }
     }
 }
@@ -577,12 +556,8 @@ struct LostRoomCard: View {
                 .environmentObject(subscriptionManager)
                 .navigationBarBackButtonHidden(true)
                 .toolbar(.hidden, for: .tabBar)
-                .onAppear {
-                    store.isInRoom = true
-                }
-                .onDisappear {
-                    store.isInRoom = false
-                }
+                .onAppear { store.isInRoom = true }
+                .onDisappear { store.isInRoom = false }
         } label: {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(spacing: 14) {
@@ -607,8 +582,7 @@ struct LostRoomCard: View {
                     Spacer()
 
                     if isLoading {
-                        ProgressView()
-                            .scaleEffect(0.8)
+                        ProgressView().scaleEffect(0.8)
                     } else if myLostCount > 0 {
                         Text("ACTIVE")
                             .font(.system(size: 10, weight: .bold))
@@ -626,7 +600,7 @@ struct LostRoomCard: View {
 
                 if !isLoading && (lostCount > 0 || foundCount > 0) {
                     HStack(spacing: 10) {
-                        LostFoundStatPill(title: "Lost", count: lostCount, icon: "exclamationmark.triangle.fill")
+                        LostFoundStatPill(title: "Lost",  count: lostCount,  icon: "exclamationmark.triangle.fill")
                         LostFoundStatPill(title: "Found", count: foundCount, icon: "checkmark.circle.fill")
                     }
                 }
@@ -725,15 +699,13 @@ struct PetRoomCard: View {
 
 struct AddPetCard: View {
     @EnvironmentObject private var store: RoomStore
-    @State private var showCreateRoom = false
     @EnvironmentObject private var subscriptionManager: SubscriptionManager
+    @State private var showCreateRoom = false
     @State private var showUpgradeSheet = false
 
     var body: some View {
         Button {
-            if store.rooms.filter({ $0.isOwned }).count
-                >= subscriptionManager.maxRooms
-            {
+            if store.rooms.filter({ $0.isOwned }).count >= subscriptionManager.maxRooms {
                 showUpgradeSheet = true
             } else {
                 showCreateRoom = true
@@ -761,10 +733,10 @@ struct AddPetCard: View {
                     )
             )
         }
+        .buttonStyle(.plain)
         .sheet(isPresented: $showUpgradeSheet) {
             UpgradeView()
         }
-        .buttonStyle(.plain)
         .sheet(isPresented: $showCreateRoom) {
             CreateRoomView { newRoom in
                 store.add(newRoom)
@@ -773,26 +745,10 @@ struct AddPetCard: View {
     }
 }
 
-// MARK: - Placeholder Views
-
-struct ActivityPlaceholderView: View {
-    var body: some View {
-        ActivityView()
-    }
-}
-
-struct ProfilePlaceholderView: View {
-    var body: some View {
-        ProfileView()
-    }
-}
-
 // MARK: - Preview
 
 #Preview {
-    // Use a pre-configured instance so the preview doesn't trigger a live
-    // RevenueCat network call via SubscriptionManager.init().
     let sm = SubscriptionManager()
     return MainTabView(subscriptionManager: sm)
-        .task { sm.tier = .pro } // set a tier for richer preview state
+        .task { sm.tier = .pro }
 }
