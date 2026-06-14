@@ -29,6 +29,7 @@ private struct RoomActivity: Codable {
 
 class RoomStore: ObservableObject {
     @Published var rooms: [PetRoom] = []
+    @Published var memberCounts: [UUID: Int] = [:]
     @Published var isInRoom: Bool = false
 
     func add(_ room: PetRoom) {
@@ -72,6 +73,38 @@ class RoomStore: ObservableObject {
             var allRooms: [PetRoom] =
                 ownedRooms.map { $0.toPetRoom(isOwned: true) }
                 + memberRooms.map { $0.toPetRoom(isOwned: false) }
+
+            // Fetch the real member count for each room.
+            // Do not use placeholder values like "12 members" in the UI.
+            var fetchedMemberCounts: [UUID: Int] = [:]
+
+            try await withThrowingTaskGroup(of: (UUID, Int).self) { group in
+                for room in allRooms {
+                    let roomId = room.id
+                    group.addTask {
+                        struct RoomMemberCountRow: Codable {
+                            let userId: UUID
+
+                            enum CodingKeys: String, CodingKey {
+                                case userId = "user_id"
+                            }
+                        }
+
+                        let members: [RoomMemberCountRow] = try await supabase
+                            .from("room_members")
+                            .select("user_id")
+                            .eq("room_id", value: roomId.uuidString)
+                            .execute()
+                            .value
+
+                        return (roomId, max(members.count, 1))
+                    }
+                }
+
+                for try await (roomId, count) in group {
+                    fetchedMemberCounts[roomId] = count
+                }
+            }
 
             // Fetch last activity for all rooms concurrently instead of serially
             try await withThrowingTaskGroup(of: (Int, Date?, String?).self) { group in
@@ -122,7 +155,10 @@ class RoomStore: ObservableObject {
             }
 
             let sorted = allRooms.sorted { $0.lastActivity > $1.lastActivity }
-            await MainActor.run { self.rooms = sorted }
+            await MainActor.run {
+                self.rooms = sorted
+                self.memberCounts = fetchedMemberCounts
+            }
 
         } catch {
             phLog("Fetch rooms error: \(error)")
@@ -917,6 +953,7 @@ struct RoomsTabContent: View {
                                 age: room.age,
                                 icon: room.icon,
                                 accentHex: room.accentHex,
+                                memberCount: store.memberCounts[room.id] ?? max(room.members.count, 1),
                                 lastMessage: room.lastMessage
                             )
                         }
@@ -1232,6 +1269,7 @@ struct PetRoomCard: View {
     let age: String
     let icon: String
     let accentHex: String
+    let memberCount: Int
     var lastMessage: String = ""
 
     private var accent: Color { Color(hex: accentHex) }
@@ -1272,7 +1310,7 @@ struct PetRoomCard: View {
                             .frame(width: 20, height: 20)
                             .overlay(Circle().stroke(PHTheme.surface, lineWidth: 2))
                     }
-                    Text("12 members")
+                    Text("\(memberCount) \(memberCount == 1 ? "member" : "members")")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(PHTheme.subtext)
                         .padding(.leading, 10)
