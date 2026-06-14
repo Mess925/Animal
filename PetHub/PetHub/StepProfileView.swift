@@ -143,7 +143,6 @@ struct StepProfileView: View {
                 .execute()
             onNext()
         } catch {
-            print("Save profile error: \(error)")
         }
     }
 }

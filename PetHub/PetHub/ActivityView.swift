@@ -261,7 +261,6 @@ struct ActivityView: View {
                 isLoading = false
             }
         } catch {
-            print("Fetch activities error: \(error)")
             isLoading = false
         }
     }

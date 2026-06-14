@@ -328,7 +328,6 @@ struct RoomSettingsView: View {
             }
 
         } catch {
-            print("Remove member error: \(error)")
         }
     }
 
@@ -381,7 +380,6 @@ struct RoomSettingsView: View {
                 members = fetchedMembers
             }
         } catch {
-            print("Fetch members error: \(error)")
         }
     }
 
@@ -411,7 +409,6 @@ struct RoomSettingsView: View {
                 dismiss()
             }
         } catch {
-            print("Leave room error: \(error)")
         }
     }
 
@@ -427,7 +424,6 @@ struct RoomSettingsView: View {
             }
             dismiss()
         } catch {
-            print("Delete room error: \(error)")
         }
     }
 }

@@ -56,7 +56,6 @@ struct PetHubApp: App {
             do {
                 try await supabase.auth.signOut()
             } catch {
-                print("[Auth] signOut failed: \(error)")
             }
 
             isLoggedIn = false
@@ -99,7 +98,6 @@ struct PetHubApp: App {
 
             subscriptionManager.fetchCustomerInfo()
         } catch {
-            print("[Onboarding] Failed to fetch profile: \(error)")
         }
     }
 }

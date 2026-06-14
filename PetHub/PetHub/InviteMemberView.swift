@@ -189,7 +189,6 @@ struct InviteMemberView: View {
             successMessage = "Invited successfully! 🎉"
         } catch {
             errorMessage = "Something went wrong. Try again."
-            print("Invite error: \(error)")
         }
 
         isLoading = false

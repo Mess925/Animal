@@ -182,7 +182,6 @@ struct CaptureAndPostView: View {
             onPost(image, caption)
             dismiss()
         } catch {
-            print("Upload error: \(error)")
         }
         isUploading = false
     }

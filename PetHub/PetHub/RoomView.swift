@@ -11,7 +11,6 @@ import SwiftUI
 
 private func phLog(_ message: String) {
 #if DEBUG
-    print("[PetHub] \(message)")
 #endif
 }
 

@@ -212,7 +212,6 @@ struct StepCreateRoomView: View {
             onFinish()
 
         } catch {
-            print("Complete onboarding error: \(error)")
         }
     }
 }

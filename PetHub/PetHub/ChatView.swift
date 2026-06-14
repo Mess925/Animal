@@ -225,7 +225,6 @@ struct ChatView: View {
             await channel.unsubscribe()
 
         } catch {
-            print("Realtime subscribe error: \(error)")
         }
     }
 
@@ -374,15 +373,12 @@ struct ChatView: View {
                 return
             }
         } catch {
-            print("Fetch messages error: \(error)")
         }
     }
 
     private func sendMessageToSupabase(_ text: String) async {
         do {
             let user = try await supabase.auth.session.user
-            print("Sending as user: \(user.id)")
-            print("recipientId: \(recipientId ?? "nil - group")")
 
             if let recipientId = recipientId {
                 try await supabase
@@ -394,7 +390,6 @@ struct ChatView: View {
                         "room_id": roomId,
                     ])
                     .execute()
-                print("DM sent!")
             } else {
                 try await supabase
                     .from("messages")
@@ -404,7 +399,6 @@ struct ChatView: View {
                         "body": text,
                     ])
                     .execute()
-                print("Group message sent!")
             }
             if isLostFound {
                 try await supabase
@@ -418,7 +412,6 @@ struct ChatView: View {
                     .execute()
             }
         } catch {
-            print("Send message error: \(error)")
         }
 
     }
@@ -474,7 +467,6 @@ struct ChatView: View {
                 selectedImage = nil
             }
         } catch {
-            print("Send image error: \(error)")
         }
     }
 }

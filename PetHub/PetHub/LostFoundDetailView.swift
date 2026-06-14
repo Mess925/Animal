@@ -508,7 +508,6 @@ struct LostFoundDetailView: View {
                 dismiss()
             }
         } catch {
-            print("Resolve post error: \(error)")
         }
     }
 
@@ -525,7 +524,6 @@ struct LostFoundDetailView: View {
                 dismiss()
             }
         } catch {
-            print("Delete post error: \(error)")
         }
     }
 
@@ -552,7 +550,6 @@ struct LostFoundDetailView: View {
                 }
             }
         } catch {
-            print("Fetch owner error: \(error)")
         }
     }
 }

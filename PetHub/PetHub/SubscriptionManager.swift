@@ -100,7 +100,6 @@ class SubscriptionManager: ObservableObject {
                 .execute()
         } catch {
             // Non-fatal: RevenueCat remains the source of truth client-side.
-            print("[SubscriptionManager] Supabase tier sync failed: \(error)")
         }
     }
 

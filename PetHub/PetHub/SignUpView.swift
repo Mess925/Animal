@@ -169,14 +169,11 @@ struct SignUpView: View {
                 .execute()
             needsUserOnboarding = true
             isLoggedIn = true
-            print("Signed up successfully!")
         } catch {
-            print("Sign up error: \(error)")
         }
     }
 
     private func signUpWithApple() {
-        print("Apple Sign Up tapped")
     }
 }
 

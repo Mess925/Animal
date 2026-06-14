@@ -215,12 +215,10 @@ extension Color {
 
                 // Primary action button
                 AppButton("Sign In", style: .primary, icon: "arrow.right") {
-                    print("Signing in...")
                 }
 
                 // Secondary action button
                 AppButton("Sign In with Apple", style: .secondary, icon: "apple.logo") {
-                    print("Apple sign in...")
                 }
 
                 // Navigation button — replace Text("Destination") with your real view

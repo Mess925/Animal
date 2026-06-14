@@ -187,7 +187,6 @@ struct EditRoomView: View {
             }
             dismiss()
         } catch {
-            print("Save room error: \(error)")
         }
         isLoading = false
     }

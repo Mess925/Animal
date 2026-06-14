@@ -183,7 +183,6 @@ struct SignInView: View {
     }
 
     private func signInWithApple() {
-        print("Apple Sign In tapped")
     }
 
     private func signIn() async {
@@ -205,10 +204,8 @@ struct SignInView: View {
         do {
             try await supabase.auth.signIn(email: cleanedEmail, password: password)
             isLoggedIn = true
-            print("Signed in successfully!")
         } catch {
             authError = friendlyAuthError(error)
-            print("Sign in error: \(error)")
         }
     }
 }

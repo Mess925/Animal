@@ -404,7 +404,6 @@ struct LostAndFoundView: View {
                 currentUserId: session.user.id
             )
         } catch {
-            print("Fetch lost found error: \(error)")
 
             await MainActor.run {
                 isLoading = false
@@ -424,7 +423,6 @@ struct LostAndFoundView: View {
 
             await fetchPosts()
         } catch {
-            print("Delete lost found error: \(error)")
         }
     }
 
@@ -476,7 +474,6 @@ struct LostAndFoundView: View {
                         ])
                         .execute()
                 } catch {
-                    print("Create possible match activity error: \(error)")
                 }
             }
         }
@@ -1103,7 +1100,6 @@ struct AddLostFoundView: View {
             onComplete()
             dismiss()
         } catch {
-            print("Submit lost found error: \(error)")
         }
 
         isLoading = false
@@ -1310,7 +1306,6 @@ struct LostFoundMessagesView: View {
                 isLoading = false
             }
         } catch {
-            print("Fetch LF conversations error: \(error)")
 
             await MainActor.run {
                 isLoading = false

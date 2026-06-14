@@ -83,7 +83,6 @@ struct StepUsernameView: View {
                 .execute()
             onNext()
         } catch {
-            print("Save username error: \(error)")
         }
     }
 }

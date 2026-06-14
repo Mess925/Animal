@@ -191,7 +191,6 @@ struct GalleryView: View {
                 }
             }
         } catch {
-            print("Fetch photos error: \(error)")
         }
     }
 }
@@ -325,7 +324,6 @@ struct PhotoCell: View {
                 .value
             commentCount = comments.count
         } catch {
-            print("Fetch counts error: \(error)")
         }
     }
 }
@@ -633,7 +631,6 @@ struct PhotoDetailView: View {
                 commentsWithNames = result
             }
         } catch {
-            print("Fetch likes/comments error: \(error)")
         }
     }
 
@@ -673,7 +670,6 @@ struct PhotoDetailView: View {
                 likeCount += 1
             }
         } catch {
-            print("Toggle like error: \(error)")
         }
     }
 
@@ -703,7 +699,6 @@ struct PhotoDetailView: View {
 
             await fetchLikesAndComments()
         } catch {
-            print("Post comment error: \(error)")
         }
     }
 

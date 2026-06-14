@@ -347,7 +347,6 @@ struct CreateRoomView: View {
             dismiss()
             onComplete?(newRoom.toPetRoom())
         } catch {
-            print("Create room error: \(error)")
         }
     }
     

@@ -194,7 +194,6 @@ struct PeopleView: View {
             }
 
         } catch {
-            print("Fetch people members error: \(error)")
         }
     }
 

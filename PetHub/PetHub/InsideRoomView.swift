@@ -206,7 +206,6 @@ struct RoomView: View {
                 }
             }
         } catch {
-            print("Fetch active lost post error: \(error)")
         }
     }
 
@@ -253,7 +252,6 @@ struct RoomView: View {
                 currentRoom.members = fetchedMembers
             }
         } catch {
-            print("Fetch members error: \(error)")
         }
     }
 }

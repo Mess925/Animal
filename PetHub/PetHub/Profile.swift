@@ -414,10 +414,8 @@ struct ProfileView: View {
                 .single()
                 .execute()
                 .value
-            print("Fetched profile: \(fetched.name), \(fetched.username)")
             profile = fetched
         } catch {
-            print("Fetch profile error: \(error)")
         }
     }
 }
@@ -765,7 +763,6 @@ struct EditProfileView: View {
             profile.bio = bio
             dismiss()
         } catch {
-            print("Save profile error: \(error)")
         }
     }
 }
@@ -900,7 +897,6 @@ struct ChangePasswordView: View {
             try await supabase.auth.signOut()
         } catch {
             isSaving = false
-            print("Change password error: \(error)")
         }
     }
 }
@@ -1044,7 +1040,6 @@ struct DeleteAccountView: View {
         } catch {
             errorMessage =
                 "Could not delete account. Check that delete_my_account() exists in Supabase."
-            print("Delete account error: \(error)")
         }
 
         isDeleting = false
