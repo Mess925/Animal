@@ -15,6 +15,7 @@ struct SignInView: View {
     @State private var isSigningIn = false
     @State private var authError: String?
     @State private var showForgotPassword = false
+    @StateObject private var appleHandler = AppleSignInHandler()
     @FocusState private var emailFocused: Bool
     @FocusState private var passwordFocused: Bool
 
@@ -119,6 +120,17 @@ struct SignInView: View {
     }
 
     private func signInWithApple() {
+        authError = nil
+
+        appleHandler.onSuccess = {
+            isLoggedIn = true
+        }
+
+        appleHandler.onError = { message in
+            authError = message
+        }
+
+        appleHandler.signIn()
     }
 
     private func signIn() async {

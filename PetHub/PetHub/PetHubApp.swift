@@ -1,9 +1,12 @@
 import Supabase
 import SwiftUI
+import UserNotifications
 import RevenueCat
 
 @main
 struct PetHubApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
     @AppStorage("needsUserOnboarding") private var needsUserOnboarding = true
     @AppStorage("isLoggedIn") private var isLoggedIn = false
@@ -17,7 +20,7 @@ struct PetHubApp: App {
         Purchases.logLevel = .debug
         #endif
 
-        Purchases.configure(withAPIKey: "test_SawIEyfctZaetbkOBaLgIHHwOBZ")
+        Purchases.configure(withAPIKey: "appl_evhbaETZHncfnVUSItJpgNhcoqJ")
 
         _subscriptionManager = StateObject(
             wrappedValue: SubscriptionManager()
@@ -66,6 +69,10 @@ struct PetHubApp: App {
 
         isLoggedIn = supabase.auth.currentSession != nil
 
+        if isLoggedIn {
+            await NotificationManager.shared.requestPermission()
+        }
+
         if let session = supabase.auth.currentSession {
             await checkOnboarding(userId: session.user.id.uuidString)
         }
@@ -76,6 +83,7 @@ struct PetHubApp: App {
 
                 isLoggedIn = true
                 await checkOnboarding(userId: session.user.id.uuidString)
+                await NotificationManager.shared.requestPermission()
             } else {
                 isResettingPassword = false
                 isLoggedIn = false
@@ -86,6 +94,8 @@ struct PetHubApp: App {
 
     @MainActor
     private func checkOnboarding(userId: String) async {
+        needsUserOnboarding = false
+
         do {
             let profile: UserProfile = try await supabase
                 .from("profiles")
@@ -103,5 +113,24 @@ struct PetHubApp: App {
             print("Check onboarding error:", error)
             #endif
         }
+    }
+}
+
+final class AppDelegate: NSObject, UIApplicationDelegate {
+
+    func application(
+        _ application: UIApplication,
+        didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+    ) {
+        NotificationManager.shared.didRegisterForRemoteNotifications(
+            deviceToken: deviceToken
+        )
+    }
+
+    func application(
+        _ application: UIApplication,
+        didFailToRegisterForRemoteNotificationsWithError error: Error
+    ) {
+        print("APNs registration failed:", error)
     }
 }

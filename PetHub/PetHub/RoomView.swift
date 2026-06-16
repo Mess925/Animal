@@ -10,8 +10,8 @@ import SwiftUI
 // MARK: - Debug Logging
 
 private func phLog(_ message: String) {
-#if DEBUG
-#endif
+    #if DEBUG
+    #endif
 }
 
 // MARK: - Room Activity (file-scope, replaces duplicate local struct)
@@ -41,7 +41,8 @@ class RoomStore: ObservableObject {
             let user = try await supabase.auth.session.user
             phLog("Fetching rooms for user: \(user.id)")
 
-            let ownedRooms: [SupabaseRoom] = try await supabase
+            let ownedRooms: [SupabaseRoom] =
+                try await supabase
                 .from("rooms")
                 .select()
                 .eq("owner_id", value: user.id.uuidString)
@@ -49,7 +50,8 @@ class RoomStore: ObservableObject {
                 .value
             phLog("Owned rooms: \(ownedRooms.count)")
 
-            let memberships: [RoomMembership] = try await supabase
+            let memberships: [RoomMembership] =
+                try await supabase
                 .from("room_members")
                 .select()
                 .eq("user_id", value: user.id.uuidString.lowercased())
@@ -62,7 +64,8 @@ class RoomStore: ObservableObject {
 
             var memberRooms: [SupabaseRoom] = []
             if !memberRoomIds.isEmpty {
-                memberRooms = try await supabase
+                memberRooms =
+                    try await supabase
                     .from("rooms")
                     .select()
                     .in("id", values: memberRoomIds)
@@ -90,7 +93,8 @@ class RoomStore: ObservableObject {
                             }
                         }
 
-                        let members: [RoomMemberCountRow] = try await supabase
+                        let members: [RoomMemberCountRow] =
+                            try await supabase
                             .from("room_members")
                             .select("user_id")
                             .eq("room_id", value: roomId.uuidString)
@@ -107,42 +111,51 @@ class RoomStore: ObservableObject {
             }
 
             // Fetch last activity for all rooms concurrently instead of serially
-            try await withThrowingTaskGroup(of: (Int, Date?, String?).self) { group in
+            try await withThrowingTaskGroup(of: (Int, Date?, String?).self) {
+                group in
                 for (i, room) in allRooms.enumerated() {
                     let roomId = room.id.uuidString
                     group.addTask {
-                        async let lastMsg: [RoomActivity] = (try? await supabase
-                            .from("messages")
-                            .select("created_at, body")
-                            .eq("room_id", value: roomId)
-                            .order("created_at", ascending: false)
-                            .limit(1)
-                            .execute()
-                            .value) ?? []
+                        async let lastMsg: [RoomActivity] =
+                            (try? await supabase
+                                .from("messages")
+                                .select("created_at, body")
+                                .eq("room_id", value: roomId)
+                                .order("created_at", ascending: false)
+                                .limit(1)
+                                .execute()
+                                .value) ?? []
 
-                        async let lastPhoto: [RoomActivity] = (try? await supabase
-                            .from("photo_posts")
-                            .select("created_at")
-                            .eq("room_id", value: roomId)
-                            .order("created_at", ascending: false)
-                            .limit(1)
-                            .execute()
-                            .value) ?? []
+                        async let lastPhoto: [RoomActivity] =
+                            (try? await supabase
+                                .from("photo_posts")
+                                .select("created_at")
+                                .eq("room_id", value: roomId)
+                                .order("created_at", ascending: false)
+                                .limit(1)
+                                .execute()
+                                .value) ?? []
 
-                        async let lastActivity: [RoomActivity] = (try? await supabase
-                            .from("activities")
-                            .select("created_at")
-                            .eq("room_id", value: roomId)
-                            .order("created_at", ascending: false)
-                            .limit(1)
-                            .execute()
-                            .value) ?? []
+                        async let lastActivity: [RoomActivity] =
+                            (try? await supabase
+                                .from("activities")
+                                .select("created_at")
+                                .eq("room_id", value: roomId)
+                                .order("created_at", ascending: false)
+                                .limit(1)
+                                .execute()
+                                .value) ?? []
 
-                        let (msg, photo, act) = try await (lastMsg, lastPhoto, lastActivity)
+                        let (msg, photo, act) = try await (
+                            lastMsg, lastPhoto, lastActivity
+                        )
 
-                        let latestDate = [msg.first?.createdAt, photo.first?.createdAt, act.first?.createdAt]
-                            .compactMap { $0 }
-                            .max()
+                        let latestDate = [
+                            msg.first?.createdAt, photo.first?.createdAt,
+                            act.first?.createdAt,
+                        ]
+                        .compactMap { $0 }
+                        .max()
 
                         return (i, latestDate, msg.first?.body)
                     }
@@ -150,7 +163,7 @@ class RoomStore: ObservableObject {
 
                 for try await (i, latestDate, lastBody) in group {
                     allRooms[i].lastActivity = latestDate ?? Date.distantPast
-                    allRooms[i].lastMessage  = lastBody ?? ""
+                    allRooms[i].lastMessage = lastBody ?? ""
                 }
             }
 
@@ -226,19 +239,48 @@ struct FloatingTabBar: View {
 
     var body: some View {
         HStack(spacing: 2) {
-            TabBarItem(icon: "house.fill", label: "Home", tab: .home, selected: $selectedTab)
-            TabBarItem(icon: "pawprint.fill", label: "Rooms", tab: .rooms, selected: $selectedTab)
-            TabBarItem(icon: "bell.fill", label: "Activity", tab: .activity, selected: $selectedTab)
-            TabBarItem(icon: "person.fill", label: "Profile", tab: .profile, selected: $selectedTab)
+            TabBarItem(
+                icon: "house.fill",
+                label: "Home",
+                tab: .home,
+                selected: $selectedTab
+            )
+            TabBarItem(
+                icon: "pawprint.fill",
+                label: "Rooms",
+                tab: .rooms,
+                selected: $selectedTab
+            )
+            TabBarItem(
+                icon: "bell.fill",
+                label: "Activity",
+                tab: .activity,
+                selected: $selectedTab
+            )
+            TabBarItem(
+                icon: "person.fill",
+                label: "Profile",
+                tab: .profile,
+                selected: $selectedTab
+            )
         }
         .padding(.vertical, 10)
         .padding(.horizontal, 10)
         .background(
             RoundedRectangle(cornerRadius: 30, style: .continuous)
                 .fill(.ultraThinMaterial)
-                .overlay(RoundedRectangle(cornerRadius: 30, style: .continuous).fill(PHTheme.surface.opacity(0.82)))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 30, style: .continuous).fill(
+                        PHTheme.surface.opacity(0.82)
+                    )
+                )
         )
-        .overlay(RoundedRectangle(cornerRadius: 30, style: .continuous).stroke(PHTheme.border.opacity(0.9), lineWidth: 0.8))
+        .overlay(
+            RoundedRectangle(cornerRadius: 30, style: .continuous).stroke(
+                PHTheme.border.opacity(0.9),
+                lineWidth: 0.8
+            )
+        )
         .shadow(color: Color.black.opacity(0.11), radius: 24, x: 0, y: 14)
     }
 }
@@ -253,7 +295,9 @@ struct TabBarItem: View {
 
     var body: some View {
         Button {
-            withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) { selected = tab }
+            withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) {
+                selected = tab
+            }
         } label: {
             VStack(spacing: 4) {
                 Image(systemName: icon)
@@ -273,53 +317,81 @@ struct TabBarItem: View {
     }
 }
 
-
 // MARK: - Home View
 
 struct HomeView: View {
     @EnvironmentObject private var store: RoomStore
     @EnvironmentObject private var subscriptionManager: SubscriptionManager
     @Binding var selectedTab: AppTab
-
+    @State private var userName = ""
     @State private var lostFoundPosts: [LostFoundPost] = []
     @State private var isLoadingLostFound = true
 
-    private var recentRooms: [PetRoom] { Array(store.rooms.sorted { $0.lastActivity > $1.lastActivity }.prefix(3)) }
+    private var recentRooms: [PetRoom] {
+        Array(
+            store.rooms.sorted { $0.lastActivity > $1.lastActivity }.prefix(3)
+        )
+    }
     private var myRooms: [PetRoom] { store.rooms.filter { $0.isOwned } }
     private var joinedRooms: [PetRoom] { store.rooms.filter { !$0.isOwned } }
-    private var featuredLostFound: [LostFoundPost] { Array(lostFoundPosts.filter { $0.isActive }.prefix(5)) }
+    private var featuredLostFound: [LostFoundPost] {
+        Array(lostFoundPosts.filter { $0.isActive }.prefix(5))
+    }
 
     var body: some View {
         NavigationStack {
             PHPage {
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 28) {
-                        HomeHeader(roomCount: store.rooms.count, alertCount: featuredLostFound.count) {
+                        HomeHeader(
+                            userName: userName,
+                            roomCount: store.rooms.count,
+                            alertCount: featuredLostFound.count
+                        ) {
+                            
                             selectedTab = .activity
                         }
                         .padding(.horizontal, PHTheme.pagePadding)
                         .padding(.top, 22)
 
                         VStack(alignment: .leading, spacing: 14) {
-                            HomeSectionHeader(title: "Lost & Found", subtitle: "Active alerts near the community", actionTitle: "View all") {
+                            HomeSectionHeader(
+                                title: "Lost & Found",
+                                subtitle: "Active alerts near the community",
+                                actionTitle: "View all"
+                            ) {
                                 LostAndFoundView()
                                     .environmentObject(subscriptionManager)
                                     .environmentObject(store)
                             }
 
                             if isLoadingLostFound {
-                                HomeLoadingCard(title: "Loading lost and found posts…")
+                                HomeLoadingCard(
+                                    title: "Loading lost and found posts…"
+                                )
                             } else if featuredLostFound.isEmpty {
-                                HomeEmptyCard(icon: "pawprint", title: "No active alerts", subtitle: "Lost and found posts will appear here when the community posts them.")
+                                HomeEmptyCard(
+                                    icon: "pawprint",
+                                    title: "No active alerts",
+                                    subtitle:
+                                        "Lost and found posts will appear here when the community posts them."
+                                )
                             } else {
-                                ScrollView(.horizontal, showsIndicators: false) {
+                                ScrollView(.horizontal, showsIndicators: false)
+                                {
                                     HStack(spacing: 12) {
                                         ForEach(featuredLostFound) { post in
                                             NavigationLink {
-                                                LostFoundDetailView(post: post) {
-                                                    Task { await fetchLostFoundPosts() }
+                                                LostFoundDetailView(post: post)
+                                                {
+                                                    Task {
+                                                        await
+                                                            fetchLostFoundPosts()
+                                                    }
                                                 }
-                                                .environmentObject(subscriptionManager)
+                                                .environmentObject(
+                                                    subscriptionManager
+                                                )
                                                 .environmentObject(store)
                                             } label: {
                                                 HomeLostFoundTile(post: post)
@@ -336,7 +408,10 @@ struct HomeView: View {
                         .padding(.horizontal, PHTheme.pagePadding)
 
                         VStack(alignment: .leading, spacing: 16) {
-                            HomeSectionHeader(title: "Your Pets", subtitle: "Owned rooms only")
+                            HomeSectionHeader(
+                                title: "Your Pets",
+                                subtitle: "Owned rooms only"
+                            )
 
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 18) {
@@ -344,9 +419,15 @@ struct HomeView: View {
                                         NavigationLink {
                                             RoomView(room: room)
                                                 .environmentObject(store)
-                                                .environmentObject(subscriptionManager)
-                                                .onAppear { store.isInRoom = true }
-                                                .onDisappear { store.isInRoom = false }
+                                                .environmentObject(
+                                                    subscriptionManager
+                                                )
+                                                .onAppear {
+                                                    store.isInRoom = true
+                                                }
+                                                .onDisappear {
+                                                    store.isInRoom = false
+                                                }
                                         } label: {
                                             HomePetBubble(room: room)
                                         }
@@ -364,19 +445,33 @@ struct HomeView: View {
                         .padding(.horizontal, PHTheme.pagePadding)
 
                         VStack(alignment: .leading, spacing: 14) {
-                            HomeSectionHeader(title: "Recent Room Activity", subtitle: "Latest updates from your pet rooms")
+                            HomeSectionHeader(
+                                title: "Recent Room Activity",
+                                subtitle: "Latest updates from your pet rooms"
+                            )
 
                             if recentRooms.isEmpty {
-                                HomeEmptyCard(icon: "bubble.left.and.bubble.right", title: "No room activity yet", subtitle: "Create or join a room to see updates here.")
+                                HomeEmptyCard(
+                                    icon: "bubble.left.and.bubble.right",
+                                    title: "No room activity yet",
+                                    subtitle:
+                                        "Create or join a room to see updates here."
+                                )
                             } else {
                                 VStack(spacing: 10) {
                                     ForEach(recentRooms) { room in
                                         NavigationLink {
                                             RoomView(room: room)
                                                 .environmentObject(store)
-                                                .environmentObject(subscriptionManager)
-                                                .onAppear { store.isInRoom = true }
-                                                .onDisappear { store.isInRoom = false }
+                                                .environmentObject(
+                                                    subscriptionManager
+                                                )
+                                                .onAppear {
+                                                    store.isInRoom = true
+                                                }
+                                                .onDisappear {
+                                                    store.isInRoom = false
+                                                }
                                         } label: {
                                             HomeRoomActivityRow(room: room)
                                         }
@@ -401,13 +496,42 @@ struct HomeView: View {
         .task {
             await store.fetchRooms()
             await fetchLostFoundPosts()
+            await fetchUserName()
+        }
+    }
+
+    private func fetchUserName() async {
+        do {
+            let user = try await supabase.auth.session.user
+
+            struct ProfileName: Decodable {
+                let name: String?
+            }
+
+            let profile: ProfileName =
+                try await supabase
+                .from("profiles")
+                .select("name")
+                .eq("id", value: user.id.uuidString)
+                .single()
+                .execute()
+                .value
+
+            await MainActor.run {
+                userName = profile.name ?? "Pet Parent"
+            }
+        } catch {
+            await MainActor.run {
+                userName = "Pet Parent"
+            }
         }
     }
 
     private func fetchLostFoundPosts() async {
         await MainActor.run { isLoadingLostFound = true }
         do {
-            let fetched: [LostFoundPost] = try await supabase
+            let fetched: [LostFoundPost] =
+                try await supabase
                 .from("lost_found")
                 .select()
                 .neq("status", value: "deleted")
@@ -425,7 +549,6 @@ struct HomeView: View {
     }
 }
 
-
 struct HomeJoinedRoomsSection: View {
     @EnvironmentObject private var store: RoomStore
     @EnvironmentObject private var subscriptionManager: SubscriptionManager
@@ -433,10 +556,18 @@ struct HomeJoinedRoomsSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HomeSectionHeader(title: "Joined Rooms", subtitle: "Rooms shared with you")
+            HomeSectionHeader(
+                title: "Joined Rooms",
+                subtitle: "Rooms shared with you"
+            )
 
             if joinedRooms.isEmpty {
-                HomeEmptyCard(icon: "person.2", title: "No joined rooms yet", subtitle: "When someone invites you to a room, it will show here.")
+                HomeEmptyCard(
+                    icon: "person.2",
+                    title: "No joined rooms yet",
+                    subtitle:
+                        "When someone invites you to a room, it will show here."
+                )
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 10) {
@@ -462,6 +593,7 @@ struct HomeJoinedRoomsSection: View {
 }
 
 struct HomeHeader: View {
+    let userName: String
     let roomCount: Int
     let alertCount: Int
     var bellAction: () -> Void = {}
@@ -472,7 +604,7 @@ struct HomeHeader: View {
                 Text(greeting)
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(PHTheme.subtext)
-                Text("Han 👋")
+                Text("\(userName) 👋")
                     .font(.system(size: 34, weight: .black, design: .rounded))
                     .foregroundStyle(PHTheme.text)
             }
@@ -485,7 +617,9 @@ struct HomeHeader: View {
                         .frame(width: 46, height: 46)
                         .background(PHTheme.surface)
                         .clipShape(Circle())
-                        .overlay(Circle().stroke(PHTheme.border, lineWidth: 0.8))
+                        .overlay(
+                            Circle().stroke(PHTheme.border, lineWidth: 0.8)
+                        )
                     Circle()
                         .fill(PHTheme.accent2)
                         .frame(width: 9, height: 9)
@@ -535,7 +669,9 @@ struct AddPetBubble: View {
 
     var body: some View {
         Button {
-            if store.rooms.filter({ $0.isOwned }).count >= subscriptionManager.maxRooms {
+            if store.rooms.filter({ $0.isOwned }).count
+                >= subscriptionManager.maxRooms
+            {
                 showUpgradeSheet = true
             } else {
                 showCreateRoom = true
@@ -544,7 +680,9 @@ struct AddPetBubble: View {
             VStack(spacing: 8) {
                 ZStack {
                     Circle().fill(PHTheme.surface)
-                    Circle().strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [6, 5])).foregroundStyle(PHTheme.border)
+                    Circle().strokeBorder(
+                        style: StrokeStyle(lineWidth: 1, dash: [6, 5])
+                    ).foregroundStyle(PHTheme.border)
                     Image(systemName: "plus")
                         .font(.system(size: 21, weight: .bold))
                         .foregroundStyle(PHTheme.subtext)
@@ -558,7 +696,9 @@ struct AddPetBubble: View {
         }
         .buttonStyle(.plain)
         .sheet(isPresented: $showUpgradeSheet) { UpgradeView() }
-        .sheet(isPresented: $showCreateRoom) { CreateRoomView { newRoom in store.add(newRoom) } }
+        .sheet(isPresented: $showCreateRoom) {
+            CreateRoomView { newRoom in store.add(newRoom) }
+        }
     }
 }
 
@@ -592,7 +732,12 @@ struct HomeQuickAction: View {
             .padding(14)
             .background(PHTheme.surface)
             .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(PHTheme.border, lineWidth: 0.7))
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(
+                    PHTheme.border,
+                    lineWidth: 0.7
+                )
+            )
         }
         .buttonStyle(.plain)
     }
@@ -626,7 +771,12 @@ struct HomeMetricPill: View {
         .frame(maxWidth: .infinity)
         .background(PHTheme.surface)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(PHTheme.border, lineWidth: 0.7))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(
+                PHTheme.border,
+                lineWidth: 0.7
+            )
+        )
     }
 }
 
@@ -636,7 +786,12 @@ struct HomeSectionHeader<Destination: View>: View {
     var actionTitle: String? = nil
     var destination: (() -> Destination)? = nil
 
-    init(title: String, subtitle: String, actionTitle: String? = nil, destination: (() -> Destination)? = nil) {
+    init(
+        title: String,
+        subtitle: String,
+        actionTitle: String? = nil,
+        destination: (() -> Destination)? = nil
+    ) {
         self.title = title
         self.subtitle = subtitle
         self.actionTitle = actionTitle
@@ -684,10 +839,15 @@ struct HomeLostFoundTile: View {
         VStack(alignment: .leading, spacing: 10) {
             ZStack(alignment: .topLeading) {
                 RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill((isLost ? PHTheme.danger : PHTheme.success).opacity(0.13))
+                    .fill(
+                        (isLost ? PHTheme.danger : PHTheme.success).opacity(
+                            0.13
+                        )
+                    )
                     .frame(height: 118)
 
-                if let imageUrl = post.imageUrl, let url = URL(string: imageUrl) {
+                if let imageUrl = post.imageUrl, let url = URL(string: imageUrl)
+                {
                     AsyncImage(url: url) { phase in
                         switch phase {
                         case .success(let image):
@@ -695,19 +855,34 @@ struct HomeLostFoundTile: View {
                                 .resizable()
                                 .scaledToFill()
                         default:
-                            Image(systemName: isLost ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
-                                .font(.system(size: 38, weight: .bold))
-                                .foregroundStyle((isLost ? PHTheme.danger : PHTheme.success).opacity(0.82))
+                            Image(
+                                systemName: isLost
+                                    ? "exclamationmark.triangle.fill"
+                                    : "checkmark.circle.fill"
+                            )
+                            .font(.system(size: 38, weight: .bold))
+                            .foregroundStyle(
+                                (isLost ? PHTheme.danger : PHTheme.success)
+                                    .opacity(0.82)
+                            )
                         }
                     }
                     .frame(height: 118)
                     .frame(maxWidth: .infinity)
                     .clipped()
                 } else {
-                    Image(systemName: isLost ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
-                        .font(.system(size: 38, weight: .bold))
-                        .foregroundStyle((isLost ? PHTheme.danger : PHTheme.success).opacity(0.82))
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    Image(
+                        systemName: isLost
+                            ? "exclamationmark.triangle.fill"
+                            : "checkmark.circle.fill"
+                    )
+                    .font(.system(size: 38, weight: .bold))
+                    .foregroundStyle(
+                        (isLost ? PHTheme.danger : PHTheme.success).opacity(
+                            0.82
+                        )
+                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
 
                 Text(isLost ? "LOST" : "FOUND")
@@ -736,7 +911,12 @@ struct HomeLostFoundTile: View {
         .padding(10)
         .background(PHTheme.surface)
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(PHTheme.border, lineWidth: 0.7))
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(
+                PHTheme.border,
+                lineWidth: 0.7
+            )
+        )
     }
 }
 
@@ -750,7 +930,9 @@ struct HomeRoomActivityRow: View {
                 .foregroundStyle(room.accent)
                 .frame(width: 42, height: 42)
                 .background(room.accent.opacity(0.12))
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .clipShape(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                )
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(room.name)
@@ -769,7 +951,12 @@ struct HomeRoomActivityRow: View {
         .padding(14)
         .background(PHTheme.surface)
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(PHTheme.border, lineWidth: 0.7))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(
+                PHTheme.border,
+                lineWidth: 0.7
+            )
+        )
     }
 }
 
@@ -795,7 +982,12 @@ struct HomeEmptyCard: View {
         .padding(22)
         .background(PHTheme.surface)
         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(PHTheme.border, lineWidth: 0.7))
+        .overlay(
+            RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(
+                PHTheme.border,
+                lineWidth: 0.7
+            )
+        )
     }
 }
 
@@ -812,7 +1004,12 @@ struct HomeLoadingCard: View {
         .padding(18)
         .background(PHTheme.surface)
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(PHTheme.border, lineWidth: 0.7))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(
+                PHTheme.border,
+                lineWidth: 0.7
+            )
+        )
     }
 }
 
@@ -831,7 +1028,7 @@ struct RoomsView: View {
     @State private var selectedSegment: RoomsSegment = .myPets
 
     let columns = [
-        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12)
     ]
 
     private var myRooms: [PetRoom] { store.rooms.filter { $0.isOwned } }
@@ -855,21 +1052,41 @@ struct RoomsView: View {
                         HStack(alignment: .top, spacing: 12) {
                             VStack(alignment: .leading, spacing: 7) {
                                 Text("Rooms")
-                                    .font(.system(size: 32, weight: .black, design: .rounded))
+                                    .font(
+                                        .system(
+                                            size: 32,
+                                            weight: .black,
+                                            design: .rounded
+                                        )
+                                    )
                                     .foregroundStyle(PHTheme.text)
-                                Text("Switch between your rooms and rooms you joined.")
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundStyle(PHTheme.subtext)
+                                Text(
+                                    "Switch between your rooms and rooms you joined."
+                                )
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(PHTheme.subtext)
                             }
                             Spacer()
-                            Button { showSearch = true } label: {
+                            Button {
+                                showSearch = true
+                            } label: {
                                 Image(systemName: "magnifyingglass")
                                     .font(.system(size: 17, weight: .bold))
                                     .foregroundStyle(PHTheme.text)
                                     .frame(width: 44, height: 44)
                                     .background(PHTheme.surface)
-                                    .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
-                                    .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous).stroke(PHTheme.border, lineWidth: 0.7))
+                                    .clipShape(
+                                        RoundedRectangle(
+                                            cornerRadius: 15,
+                                            style: .continuous
+                                        )
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(
+                                            cornerRadius: 15,
+                                            style: .continuous
+                                        ).stroke(PHTheme.border, lineWidth: 0.7)
+                                    )
                             }
                             .buttonStyle(.plain)
                         }
@@ -881,20 +1098,28 @@ struct RoomsView: View {
 
                         if selectedSegment == .myPets {
                             RoomsTabContent(
-                                title: searchText.isEmpty ? "My Rooms" : "Search Results",
+                                title: searchText.isEmpty
+                                    ? "My Rooms" : "Search Results",
                                 emptyIcon: "pawprint",
-                                emptyTitle: searchText.isEmpty ? "No rooms yet" : "No rooms found",
-                                emptySubtitle: searchText.isEmpty ? "Create your first room from Home." : "Try searching a pet name or breed.",
+                                emptyTitle: searchText.isEmpty
+                                    ? "No rooms yet" : "No rooms found",
+                                emptySubtitle: searchText.isEmpty
+                                    ? "Create your first room from Home."
+                                    : "Try searching a pet name or breed.",
                                 rooms: visibleRooms
                             )
                             .environmentObject(store)
                             .environmentObject(subscriptionManager)
                         } else {
                             RoomsTabContent(
-                                title: searchText.isEmpty ? "Joined Rooms" : "Search Results",
+                                title: searchText.isEmpty
+                                    ? "Joined Rooms" : "Search Results",
                                 emptyIcon: "person.2.slash",
-                                emptyTitle: searchText.isEmpty ? "No joined rooms yet" : "No rooms found",
-                                emptySubtitle: searchText.isEmpty ? "Rooms shared with you will appear here." : "Try searching a pet name or breed.",
+                                emptyTitle: searchText.isEmpty
+                                    ? "No joined rooms yet" : "No rooms found",
+                                emptySubtitle: searchText.isEmpty
+                                    ? "Rooms shared with you will appear here."
+                                    : "Try searching a pet name or breed.",
                                 rooms: visibleRooms
                             )
                             .environmentObject(store)
@@ -934,8 +1159,12 @@ struct RoomsTabContent: View {
                 .padding(.horizontal, PHTheme.pagePadding)
 
             if rooms.isEmpty {
-                HomeEmptyCard(icon: emptyIcon, title: emptyTitle, subtitle: emptySubtitle)
-                    .padding(.horizontal, PHTheme.pagePadding)
+                HomeEmptyCard(
+                    icon: emptyIcon,
+                    title: emptyTitle,
+                    subtitle: emptySubtitle
+                )
+                .padding(.horizontal, PHTheme.pagePadding)
             } else {
                 LazyVGrid(columns: columns, spacing: 12) {
                     ForEach(rooms) { room in
@@ -953,7 +1182,8 @@ struct RoomsTabContent: View {
                                 age: room.age,
                                 icon: room.icon,
                                 accentHex: room.accentHex,
-                                memberCount: store.memberCounts[room.id] ?? max(room.members.count, 1),
+                                memberCount: store.memberCounts[room.id]
+                                    ?? max(room.members.count, 1),
                                 lastMessage: room.lastMessage
                             )
                         }
@@ -1014,10 +1244,14 @@ struct RoomsSearchSheet: View {
             VStack(alignment: .leading, spacing: 18) {
                 HStack {
                     Text("Search")
-                        .font(.system(size: 28, weight: .black, design: .rounded))
+                        .font(
+                            .system(size: 28, weight: .black, design: .rounded)
+                        )
                         .foregroundStyle(PHTheme.text)
                     Spacer()
-                    Button { dismiss() } label: {
+                    Button {
+                        dismiss()
+                    } label: {
                         Image(systemName: "xmark")
                             .font(.system(size: 13, weight: .bold))
                             .foregroundStyle(PHTheme.text)
@@ -1028,7 +1262,10 @@ struct RoomsSearchSheet: View {
                     .buttonStyle(.plain)
                 }
 
-                PHSearchField(placeholder: "Search rooms, pets, breeds…", text: $searchText)
+                PHSearchField(
+                    placeholder: "Search rooms, pets, breeds…",
+                    text: $searchText
+                )
 
                 ScrollView {
                     VStack(spacing: 10) {
@@ -1039,28 +1276,52 @@ struct RoomsSearchSheet: View {
                                     .foregroundStyle(room.accent)
                                     .frame(width: 42, height: 42)
                                     .background(room.accent.opacity(0.12))
-                                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                    .clipShape(
+                                        RoundedRectangle(
+                                            cornerRadius: 14,
+                                            style: .continuous
+                                        )
+                                    )
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(room.name)
                                         .font(.system(size: 14, weight: .bold))
                                         .foregroundStyle(PHTheme.text)
                                     Text(room.breed)
-                                        .font(.system(size: 12, weight: .medium))
+                                        .font(
+                                            .system(size: 12, weight: .medium)
+                                        )
                                         .foregroundStyle(PHTheme.subtext)
                                 }
                                 Spacer()
                                 Text(room.isOwned ? "Mine" : "Joined")
                                     .font(.system(size: 10, weight: .black))
-                                    .foregroundStyle(room.isOwned ? PHTheme.accent : PHTheme.accent2)
+                                    .foregroundStyle(
+                                        room.isOwned
+                                            ? PHTheme.accent : PHTheme.accent2
+                                    )
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 5)
-                                    .background((room.isOwned ? PHTheme.accent : PHTheme.accent2).opacity(0.12))
+                                    .background(
+                                        (room.isOwned
+                                            ? PHTheme.accent : PHTheme.accent2)
+                                            .opacity(0.12)
+                                    )
                                     .clipShape(Capsule())
                             }
                             .padding(13)
                             .background(PHTheme.surface)
-                            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(PHTheme.border, lineWidth: 0.7))
+                            .clipShape(
+                                RoundedRectangle(
+                                    cornerRadius: 18,
+                                    style: .continuous
+                                )
+                            )
+                            .overlay(
+                                RoundedRectangle(
+                                    cornerRadius: 18,
+                                    style: .continuous
+                                ).stroke(PHTheme.border, lineWidth: 0.7)
+                            )
                         }
                     }
                 }
@@ -1080,18 +1341,31 @@ struct RoomsSegmentedControl: View {
         HStack(spacing: 6) {
             ForEach(RoomsSegment.allCases, id: \.self) { segment in
                 Button {
-                    withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
+                    withAnimation(
+                        .spring(response: 0.28, dampingFraction: 0.82)
+                    ) {
                         selectedSegment = segment
                     }
                 } label: {
                     Text(segment.rawValue)
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(selectedSegment == segment ? .white : PHTheme.subtext)
+                        .foregroundStyle(
+                            selectedSegment == segment
+                                ? .white : PHTheme.subtext
+                        )
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 11)
                         .background(
                             RoundedRectangle(cornerRadius: 15)
-                                .fill(selectedSegment == segment ? PHTheme.coolGradient : LinearGradient(colors: [.clear], startPoint: .top, endPoint: .bottom))
+                                .fill(
+                                    selectedSegment == segment
+                                        ? PHTheme.coolGradient
+                                        : LinearGradient(
+                                            colors: [.clear],
+                                            startPoint: .top,
+                                            endPoint: .bottom
+                                        )
+                                )
                         )
                 }
                 .buttonStyle(.plain)
@@ -1164,8 +1438,13 @@ struct LostRoomCard: View {
 
     private var subtitle: String {
         if isLoading { return "Loading latest lost and found posts..." }
-        if lostCount == 0 && foundCount == 0 { return "No active lost or found posts right now" }
-        if myLostCount > 0 { return "You have \(myLostCount) active lost pet alert\(myLostCount == 1 ? "" : "s")" }
+        if lostCount == 0 && foundCount == 0 {
+            return "No active lost or found posts right now"
+        }
+        if myLostCount > 0 {
+            return
+                "You have \(myLostCount) active lost pet alert\(myLostCount == 1 ? "" : "s")"
+        }
         return "\(lostCount) lost • \(foundCount) found active posts"
     }
 
@@ -1184,15 +1463,22 @@ struct LostRoomCard: View {
                         RoundedRectangle(cornerRadius: 15)
                             .fill(PHTheme.danger.opacity(0.15))
                             .frame(width: 52, height: 52)
-                        Image(systemName: myLostCount > 0 ? "exclamationmark.triangle.fill" : "pawprint.fill")
-                            .font(.system(size: 22, weight: .medium))
-                            .foregroundStyle(PHTheme.danger)
+                        Image(
+                            systemName: myLostCount > 0
+                                ? "exclamationmark.triangle.fill"
+                                : "pawprint.fill"
+                        )
+                        .font(.system(size: 22, weight: .medium))
+                        .foregroundStyle(PHTheme.danger)
                     }
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(myLostCount > 0 ? "Your Lost Pet Alert" : "Lost & Found")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(PHTheme.text)
+                        Text(
+                            myLostCount > 0
+                                ? "Your Lost Pet Alert" : "Lost & Found"
+                        )
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(PHTheme.text)
                         Text(subtitle)
                             .font(.system(size: 11))
                             .foregroundStyle(PHTheme.subtext)
@@ -1209,7 +1495,9 @@ struct LostRoomCard: View {
                             .foregroundStyle(PHTheme.danger)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 5)
-                            .background(Capsule().fill(PHTheme.danger.opacity(0.15)))
+                            .background(
+                                Capsule().fill(PHTheme.danger.opacity(0.15))
+                            )
                     } else {
                         Image(systemName: "chevron.right")
                             .font(.system(size: 12))
@@ -1219,8 +1507,16 @@ struct LostRoomCard: View {
 
                 if !isLoading && (lostCount > 0 || foundCount > 0) {
                     HStack(spacing: 10) {
-                        LostFoundStatPill(title: "Lost",  count: lostCount,  icon: "exclamationmark.triangle.fill")
-                        LostFoundStatPill(title: "Found", count: foundCount, icon: "checkmark.circle.fill")
+                        LostFoundStatPill(
+                            title: "Lost",
+                            count: lostCount,
+                            icon: "exclamationmark.triangle.fill"
+                        )
+                        LostFoundStatPill(
+                            title: "Found",
+                            count: foundCount,
+                            icon: "checkmark.circle.fill"
+                        )
                     }
                 }
             }
@@ -1230,7 +1526,12 @@ struct LostRoomCard: View {
                     .fill(PHTheme.surface)
                     .overlay(
                         RoundedRectangle(cornerRadius: 20)
-                            .stroke(PHTheme.danger.opacity(myLostCount > 0 ? 0.35 : 0.16), lineWidth: 0.8)
+                            .stroke(
+                                PHTheme.danger.opacity(
+                                    myLostCount > 0 ? 0.35 : 0.16
+                                ),
+                                lineWidth: 0.8
+                            )
                     )
             )
         }
@@ -1284,12 +1585,19 @@ struct PetRoomCard: View {
                     .foregroundStyle(accent)
             }
             .frame(width: 74, height: 74)
-            .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(PHTheme.border, lineWidth: 0.7))
+            .overlay(
+                RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(
+                    PHTheme.border,
+                    lineWidth: 0.7
+                )
+            )
 
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 8) {
                     Text("\(name)'s Room")
-                        .font(.system(size: 16, weight: .black, design: .rounded))
+                        .font(
+                            .system(size: 16, weight: .black, design: .rounded)
+                        )
                         .foregroundStyle(PHTheme.text)
                         .lineLimit(1)
                     Spacer()
@@ -1308,12 +1616,16 @@ struct PetRoomCard: View {
                         Circle()
                             .fill(index == 0 ? accent : PHTheme.surface2)
                             .frame(width: 20, height: 20)
-                            .overlay(Circle().stroke(PHTheme.surface, lineWidth: 2))
+                            .overlay(
+                                Circle().stroke(PHTheme.surface, lineWidth: 2)
+                            )
                     }
-                    Text("\(memberCount) \(memberCount == 1 ? "member" : "members")")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(PHTheme.subtext)
-                        .padding(.leading, 10)
+                    Text(
+                        "\(memberCount) \(memberCount == 1 ? "member" : "members")"
+                    )
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(PHTheme.subtext)
+                    .padding(.leading, 10)
                     Spacer()
                     if !lastMessage.isEmpty {
                         Text("1")
@@ -1329,7 +1641,12 @@ struct PetRoomCard: View {
         .padding(12)
         .background(PHTheme.surface)
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(PHTheme.border.opacity(0.9), lineWidth: 0.8))
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(
+                PHTheme.border.opacity(0.9),
+                lineWidth: 0.8
+            )
+        )
         .shadow(color: Color.black.opacity(0.035), radius: 14, x: 0, y: 8)
     }
 }
@@ -1344,7 +1661,9 @@ struct AddPetCard: View {
 
     var body: some View {
         Button {
-            if store.rooms.filter({ $0.isOwned }).count >= subscriptionManager.maxRooms {
+            if store.rooms.filter({ $0.isOwned }).count
+                >= subscriptionManager.maxRooms
+            {
                 showUpgradeSheet = true
             } else {
                 showCreateRoom = true
@@ -1368,7 +1687,12 @@ struct AddPetCard: View {
                     .fill(PHTheme.surface.opacity(0.62))
                     .overlay(
                         RoundedRectangle(cornerRadius: 26, style: .continuous)
-                            .strokeBorder(style: StrokeStyle(lineWidth: 1.2, dash: [7, 5]))
+                            .strokeBorder(
+                                style: StrokeStyle(
+                                    lineWidth: 1.2,
+                                    dash: [7, 5]
+                                )
+                            )
                             .foregroundStyle(PHTheme.accent.opacity(0.45))
                     )
             )

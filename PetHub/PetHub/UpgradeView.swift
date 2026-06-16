@@ -104,9 +104,10 @@ struct UpgradeView: View {
                         .padding(.horizontal, 20)
                         .padding(.bottom, 28)
                 }
+                
+                .task { await loadOfferings() }
             }
         }
-        .task { await loadOfferings() }
     }
 
     // MARK: - Header
@@ -423,17 +424,32 @@ struct UpgradeView: View {
     }
 
     // MARK: - RevenueCat
-
     private func loadOfferings() async {
+        print("🔴 loadOfferings called")
         do {
+            print("🔴 calling Purchases.shared.offerings()")
             let offerings = try await Purchases.shared.offerings()
+            print("🔴 offerings received")
+            
+            print("===== OFFERINGS =====")
+            print("Current:", offerings.current?.identifier ?? "nil")
+            print("Packages:", offerings.current?.availablePackages.count ?? 0)
+
+            for package in offerings.current?.availablePackages ?? [] {
+                print("Package:", package.identifier)
+                print("Product:", package.storeProduct.productIdentifier)
+            }
+
             await MainActor.run {
                 currentOffering = offerings.current
                 isLoading = false
+                if offerings.current == nil {
+                    errorMessage = "Offerings loaded but current is nil"
+                }
             }
         } catch {
             await MainActor.run {
-                errorMessage = "Failed to load plans. Please try again."
+                currentOffering = nil
                 isLoading = false
             }
         }

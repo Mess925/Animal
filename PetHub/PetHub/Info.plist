@@ -2,41 +2,22 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-
-    <!-- URL Scheme for deep linking (password reset, etc.) -->
-    <key>CFBundleURLTypes</key>
-    <array>
-        <dict>
-            <key>CFBundleTypeRole</key>
-            <string>Editor</string>
-            <key>CFBundleURLSchemes</key>
-            <array>
-                <string>pethub</string>
-            </array>
-        </dict>
-    </array>
-
-    <!-- Camera -->
-    <key>NSCameraUsageDescription</key>
-    <string>PetHub uses your camera to take photos of your pets.</string>
-
-    <!-- Photo Library (read) -->
-    <key>NSPhotoLibraryUsageDescription</key>
-    <string>PetHub accesses your photo library so you can share pet photos.</string>
-
-    <!-- Photo Library (write/save) -->
-    <key>NSPhotoLibraryAddUsageDescription</key>
-    <string>PetHub saves photos to your library.</string>
-
-    <!-- Notifications -->
-    <key>UIBackgroundModes</key>
-    <array>
-        <string>remote-notification</string>
-    </array>
-
-    <!-- Misc -->
-    <key>NSCameraReactionEffectGesturesEnabledDefault</key>
-    <false/>
-
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>pethub</string>
+			</array>
+		</dict>
+	</array>
+	<key>NSCameraReactionEffectGesturesEnabledDefault</key>
+	<false/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 </dict>
 </plist>
