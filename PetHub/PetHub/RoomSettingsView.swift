@@ -15,9 +15,14 @@ struct RoomSettingsView: View {
     @State private var showEditRoom = false
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var store: RoomStore
+
     @State private var notifyPhotos = true
     @State private var notifyMessages = true
     @State private var notifyReactions = false
+    @State private var notifyDM = true
+    @State private var notifyFoundPet = true
+    @State private var isLoadingNotificationSettings = true
+
     @State private var selectedAccent: Color
     @State private var showDeleteAlert = false
     @State private var showLeaveAlert = false
@@ -92,15 +97,11 @@ struct RoomSettingsView: View {
                         .fill(selectedAccent.opacity(0.06))
                         .overlay(
                             RoundedRectangle(cornerRadius: 20)
-                                .stroke(
-                                    selectedAccent.opacity(0.12),
-                                    lineWidth: 0.5
-                                )
+                                .stroke(selectedAccent.opacity(0.12), lineWidth: 0.5)
                         )
                 )
                 .padding(.horizontal, 16)
                 .padding(.top, 20)
-
 
                 // MARK: Notifications
                 SettingsSectionLabel(title: "Notifications")
@@ -116,7 +117,9 @@ struct RoomSettingsView: View {
                         sublabel: "When someone posts a photo",
                         isOn: $notifyPhotos
                     )
+
                     SettingsDivider()
+
                     SettingsToggleRow(
                         icon: "bubble.left.fill",
                         iconColor: PHTheme.accent2,
@@ -124,13 +127,35 @@ struct RoomSettingsView: View {
                         sublabel: "New messages in room",
                         isOn: $notifyMessages
                     )
+
                     SettingsDivider()
+
                     SettingsToggleRow(
                         icon: "heart.fill",
                         iconColor: PHTheme.warning,
                         label: "Reactions & comments",
-                        sublabel: nil,
+                        sublabel: "Likes and comments on photos",
                         isOn: $notifyReactions
+                    )
+
+                    SettingsDivider()
+
+                    SettingsToggleRow(
+                        icon: "paperplane.fill",
+                        iconColor: PHTheme.accent,
+                        label: "Direct messages",
+                        sublabel: "Private messages from members",
+                        isOn: $notifyDM
+                    )
+
+                    SettingsDivider()
+
+                    SettingsToggleRow(
+                        icon: "pawprint.fill",
+                        iconColor: PHTheme.success,
+                        label: "Found your pet",
+                        sublabel: "Possible found-pet matches",
+                        isOn: $notifyFoundPet
                     )
                 }
                 .padding(.horizontal, 16)
@@ -153,13 +178,14 @@ struct RoomSettingsView: View {
                                 }
                             }
                         )
+
                         if member.id != members.last?.id {
                             SettingsDivider()
                         }
                     }
 
-                    // Add member
                     SettingsDivider()
+
                     Button {
                         showAddMember = true
                     } label: {
@@ -167,20 +193,20 @@ struct RoomSettingsView: View {
                             ZStack {
                                 Circle()
                                     .strokeBorder(
-                                        style: StrokeStyle(
-                                            lineWidth: 1,
-                                            dash: [4, 3]
-                                        )
+                                        style: StrokeStyle(lineWidth: 1, dash: [4, 3])
                                     )
                                     .foregroundStyle(PHTheme.divider)
                                     .frame(width: 38, height: 38)
+
                                 Image(systemName: "plus")
                                     .font(.system(size: 14))
                                     .foregroundStyle(PHTheme.subtext)
                             }
+
                             Text("Invite someone")
                                 .font(.system(size: 14))
                                 .foregroundStyle(PHTheme.subtext)
+
                             Spacer()
                         }
                         .padding(.horizontal, 16)
@@ -206,18 +232,22 @@ struct RoomSettingsView: View {
                                     RoundedRectangle(cornerRadius: 10)
                                         .fill(PHTheme.danger.opacity(0.1))
                                         .frame(width: 34, height: 34)
+
                                     Image(systemName: "trash.fill")
                                         .font(.system(size: 14))
                                         .foregroundStyle(PHTheme.danger)
                                 }
+
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text("Delete room")
                                         .font(.system(size: 14))
                                         .foregroundStyle(PHTheme.danger)
+
                                     Text("Permanently removes this pet room")
                                         .font(.system(size: 11))
                                         .foregroundStyle(PHTheme.subtext)
                                 }
+
                                 Spacer()
                             }
                             .padding(.horizontal, 16)
@@ -233,18 +263,22 @@ struct RoomSettingsView: View {
                                     RoundedRectangle(cornerRadius: 10)
                                         .fill(PHTheme.danger.opacity(0.1))
                                         .frame(width: 34, height: 34)
+
                                     Image(systemName: "rectangle.portrait.and.arrow.right")
                                         .font(.system(size: 14))
                                         .foregroundStyle(PHTheme.danger)
                                 }
+
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text("Leave room")
                                         .font(.system(size: 14))
                                         .foregroundStyle(PHTheme.danger)
+
                                     Text("Remove this room from Joined Rooms")
                                         .font(.system(size: 11))
                                         .foregroundStyle(PHTheme.subtext)
                                 }
+
                                 Spacer()
                             }
                             .padding(.horizontal, 16)
@@ -268,20 +302,23 @@ struct RoomSettingsView: View {
         }
         .task {
             await fetchMembers()
-            let user = try? await supabase.auth.session.user
-            isOwner = room.members.first(where: { $0.isOwner })?.id == user?.id
-            // or check from room_members
-            if let userId = user?.id {
-                let rows: [RoomMembership] =
-                    (try? await supabase
-                        .from("room_members")
-                        .select()
-                        .eq("room_id", value: room.id.uuidString)
-                        .eq("user_id", value: userId.uuidString)
-                        .execute()
-                        .value) ?? []
-                isOwner = rows.first?.role == "owner"  // need role in RoomMembership
-            }
+            await checkOwner()
+            await loadNotificationSettings()
+        }
+        .onChange(of: notifyPhotos) { _, _ in
+            saveNotificationSettingsIfReady()
+        }
+        .onChange(of: notifyMessages) { _, _ in
+            saveNotificationSettingsIfReady()
+        }
+        .onChange(of: notifyReactions) { _, _ in
+            saveNotificationSettingsIfReady()
+        }
+        .onChange(of: notifyDM) { _, _ in
+            saveNotificationSettingsIfReady()
+        }
+        .onChange(of: notifyFoundPet) { _, _ in
+            saveNotificationSettingsIfReady()
         }
         .sheet(isPresented: $showAddMember, onDismiss: {
             Task {
@@ -296,9 +333,7 @@ struct RoomSettingsView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text(
-                "All photos and messages in \(room.name)'s room will be permanently deleted."
-            )
+            Text("All photos and messages in \(room.name)'s room will be permanently deleted.")
         }
         .alert("Leave Room?", isPresented: $showLeaveAlert) {
             Button("Leave", role: .destructive) {
@@ -309,7 +344,139 @@ struct RoomSettingsView: View {
             Text("You will stop seeing \(room.name)'s room in Joined Rooms.")
         }
     }
-    
+
+    private func saveNotificationSettingsIfReady() {
+        guard !isLoadingNotificationSettings else { return }
+
+        Task {
+            await saveNotificationSettings()
+        }
+    }
+
+    private func checkOwner() async {
+        do {
+            let user = try await supabase.auth.session.user
+
+            let rows: [RoomMembership] =
+                try await supabase
+                .from("room_members")
+                .select()
+                .eq("room_id", value: room.id.uuidString)
+                .eq("user_id", value: user.id.uuidString)
+                .execute()
+                .value
+
+            await MainActor.run {
+                isOwner = rows.first?.role == "owner"
+            }
+        } catch {
+            await MainActor.run {
+                isOwner = false
+            }
+        }
+    }
+
+    private func loadNotificationSettings() async {
+        await MainActor.run {
+            isLoadingNotificationSettings = true
+        }
+
+        do {
+            let user = try await supabase.auth.session.user
+
+            struct NotificationSettingsRow: Codable {
+                let notifyPhotos: Bool
+                let notifyMessages: Bool
+                let notifyReactions: Bool
+                let notifyDM: Bool
+                let notifyFoundPet: Bool
+
+                enum CodingKeys: String, CodingKey {
+                    case notifyPhotos = "notify_photos"
+                    case notifyMessages = "notify_messages"
+                    case notifyReactions = "notify_reactions"
+                    case notifyDM = "notify_dm"
+                    case notifyFoundPet = "notify_found_pet"
+                }
+            }
+
+            let rows: [NotificationSettingsRow] =
+                try await supabase
+                .from("room_notification_settings")
+                .select()
+                .eq("user_id", value: user.id.uuidString)
+                .eq("room_id", value: room.id.uuidString)
+                .execute()
+                .value
+
+            if let row = rows.first {
+                await MainActor.run {
+                    notifyPhotos = row.notifyPhotos
+                    notifyMessages = row.notifyMessages
+                    notifyReactions = row.notifyReactions
+                    notifyDM = row.notifyDM
+                    notifyFoundPet = row.notifyFoundPet
+                    isLoadingNotificationSettings = false
+                }
+            } else {
+                await MainActor.run {
+                    isLoadingNotificationSettings = false
+                }
+
+                await saveNotificationSettings()
+            }
+        } catch {
+            await MainActor.run {
+                isLoadingNotificationSettings = false
+            }
+        }
+    }
+
+    private func saveNotificationSettings() async {
+        do {
+            let user = try await supabase.auth.session.user
+
+            struct NotificationSettingsUpsert: Codable {
+                let userId: String
+                let roomId: String
+                let notifyPhotos: Bool
+                let notifyMessages: Bool
+                let notifyReactions: Bool
+                let notifyDM: Bool
+                let notifyFoundPet: Bool
+                let updatedAt: String
+
+                enum CodingKeys: String, CodingKey {
+                    case userId = "user_id"
+                    case roomId = "room_id"
+                    case notifyPhotos = "notify_photos"
+                    case notifyMessages = "notify_messages"
+                    case notifyReactions = "notify_reactions"
+                    case notifyDM = "notify_dm"
+                    case notifyFoundPet = "notify_found_pet"
+                    case updatedAt = "updated_at"
+                }
+            }
+
+            let payload = NotificationSettingsUpsert(
+                userId: user.id.uuidString,
+                roomId: room.id.uuidString,
+                notifyPhotos: notifyPhotos,
+                notifyMessages: notifyMessages,
+                notifyReactions: notifyReactions,
+                notifyDM: notifyDM,
+                notifyFoundPet: notifyFoundPet,
+                updatedAt: ISO8601DateFormatter().string(from: Date())
+            )
+
+            try await supabase
+                .from("room_notification_settings")
+                .upsert(payload, onConflict: "user_id,room_id")
+                .execute()
+        } catch {
+        }
+    }
+
     private func removeMember(_ member: Member) async {
         do {
             guard !member.isOwner else { return }
@@ -326,7 +493,6 @@ struct RoomSettingsView: View {
                     members.removeAll { $0.id == member.id }
                 }
             }
-
         } catch {
         }
     }
@@ -387,7 +553,6 @@ struct RoomSettingsView: View {
         do {
             let user = try await supabase.auth.session.user
 
-            // Activity V1: roomLeft
             try? await supabase
                 .from("activities")
                 .insert([
@@ -419,10 +584,11 @@ struct RoomSettingsView: View {
                 .delete()
                 .eq("id", value: room.id.uuidString)
                 .execute()
+
             await MainActor.run {
                 store.rooms.removeAll { $0.id == room.id }
+                dismiss()
             }
-            dismiss()
         } catch {
         }
     }
@@ -432,6 +598,7 @@ struct RoomSettingsView: View {
 
 struct SettingsSectionLabel: View {
     let title: String
+
     var body: some View {
         Text(title.uppercased())
             .font(.system(size: 10, weight: .medium))
@@ -442,18 +609,23 @@ struct SettingsSectionLabel: View {
 
 struct SettingsCard<Content: View>: View {
     let content: Content
-    init(@ViewBuilder content: () -> Content) { self.content = content() }
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
 
     var body: some View {
-        VStack(spacing: 0) { content }
-            .background(
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(PHTheme.surface2)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(PHTheme.divider, lineWidth: 0.5)
-                    )
-            )
+        VStack(spacing: 0) {
+            content
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(PHTheme.surface2)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(PHTheme.divider, lineWidth: 0.5)
+                )
+        )
     }
 }
 
@@ -479,6 +651,7 @@ struct SettingsToggleRow: View {
                 RoundedRectangle(cornerRadius: 10)
                     .fill(iconColor.opacity(0.12))
                     .frame(width: 34, height: 34)
+
                 Image(systemName: icon)
                     .font(.system(size: 14))
                     .foregroundStyle(iconColor)
@@ -488,8 +661,9 @@ struct SettingsToggleRow: View {
                 Text(label)
                     .font(.system(size: 14))
                     .foregroundStyle(PHTheme.text)
-                if let sub = sublabel {
-                    Text(sub)
+
+                if let sublabel {
+                    Text(sublabel)
                         .font(.system(size: 11))
                         .foregroundStyle(PHTheme.subtext)
                 }
@@ -520,6 +694,7 @@ struct MemberSettingsRow: View {
                 Text(member.name)
                     .font(.system(size: 14))
                     .foregroundStyle(PHTheme.text)
+
                 Text(member.isOwner ? "Owner" : "Member")
                     .font(.system(size: 11))
                     .foregroundStyle(PHTheme.subtext)
@@ -561,7 +736,7 @@ struct MemberSettingsRow: View {
 
 // MARK: - Preview
 
-#Preview {
-    RoomSettingsView(room: .mochi)
-        .background(PHTheme.background)
-}
+//#Preview {
+//    RoomSettingsView(room: .mochi)
+//        .background(PHTheme.background)
+//}

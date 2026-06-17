@@ -746,7 +746,7 @@ struct CommentRow: View {
 
 // MARK: - Preview
 
-#Preview {
-    GalleryView(room: .mochi)
-        .background(PHTheme.background)
-}
+//#Preview {
+//    GalleryView(room: .mochi)
+//        .background(PHTheme.background)
+//}

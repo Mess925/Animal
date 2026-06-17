@@ -503,6 +503,16 @@ struct LostFoundDetailView: View {
                 .eq("id", value: post.id.uuidString)
                 .execute()
 
+            try? await supabase
+                .from("activities")
+                .insert([
+                    "type": "pet_found",
+                    "actor_id": post.userId.uuidString,
+                    "recipient_id": post.userId.uuidString,
+                    "body": "Your \(post.animalType) has been reunited"
+                ])
+                .execute()
+
             await MainActor.run {
                 onPostUpdated?()
                 dismiss()

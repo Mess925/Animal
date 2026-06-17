@@ -65,7 +65,7 @@ struct UpgradeView: View {
                                     PlanFeature(icon: "checkmark.circle.fill", title: "Post lost pets", subtitle: "Create lost reports from your pet room", isIncluded: true),
                                     PlanFeature(icon: "phone.fill", title: "See contact details", subtitle: "Call or message owners/finders faster", isIncluded: true),
                                     PlanFeature(icon: "house.fill", title: "5 pet rooms", subtitle: "More space for your pets", isIncluded: true),
-                                    PlanFeature(icon: "photo.fill", title: "100 photos per room", subtitle: "More shared memories", isIncluded: true),
+                                    PlanFeature(icon: "photo.fill", title: "200 photos total", subtitle: "Across your whole account", isIncluded: true),
                                     PlanFeature(icon: "magnifyingglass.circle.fill", title: "Possible Matches", subtitle: "Pro only", isIncluded: false)
                                 ]
                             )
@@ -252,7 +252,8 @@ struct UpgradeView: View {
             }
 
             VStack(alignment: .leading, spacing: 10) {
-                FeatureRow(feature: PlanFeature(icon: "eye.fill", title: "View Lost & Found", subtitle: "Browse community reports", isIncluded: true), accentColor: PHTheme.subtext)
+                FeatureRow(feature: PlanFeature(icon: "house.fill", title: "3 pet rooms", subtitle: "Create up to 3 pet rooms", isIncluded: true), accentColor: PHTheme.subtext)
+                FeatureRow(feature: PlanFeature(icon: "photo.fill", title: "50 photos total", subtitle: "Across your whole account", isIncluded: true), accentColor: PHTheme.subtext)
                 FeatureRow(feature: PlanFeature(icon: "checkmark.circle.fill", title: "Post found pets", subtitle: "Help owners find missing pets", isIncluded: true), accentColor: PHTheme.subtext)
                 FeatureRow(feature: PlanFeature(icon: "xmark.circle.fill", title: "Post lost pets", subtitle: "Upgrade to Semi-Pro", isIncluded: false), accentColor: PHTheme.subtext)
                 FeatureRow(feature: PlanFeature(icon: "xmark.circle.fill", title: "Possible Matches", subtitle: "Upgrade to Pro", isIncluded: false), accentColor: PHTheme.subtext)
@@ -448,10 +449,9 @@ struct UpgradeView: View {
                 }
             }
         } catch {
-            await MainActor.run {
-                currentOffering = nil
-                isLoading = false
-            }
+            currentOffering = nil
+            isLoading = false
+            errorMessage = "Unable to load subscriptions."
         }
     }
 

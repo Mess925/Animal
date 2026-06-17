@@ -14,6 +14,9 @@ struct PetHubApp: App {
 
     @StateObject private var themeManager = ThemeManager()
     @StateObject private var subscriptionManager: SubscriptionManager
+    @StateObject private var networkMonitor = NetworkMonitor.shared
+
+    @State private var isStartingApp = true
 
     init() {
         #if DEBUG
@@ -29,14 +32,28 @@ struct PetHubApp: App {
 
     var body: some Scene {
         WindowGroup {
-            rootView
-                .tint(PHTheme.accent)
-                .preferredColorScheme(themeManager.theme.colorScheme)
-                .environmentObject(themeManager)
-                .environmentObject(subscriptionManager)
-                .task {
-                    await startApp()
+            ZStack(alignment: .top) {
+                if isStartingApp {
+                    AppLoadingView()
+                } else {
+                    rootView
                 }
+
+                if !networkMonitor.isConnected {
+                    OfflineBanner()
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .zIndex(999)
+                }
+            }
+            .animation(.spring(response: 0.35, dampingFraction: 0.85), value: networkMonitor.isConnected)
+            .tint(PHTheme.accent)
+            .preferredColorScheme(themeManager.theme.colorScheme)
+            .environmentObject(themeManager)
+            .environmentObject(subscriptionManager)
+            .environmentObject(networkMonitor)
+            .task {
+                await startApp()
+            }
         }
     }
 
@@ -56,6 +73,13 @@ struct PetHubApp: App {
     }
 
     private func startApp() async {
+        defer {
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 500_000_000)
+                isStartingApp = false
+            }
+        }
+
         if !hasSeenOnboarding {
             do {
                 try await supabase.auth.signOut()
@@ -77,17 +101,19 @@ struct PetHubApp: App {
             await checkOnboarding(userId: session.user.id.uuidString)
         }
 
-        for await state in supabase.auth.authStateChanges {
-            if let session = state.session {
-                guard !isResettingPassword else { continue }
+        Task {
+            for await state in supabase.auth.authStateChanges {
+                if let session = state.session {
+                    guard !isResettingPassword else { continue }
 
-                isLoggedIn = true
-                await checkOnboarding(userId: session.user.id.uuidString)
-                await NotificationManager.shared.requestPermission()
-            } else {
-                isResettingPassword = false
-                isLoggedIn = false
-                needsUserOnboarding = true
+                    isLoggedIn = true
+                    await checkOnboarding(userId: session.user.id.uuidString)
+                    await NotificationManager.shared.requestPermission()
+                } else {
+                    isResettingPassword = false
+                    isLoggedIn = false
+                    needsUserOnboarding = true
+                }
             }
         }
     }
@@ -112,6 +138,35 @@ struct PetHubApp: App {
             #if DEBUG
             print("Check onboarding error:", error)
             #endif
+        }
+    }
+}
+
+struct AppLoadingView: View {
+    var body: some View {
+        ZStack {
+            PHTheme.background
+                .ignoresSafeArea()
+
+            VStack(spacing: 18) {
+                ZStack {
+                    Circle()
+                        .fill(PHTheme.accent.opacity(0.14))
+                        .frame(width: 82, height: 82)
+
+                    Image(systemName: "pawprint.fill")
+                        .font(.system(size: 38, weight: .semibold))
+                        .foregroundStyle(PHTheme.accent)
+                }
+
+                Text("PetHub")
+                    .font(.system(size: 26, weight: .bold))
+                    .foregroundStyle(PHTheme.text)
+
+                ProgressView()
+                    .tint(PHTheme.accent)
+                    .padding(.top, 4)
+            }
         }
     }
 }

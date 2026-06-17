@@ -344,8 +344,8 @@ struct DMRow: View {
 }
 
 // MARK: - Preview
-
-#Preview {
-    PeopleView(room: .mochi)
-        .background(PHTheme.background)
-}
+//
+//#Preview {
+//    PeopleView(room: .mochi)
+//        .background(PHTheme.background)
+//}

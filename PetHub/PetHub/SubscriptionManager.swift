@@ -28,13 +28,15 @@ class SubscriptionManager: ObservableObject {
         }
     }
 
-    var maxPhotosPerRoom: Int {
+    var maxPhotosTotal: Int {
         switch tier {
         case .free: return 50
-        case .semiPro: return 100
+        case .semiPro: return 200
         case .pro: return Int.max
         }
     }
+
+    var hasUnlimitedPhotos: Bool { tier == .pro }
 
     var canPostLostPet: Bool { tier == .semiPro || tier == .pro }
     var canPostFoundPet: Bool { true }

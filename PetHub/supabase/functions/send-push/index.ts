@@ -47,19 +47,19 @@ async function createJWT() {
   const unsignedToken =
     `${base64url(JSON.stringify(header))}.${base64url(JSON.stringify(payload))}`
 
-const signature = await crypto.subtle.sign(
-  { name: "ECDSA", hash: "SHA-256" },
-  privateKey,
-  new TextEncoder().encode(unsignedToken)
-)
+  const signature = await crypto.subtle.sign(
+    { name: "ECDSA", hash: "SHA-256" },
+    privateKey,
+    new TextEncoder().encode(unsignedToken)
+  )
 
-const sigBytes = new Uint8Array(signature)
+  const sigBytes = new Uint8Array(signature)
 
-if (sigBytes.length !== 64) {
-  throw new Error(`Invalid ES256 signature length: ${sigBytes.length}`)
-}
+  if (sigBytes.length !== 64) {
+    throw new Error(`Invalid ES256 signature length: ${sigBytes.length}`)
+  }
 
-return `${unsignedToken}.${base64url(sigBytes.buffer)}`
+  return `${unsignedToken}.${base64url(sigBytes.buffer)}`
 }
 
 serve(async (req) => {
@@ -73,8 +73,15 @@ serve(async (req) => {
     const jwt = await createJWT()
     const bundleId = Deno.env.get("APNS_BUNDLE_ID")!
 
+    const apnsEnvironment = Deno.env.get("APNS_ENVIRONMENT") ?? "sandbox"
+
+    const apnsHost =
+      apnsEnvironment === "production"
+        ? "https://api.push.apple.com"
+        : "https://api.sandbox.push.apple.com"
+
     const response = await fetch(
-      `https://api.sandbox.push.apple.com/3/device/${token}`,
+      `${apnsHost}/3/device/${token}`,
       {
         method: "POST",
         headers: {
@@ -101,6 +108,7 @@ serve(async (req) => {
     return Response.json({
       success: response.ok,
       status: response.status,
+      environment: apnsEnvironment,
       response: text
     })
   } catch (error) {

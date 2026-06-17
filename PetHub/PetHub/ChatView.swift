@@ -949,14 +949,14 @@ struct PHPickerView: UIViewControllerRepresentable {
 
 // MARK: - Preview
 
-#Preview {
-    ChatView(
-        title: "Mochi's Room",
-        subtitle: "4 members",
-        accentHex: "AA9DFF",
-        roomId: "preview",
-        messages: PetRoom.mochi.groupMessages,
-        isGroup: true,
-        members: PetRoom.mochi.members
-    )
-}
+//#Preview {
+//    ChatView(
+//        title: "Mochi's Room",
+//        subtitle: "4 members",
+//        accentHex: "AA9DFF",
+//        roomId: "preview",
+//        messages: PetRoom.mochi.groupMessages,
+//        isGroup: true,
+//        members: PetRoom.mochi.members
+//    )
+//}
