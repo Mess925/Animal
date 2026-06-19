@@ -26,10 +26,9 @@ struct LostFoundDetailView: View {
         isReunited ? PHTheme.success : (isLost ? PHTheme.danger : PHTheme.success)
     }
 
-    private var isSemiPro: Bool { subscriptionManager.isSemiPro }
     private var isPro: Bool { subscriptionManager.isPro }
-    private var canSeeContact: Bool { isSemiPro || isPro }
-    private var canSeeDetails: Bool { isSemiPro || isPro }
+    private var canSeeContact: Bool { isPro }
+    private var canSeeDetails: Bool { true }
     private var canRespond: Bool { isPro && !isReunited }
     private var isOwner: Bool { post.userId == currentUserId }
 
@@ -363,7 +362,7 @@ struct LostFoundDetailView: View {
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(PHTheme.text)
 
-                    Text("Upgrade to Semi-Pro to see location, description and more")
+                    Text("Upgrade to Pro to see contact details and respond")
                         .font(.system(size: 12))
                         .foregroundStyle(PHTheme.placeholder)
                         .fixedSize(horizontal: false, vertical: true)

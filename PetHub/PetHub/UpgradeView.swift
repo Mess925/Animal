@@ -54,18 +54,19 @@ struct UpgradeView: View {
                             planCard(
                                 tier: .semiPro,
                                 name: "Semi-Pro",
-                                badge: "Best starter",
+                                badge: "More space",
                                 accentColor: PHTheme.success,
-                                monthlyPrice: "$1.99",
-                                yearlyPrice: "$15.99",
+                                monthlyPrice: "$3.99",
+                                yearlyPrice: "$39.99",
                                 yearlySaving: "Save $7.89/year",
                                 packageMonthlyId: "pethub_semipro_monthly",
                                 packageYearlyId: "pethub_semipro_yearly",
                                 features: [
-                                    PlanFeature(icon: "checkmark.circle.fill", title: "Post lost pets", subtitle: "Create lost reports from your pet room", isIncluded: true),
-                                    PlanFeature(icon: "phone.fill", title: "See contact details", subtitle: "Call or message owners/finders faster", isIncluded: true),
+                                    PlanFeature(icon: "location.fill", title: "35 km search radius", subtitle: "See more nearby lost and found posts", isIncluded: true),
                                     PlanFeature(icon: "house.fill", title: "5 pet rooms", subtitle: "More space for your pets", isIncluded: true),
-                                    PlanFeature(icon: "photo.fill", title: "200 photos total", subtitle: "Across your whole account", isIncluded: true),
+                                    PlanFeature(icon: "photo.fill", title: "1000 photos total", subtitle: "Across your whole account", isIncluded: true),
+                                    PlanFeature(icon: "checkmark.circle.fill", title: "Post found pets", subtitle: "Help owners find missing pets", isIncluded: true),
+                                    PlanFeature(icon: "lock.fill", title: "Post lost pets", subtitle: "Pro only", isIncluded: false),
                                     PlanFeature(icon: "magnifyingglass.circle.fill", title: "Possible Matches", subtitle: "Pro only", isIncluded: false)
                                 ]
                             )
@@ -75,17 +76,19 @@ struct UpgradeView: View {
                                 name: "Pro",
                                 badge: "Recovery tools",
                                 accentColor: PHTheme.accent,
-                                monthlyPrice: "$3.99",
-                                yearlyPrice: "$35.99",
+                                monthlyPrice: "$5.99",
+                                yearlyPrice: "$59.99",
                                 yearlySaving: "Save $11.89/year",
                                 packageMonthlyId: "pethub_pro_monthly",
                                 packageYearlyId: "pethub_pro_yearly",
                                 features: [
+                                    PlanFeature(icon: "location.fill", title: "150 km search radius", subtitle: "Search across a much wider area", isIncluded: true),
+                                    PlanFeature(icon: "checkmark.circle.fill", title: "Post lost pets", subtitle: "Create lost reports from your pet room", isIncluded: true),
+                                    PlanFeature(icon: "phone.fill", title: "See contact details", subtitle: "Call or message owners/finders faster", isIncluded: true),
                                     PlanFeature(icon: "magnifyingglass.circle.fill", title: "Possible Matches", subtitle: "Match your lost pet with found posts", isIncluded: true),
-                                    PlanFeature(icon: "bell.badge.fill", title: "Future radius alerts", subtitle: "Notify nearby users after Apple setup", isIncluded: true),
+                                    PlanFeature(icon: "bell.badge.fill", title: "Possible Match alerts", subtitle: "Get notified about possible matches", isIncluded: true),
                                     PlanFeature(icon: "house.fill", title: "Unlimited rooms", subtitle: "No room limit", isIncluded: true),
-                                    PlanFeature(icon: "photo.fill", title: "Unlimited photos", subtitle: "No photo limit", isIncluded: true),
-                                    PlanFeature(icon: "crown.fill", title: "Everything in Semi-Pro", subtitle: "Lost posts and contact details included", isIncluded: true)
+                                    PlanFeature(icon: "photo.fill", title: "Unlimited photos", subtitle: "No photo limit", isIncluded: true)
                                 ]
                             )
                         }
@@ -104,7 +107,6 @@ struct UpgradeView: View {
                         .padding(.horizontal, 20)
                         .padding(.bottom, 28)
                 }
-                
                 .task { await loadOfferings() }
             }
         }
@@ -162,7 +164,7 @@ struct UpgradeView: View {
                     .foregroundStyle(PHTheme.text)
                     .multilineTextAlignment(.center)
 
-                Text("Free is for helping the community. Semi-Pro unlocks lost posting. Pro unlocks active recovery tools.")
+                Text("Free is for local community access. Semi-Pro gives you more pet space and a wider search radius. Pro unlocks full lost pet recovery tools.")
                     .font(.system(size: 14))
                     .foregroundStyle(PHTheme.subtext)
                     .multilineTextAlignment(.center)
@@ -241,7 +243,7 @@ struct UpgradeView: View {
                     Text("Free")
                         .font(.system(size: 21, weight: .bold))
                         .foregroundStyle(PHTheme.text)
-                    Text("Community access")
+                    Text("Local community access")
                         .font(.system(size: 13))
                         .foregroundStyle(PHTheme.subtext)
                 }
@@ -252,10 +254,11 @@ struct UpgradeView: View {
             }
 
             VStack(alignment: .leading, spacing: 10) {
+                FeatureRow(feature: PlanFeature(icon: "location.fill", title: "10 km search radius", subtitle: "See local lost and found posts", isIncluded: true), accentColor: PHTheme.subtext)
                 FeatureRow(feature: PlanFeature(icon: "house.fill", title: "3 pet rooms", subtitle: "Create up to 3 pet rooms", isIncluded: true), accentColor: PHTheme.subtext)
                 FeatureRow(feature: PlanFeature(icon: "photo.fill", title: "50 photos total", subtitle: "Across your whole account", isIncluded: true), accentColor: PHTheme.subtext)
                 FeatureRow(feature: PlanFeature(icon: "checkmark.circle.fill", title: "Post found pets", subtitle: "Help owners find missing pets", isIncluded: true), accentColor: PHTheme.subtext)
-                FeatureRow(feature: PlanFeature(icon: "xmark.circle.fill", title: "Post lost pets", subtitle: "Upgrade to Semi-Pro", isIncluded: false), accentColor: PHTheme.subtext)
+                FeatureRow(feature: PlanFeature(icon: "xmark.circle.fill", title: "Post lost pets", subtitle: "Upgrade to Pro", isIncluded: false), accentColor: PHTheme.subtext)
                 FeatureRow(feature: PlanFeature(icon: "xmark.circle.fill", title: "Possible Matches", subtitle: "Upgrade to Pro", isIncluded: false), accentColor: PHTheme.subtext)
             }
 
@@ -285,6 +288,7 @@ struct UpgradeView: View {
         features: [PlanFeature]
     ) -> some View {
         let isCurrent = subscriptionManager.tier == tier
+        let isIncludedInCurrentPlan = tier == .semiPro && subscriptionManager.tier == .pro
         let isProCard = tier == .pro
         let price = isYearly ? yearlyPrice : monthlyPrice
 
@@ -304,7 +308,7 @@ struct UpgradeView: View {
                             .background((isCurrent ? PHTheme.success : accentColor).opacity(0.13), in: Capsule())
                     }
 
-                    Text(isProCard ? "Active recovery tools for lost pets" : "Lost posting and contact access")
+                    Text(isProCard ? "Full recovery tools for lost pets" : "More space and wider nearby search")
                         .font(.system(size: 13))
                         .foregroundStyle(PHTheme.subtext)
                 }
@@ -333,7 +337,7 @@ struct UpgradeView: View {
             }
 
             Button {
-                guard !isCurrent else { return }
+                guard !isCurrent && !isIncludedInCurrentPlan else { return }
                 Task {
                     let id = isYearly ? packageYearlyId : packageMonthlyId
                     if let package = findPackage(id) {
@@ -354,15 +358,15 @@ struct UpgradeView: View {
                     }
                     Spacer()
                 }
-                .foregroundStyle(isCurrent ? PHTheme.subtext : (isProCard ? PHTheme.text : .white))
+                .foregroundStyle(isCurrent || isIncludedInCurrentPlan ? PHTheme.subtext : (isProCard ? PHTheme.text : .white))
                 .padding(.vertical, 14)
                 .background(
                     RoundedRectangle(cornerRadius: 16)
-                        .fill(isCurrent ? PHTheme.divider.opacity(0.5) : accentColor)
+                        .fill(isCurrent || isIncludedInCurrentPlan ? PHTheme.divider.opacity(0.5) : accentColor)
                 )
             }
             .buttonStyle(.plain)
-            .disabled(isCurrent || isPurchasing)
+            .disabled(isCurrent || isIncludedInCurrentPlan || isPurchasing)
         }
         .padding(20)
         .background(
@@ -426,32 +430,22 @@ struct UpgradeView: View {
 
     // MARK: - RevenueCat
     private func loadOfferings() async {
-        print("🔴 loadOfferings called")
         do {
-            print("🔴 calling Purchases.shared.offerings()")
             let offerings = try await Purchases.shared.offerings()
-            print("🔴 offerings received")
-            
-            print("===== OFFERINGS =====")
-            print("Current:", offerings.current?.identifier ?? "nil")
-            print("Packages:", offerings.current?.availablePackages.count ?? 0)
-
-            for package in offerings.current?.availablePackages ?? [] {
-                print("Package:", package.identifier)
-                print("Product:", package.storeProduct.productIdentifier)
-            }
 
             await MainActor.run {
                 currentOffering = offerings.current
                 isLoading = false
                 if offerings.current == nil {
-                    errorMessage = "Offerings loaded but current is nil"
+                    errorMessage = "Subscriptions are currently unavailable. Please try again later."
                 }
             }
         } catch {
-            currentOffering = nil
-            isLoading = false
-            errorMessage = "Unable to load subscriptions."
+            await MainActor.run {
+                currentOffering = nil
+                isLoading = false
+                errorMessage = "Unable to load subscriptions. Please try again later."
+            }
         }
     }
 

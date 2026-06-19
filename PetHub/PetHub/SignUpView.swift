@@ -16,6 +16,7 @@ struct SignUpView: View {
     
     @AppStorage("needsUserOnboarding") var needsUserOnboarding = false
     @AppStorage("isLoggedIn") var isLoggedIn = false
+    @AppStorage("isSigningUpWithApple") private var isSigningUpWithApple = false
     
     @FocusState private var nameFocused: Bool
     @FocusState private var emailFocused: Bool
@@ -161,16 +162,25 @@ struct SignUpView: View {
     
     private func signUpWithApple() {
         authError = nil
-        
-        appleHandler.onSuccess = {
+        isSigningUpWithApple = true  // block the listener
+
+        appleHandler.onSuccess = { profileExists in
+            isSigningUpWithApple = false
+
+            if profileExists {
+                Task { try? await supabase.auth.signOut() }
+                authError = "This Apple account already exists. Please sign in instead."
+                return
+            }
+
             needsUserOnboarding = true
             isLoggedIn = true
         }
-        
         appleHandler.onError = { message in
+            isSigningUpWithApple = false
             authError = message
         }
-        
+
         appleHandler.signIn()
     }
 }

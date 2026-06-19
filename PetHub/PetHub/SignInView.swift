@@ -18,7 +18,8 @@ struct SignInView: View {
     @StateObject private var appleHandler = AppleSignInHandler()
     @FocusState private var emailFocused: Bool
     @FocusState private var passwordFocused: Bool
-
+    @AppStorage("needsUserOnboarding") var needsUserOnboarding = false
+    
     private var cleanedEmail: String {
         email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
@@ -122,7 +123,8 @@ struct SignInView: View {
     private func signInWithApple() {
         authError = nil
 
-        appleHandler.onSuccess = {
+        appleHandler.onSuccess = { profileExists in
+            needsUserOnboarding = !profileExists
             isLoggedIn = true
         }
 

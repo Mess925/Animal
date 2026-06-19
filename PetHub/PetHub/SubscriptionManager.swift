@@ -31,16 +31,25 @@ class SubscriptionManager: ObservableObject {
     var maxPhotosTotal: Int {
         switch tier {
         case .free: return 50
-        case .semiPro: return 200
+        case .semiPro: return 1000
         case .pro: return Int.max
+        }
+    }
+
+    var searchRadiusKm: Double {
+        switch tier {
+        case .free: return 10
+        case .semiPro: return 35
+        case .pro: return 150
         }
     }
 
     var hasUnlimitedPhotos: Bool { tier == .pro }
 
-    var canPostLostPet: Bool { tier == .semiPro || tier == .pro }
+    var canPostLostPet: Bool { tier == .pro }
     var canPostFoundPet: Bool { true }
     var canViewLostFound: Bool { true }
+    var canViewContactDetails: Bool { tier == .pro }
 
     // MARK: - Init
     init() {
@@ -94,6 +103,7 @@ class SubscriptionManager: ObservableObject {
     private static func syncTierToSupabase(_ tier: SubscriptionTier) async {
         guard let userId = await supabase.auth.currentUser?.id.uuidString else { return }
         let tierString = tier.supabaseValue
+
         do {
             try await supabase
                 .from("profiles")

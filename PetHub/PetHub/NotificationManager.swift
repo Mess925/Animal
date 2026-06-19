@@ -48,10 +48,13 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
 
             try await supabase
                 .from("push_tokens")
-                .upsert([
-                    "user_id": user.id.uuidString,
-                    "token": token
-                ])
+                .upsert(
+                    [
+                        "user_id": user.id.uuidString,
+                        "token": token
+                    ],
+                    onConflict: "user_id,token"
+                )
                 .execute()
 
             print("Push token saved")

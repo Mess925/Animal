@@ -19,5 +19,9 @@
 	<array>
 		<string>remote-notification</string>
 	</array>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>PetHub uses your location to show nearby lost and found pet reports.</string>
+    <key>NSCameraUsageDescription</key>
+    <string>PetHub uses your camera to capture and share pet photos.</string>
 </dict>
 </plist>

@@ -21,7 +21,7 @@ import Combine
 
 @MainActor
 final class AppleSignInHandler: NSObject, ObservableObject {
-    var onSuccess: (() -> Void)?
+    var onSuccess: ((_ profileExists: Bool) -> Void)?
     var onError: ((String) -> Void)?
 
     private var currentNonce: String?
@@ -69,6 +69,15 @@ extension AppleSignInHandler: ASAuthorizationControllerDelegate {
                 )
 
                 let user = result.user
+                let existingProfiles: [UserProfile] = try await supabase
+                    .from("profiles")
+                    .select()
+                    .eq("id", value: user.id.uuidString)
+                    .limit(1)
+                    .execute()
+                    .value
+
+                let profileExists = !existingProfiles.isEmpty
 
                 let appleName = [
                     credential.fullName?.givenName,
@@ -88,19 +97,24 @@ extension AppleSignInHandler: ASAuthorizationControllerDelegate {
 
                 let fallbackUsername = "@\(emailPrefix ?? String(user.id.uuidString.prefix(8)))"
 
-                try await supabase
-                    .from("profiles")
-                    .upsert([
-                        "id": user.id.uuidString,
-                        "name": fallbackName,
-                        "username": fallbackUsername,
-                        "bio": "",
-                        "avatar_emoji": "🧑",
-                        "avatar_accent_hex": "AA9DFF"
-                    ])
-                    .execute()
+                if !profileExists {
+                    let profile = AppleProfileUpsert(
+                        id: user.id.uuidString,
+                        name: fallbackName,
+                        username: fallbackUsername,
+                        bio: "",
+                        avatarEmoji: "🧑",
+                        avatarAccentHex: "AA9DFF",
+                        isOnboarded: false
+                    )
 
-                onSuccess?()
+                    try await supabase
+                        .from("profiles")
+                        .upsert(profile, onConflict: "id")
+                        .execute()
+                }
+
+                onSuccess?(profileExists)
             } catch {
                 onError?("Apple sign in failed. Please try again.")
             }
@@ -122,6 +136,26 @@ extension AppleSignInHandler: ASAuthorizationControllerPresentationContextProvid
             .compactMap { $0 as? UIWindowScene }
             .flatMap(\.windows)
             .first { $0.isKeyWindow } ?? ASPresentationAnchor()
+    }
+}
+
+private struct AppleProfileUpsert: Encodable {
+    let id: String
+    let name: String
+    let username: String
+    let bio: String
+    let avatarEmoji: String
+    let avatarAccentHex: String
+    let isOnboarded: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case username
+        case bio
+        case avatarEmoji = "avatar_emoji"
+        case avatarAccentHex = "avatar_accent_hex"
+        case isOnboarded = "is_onboarded"
     }
 }
 

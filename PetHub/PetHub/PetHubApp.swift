@@ -10,6 +10,7 @@ struct PetHubApp: App {
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
     @AppStorage("needsUserOnboarding") private var needsUserOnboarding = true
     @AppStorage("isLoggedIn") private var isLoggedIn = false
+    @AppStorage("isSigningUpWithApple") private var isSigningUpWithApple = false
     @AppStorage("isResettingPassword") private var isResettingPassword = false
 
     @StateObject private var themeManager = ThemeManager()
@@ -105,12 +106,13 @@ struct PetHubApp: App {
             for await state in supabase.auth.authStateChanges {
                 if let session = state.session {
                     guard !isResettingPassword else { continue }
-
+                    guard !isSigningUpWithApple else { continue }
                     isLoggedIn = true
                     await checkOnboarding(userId: session.user.id.uuidString)
                     await NotificationManager.shared.requestPermission()
                 } else {
                     isResettingPassword = false
+                    isSigningUpWithApple = false
                     isLoggedIn = false
                     needsUserOnboarding = true
                 }

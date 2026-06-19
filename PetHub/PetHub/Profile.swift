@@ -1082,8 +1082,8 @@ struct DeleteAccountView: View {
 
             try? await supabase.auth.signOut()
         } catch {
-            errorMessage =
-                "Could not delete account. Check that delete_my_account() exists in Supabase."
+            print("Delete account error:", error)
+            errorMessage = String(describing: error)
         }
 
         isDeleting = false

@@ -6,6 +6,8 @@
 import Foundation
 import Supabase
 import SwiftUI
+import Combine
+import CoreLocation
 
 // MARK: - Model
 
@@ -24,6 +26,8 @@ struct LostFoundPost: Codable, Identifiable, Hashable {
     let animalType: String
     let description: String?
     let location: String?
+    let latitude: Double?
+    let longitude: Double?
     let imageUrl: String?
     let status: String
     let reunitedAt: Date?
@@ -48,11 +52,87 @@ struct LostFoundPost: Codable, Identifiable, Hashable {
         case animalType = "animal_type"
         case description
         case location
+        case latitude
+        case longitude
         case imageUrl = "image_url"
         case status
         case reunitedAt = "reunited_at"
         case contactPhone = "contact_phone"
         case createdAt = "created_at"
+    }
+}
+
+struct LostFoundPostInsert: Encodable {
+    let userId: String
+    let reportType: String
+    let animalType: String
+    let description: String
+    let location: String
+    let latitude: Double?
+    let longitude: Double?
+    let contactPhone: String
+    let status: String
+    let imageUrl: String?
+
+    enum CodingKeys: String, CodingKey {
+        case userId = "user_id"
+        case reportType = "type"
+        case animalType = "animal_type"
+        case description
+        case location
+        case latitude
+        case longitude
+        case contactPhone = "contact_phone"
+        case status
+        case imageUrl = "image_url"
+    }
+}
+
+final class LostFoundLocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
+    @Published var location: CLLocation?
+    @Published var authorizationStatus: CLAuthorizationStatus = .notDetermined
+    @Published var updateToken = UUID()
+
+    private let manager = CLLocationManager()
+
+    override init() {
+        super.init()
+        manager.delegate = self
+        manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
+        authorizationStatus = manager.authorizationStatus
+    }
+
+    func requestLocationPermission() {
+        authorizationStatus = manager.authorizationStatus
+
+        switch authorizationStatus {
+        case .notDetermined:
+            manager.requestWhenInUseAuthorization()
+        case .authorizedAlways, .authorizedWhenInUse:
+            manager.requestLocation()
+        case .denied, .restricted:
+            break
+        @unknown default:
+            break
+        }
+    }
+
+    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        authorizationStatus = manager.authorizationStatus
+
+        if authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways {
+            manager.requestLocation()
+        }
+    }
+
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        guard let latest = locations.last else { return }
+        location = latest
+        updateToken = UUID()
+    }
+
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        updateToken = UUID()
     }
 }
 
@@ -71,6 +151,7 @@ struct LostAndFoundView: View {
     @EnvironmentObject private var subscriptionManager: SubscriptionManager
     @EnvironmentObject private var store: RoomStore
     @Environment(\.dismiss) private var dismiss
+    @StateObject private var locationManager = LostFoundLocationManager()
 
     @State private var posts: [LostFoundPost] = []
     @State private var isLoading = true
@@ -171,7 +252,11 @@ struct LostAndFoundView: View {
             .environmentObject(store)
         }
         .task {
+            locationManager.requestLocationPermission()
             await fetchPosts()
+        }
+        .onChange(of: locationManager.updateToken) { _ in
+            Task { await fetchPosts() }
         }
         .navigationBarBackButtonHidden(true)
         .navigationBarHidden(true)
@@ -313,11 +398,11 @@ struct LostAndFoundView: View {
                     .font(.system(size: 44))
                     .foregroundStyle(PHTheme.danger.opacity(0.4))
 
-                Text("No reports yet")
+                Text("No nearby reports yet")
                     .font(.system(size: 16, weight: .medium))
                     .foregroundStyle(PHTheme.subtext)
 
-                Text("Tap + to report a lost or found animal")
+                Text("Reports are filtered by your plan radius")
                     .font(.system(size: 13))
                     .foregroundStyle(PHTheme.placeholder)
             }
@@ -393,14 +478,19 @@ struct LostAndFoundView: View {
 
             let (session, results) = try await (userSession, fetched)
 
+            let nearbyResults = filterPostsByPlanRadius(
+                results,
+                currentUserId: session.user.id
+            )
+
             await MainActor.run {
                 currentUserId = session.user.id
-                posts = results
+                posts = nearbyResults
                 isLoading = false
             }
 
             await createPossibleMatchActivities(
-                posts: results,
+                posts: nearbyResults,
                 currentUserId: session.user.id
             )
         } catch {
@@ -409,6 +499,57 @@ struct LostAndFoundView: View {
                 isLoading = false
             }
         }
+    }
+
+    private func filterPostsByPlanRadius(
+        _ results: [LostFoundPost],
+        currentUserId: UUID
+    ) -> [LostFoundPost] {
+        guard let userLocation = locationManager.location else {
+            return results.filter { $0.userId == currentUserId }
+        }
+
+        let userCoordinate = userLocation.coordinate
+        let radiusKm = subscriptionManager.searchRadiusKm
+
+        return results.filter { post in
+            if post.userId == currentUserId {
+                return true
+            }
+
+            guard let postLatitude = post.latitude,
+                  let postLongitude = post.longitude else {
+                return false
+            }
+
+            let distance = distanceKm(
+                fromLat: userCoordinate.latitude,
+                fromLng: userCoordinate.longitude,
+                toLat: postLatitude,
+                toLng: postLongitude
+            )
+
+            return distance <= radiusKm
+        }
+    }
+
+    private func distanceKm(
+        fromLat: Double,
+        fromLng: Double,
+        toLat: Double,
+        toLng: Double
+    ) -> Double {
+        let earthRadiusKm = 6371.0
+        let dLat = (toLat - fromLat) * .pi / 180
+        let dLng = (toLng - fromLng) * .pi / 180
+        let lat1 = fromLat * .pi / 180
+        let lat2 = toLat * .pi / 180
+
+        let a = sin(dLat / 2) * sin(dLat / 2)
+            + sin(dLng / 2) * sin(dLng / 2) * cos(lat1) * cos(lat2)
+
+        let c = 2 * atan2(sqrt(a), sqrt(1 - a))
+        return earthRadiusKm * c
     }
 
     // MARK: - Delete
@@ -702,7 +843,7 @@ struct LostFoundCard: View {
                     .foregroundStyle(PHTheme.placeholder)
 
                 if let phone = post.contactPhone, !phone.isEmpty {
-                    if subscriptionManager.isSemiPro || subscriptionManager.isPro {
+                    if subscriptionManager.isPro {
                         HStack(spacing: 4) {
                             Image(systemName: "phone.fill")
                                 .font(.system(size: 10))
@@ -718,7 +859,7 @@ struct LostFoundCard: View {
                                 .font(.system(size: 10))
                                 .foregroundStyle(PHTheme.placeholder)
 
-                            Text("Upgrade to see contact")
+                            Text("Upgrade to Pro to see contact")
                                 .font(.system(size: 11))
                                 .foregroundStyle(PHTheme.placeholder)
                         }
@@ -813,6 +954,7 @@ struct AddLostFoundView: View {
 
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var subscriptionManager: SubscriptionManager
+    @StateObject private var locationManager = LostFoundLocationManager()
 
     @State private var type: String
     @State private var contactPhone = ""
@@ -1036,6 +1178,8 @@ struct AddLostFoundView: View {
             UpgradeView()
         }
         .onAppear {
+            locationManager.requestLocationPermission()
+
             if let lockedType {
                 type = lockedType
             }
@@ -1078,19 +1222,20 @@ struct AddLostFoundView: View {
                 imageUrl = url.absoluteString
             }
 
-            var insert: [String: String] = [
-                "user_id": user.id.uuidString,
-                "type": type,
-                "animal_type": animalType,
-                "description": description,
-                "location": location,
-                "contact_phone": contactPhone,
-                "status": "active"
-            ]
+            let coordinate = locationManager.location?.coordinate
 
-            if let imageUrl {
-                insert["image_url"] = imageUrl
-            }
+            let insert = LostFoundPostInsert(
+                userId: user.id.uuidString,
+                reportType: type,
+                animalType: animalType,
+                description: description,
+                location: location,
+                latitude: coordinate?.latitude,
+                longitude: coordinate?.longitude,
+                contactPhone: contactPhone,
+                status: "active",
+                imageUrl: imageUrl
+            )
 
             try await supabase
                 .from("lost_found")
