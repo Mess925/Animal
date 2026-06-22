@@ -1,252 +1,238 @@
 //
-//  OnBoradingView.swift
+//  OnboardingView.swift
 //  PetHub
 //
-//  Created by Han Min Thant on 31/5/26.
-//
 
-import Foundation
 import SwiftUI
 
-// MARK: - Onboarding Page Model
-
 private struct OnboardingPage {
-    let emoji: String
-    let floatingEmojis: [(emoji: String, x: CGFloat, y: CGFloat)]
-    let accentHex: String
+    let animal: String
+    let step: String
     let title: String
     let body: String
-    let pills: [(label: String, hex: String)]
+    let accentHex: String
+    let cards: [MiniPetCard]
+}
+
+private struct MiniPetCard {
+    let emoji: String
+    let text: String
+    let color: String
+    let rotation: Double
+    let x: CGFloat
+    let y: CGFloat
 }
 
 private let pages: [OnboardingPage] = [
-    OnboardingPage(
-        emoji: "🐾",
-        floatingEmojis: [
-            (emoji: "🐶", x: 1,   y: 1),
-            (emoji: "🐱", x: -1,  y: -1),
-            (emoji: "🐦", x: 1,   y: -0.6),
-        ],
-        accentHex: "AA9DFF",
-        title: "A home for every animal in your life",
-        body: "Create rooms for your pets, follow strays in your neighbourhood, and share moments with the people who care.",
-        pills: [
-            ("🐾  My Pet",      "AA9DFF"),
-            ("🏘️  Stray Watch", "7EC8C8"),
-            ("📍  Lost & Found","E25718"),
+    .init(
+        animal: "🐶",
+        step: "STEP 01",
+        title: "A cozy space for every pet",
+        body: "Save photos, notes, rooms, and little daily memories in one simple place.",
+        accentHex: "FF8A3D",
+        cards: [
+            .init(emoji: "🐾", text: "Pet rooms", color: "FFE1CC", rotation: -8, x: -82, y: 12),
+            .init(emoji: "📸", text: "Photos", color: "DCE7FF", rotation: 7, x: 72, y: -10),
+            .init(emoji: "💬", text: "Updates", color: "E2F8E8", rotation: -4, x: 0, y: 78)
         ]
     ),
-    OnboardingPage(
-        emoji: "🏘️",
-        floatingEmojis: [
-            (emoji: "📸", x: 1,  y: 1),
-            (emoji: "💬", x: -1, y: -1),
-        ],
-        accentHex: "7EC8C8",
-        title: "Invite people, share the moments",
-        body: "Each room is a shared space. Invite family, friends, or neighbours to post photos, updates, and memories together.",
-        pills: [
-            ("📸  Photos", "F4A84A"),
-            ("💬  Chat",   "AA9DFF"),
-            ("🤝  People", "7EC8C8"),
+    .init(
+        animal: "🐱",
+        step: "STEP 02",
+        title: "Share with people who care",
+        body: "Invite family, friends, or neighbours so everyone stays close to your pet’s moments.",
+        accentHex: "5F7CFF",
+        cards: [
+            .init(emoji: "👥", text: "Members", color: "DCE7FF", rotation: -7, x: -78, y: 6),
+            .init(emoji: "❤️", text: "Memories", color: "FFE0EA", rotation: 9, x: 80, y: -8),
+            .init(emoji: "🔔", text: "Alerts", color: "FFF0C7", rotation: -3, x: 0, y: 78)
         ]
     ),
+    .init(
+        animal: "🐰",
+        step: "STEP 03",
+        title: "Help lost pets get home",
+        body: "Post lost or found pets and get possible-match alerts when someone nearby has a clue.",
+        accentHex: "18A35D",
+        cards: [
+            .init(emoji: "📍", text: "Lost", color: "FFE1CC", rotation: -9, x: -82, y: 8),
+            .init(emoji: "🔎", text: "Matches", color: "E2F8E8", rotation: 8, x: 76, y: -12),
+            .init(emoji: "🏡", text: "Home", color: "DCE7FF", rotation: -3, x: 0, y: 78)
+        ]
+    )
 ]
-
-// MARK: - OnboardingView
 
 struct OnboardingView: View {
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
 
     @State private var currentPage = 0
-    @State private var dragOffset: CGFloat = 0
     @State private var showWelcome = false
 
-    private var accent: Color { Color(hex: pages[currentPage].accentHex) }
+    private var page: OnboardingPage { pages[currentPage] }
+    private var accent: Color { Color(hex: page.accentHex) }
 
     var body: some View {
         if showWelcome {
             WelcomeView()
         } else {
-            ZStack(alignment: .bottom) {
-                PHTheme.background.ignoresSafeArea()
+            ZStack {
+                Color.white.ignoresSafeArea()
 
-                // Slides
                 TabView(selection: $currentPage) {
-                    ForEach(pages.indices, id: \.self) { i in
-                        OnboardingSlide(page: pages[i])
-                            .tag(i)
+                    ForEach(pages.indices, id: \.self) { index in
+                        ModernOnboardingSlide(page: pages[index])
+                            .tag(index)
                     }
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
-                .animation(.spring(response: 0.4, dampingFraction: 0.8), value: currentPage)
 
-                // Bottom controls
-                VStack(spacing: 0) {
-                    // Dots
-                    HStack(spacing: 6) {
-                        ForEach(pages.indices, id: \.self) { i in
-                            Capsule()
-                                .fill(i == currentPage ? accent : PHTheme.border.opacity(1.8))
-                                .frame(width: i == currentPage ? 20 : 6, height: 6)
-                                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: currentPage)
-                        }
-                    }
-                    .padding(.bottom, 22)
-
-                    // CTA
-                    Button {
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                            if currentPage < pages.count - 1 {
-                                currentPage += 1
-                            } else {
-                                finishOnboarding()
-                            }
-                        }
-                    } label: {
-                        Text(currentPage < pages.count - 1 ? "Continue" : "Get Started")
-                            .font(.system(size: 16, weight: .bold, design: .rounded))
-                            .foregroundStyle(ctaTextColor)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(
-                                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                                    .fill(accent)
-                                    .shadow(color: accent.opacity(0.22), radius: 12, x: 0, y: 6)
-                            )
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.horizontal, 24)
-                    .animation(.easeInOut(duration: 0.25), value: currentPage)
-
-                    // Skip
-                    Button {
-                        finishOnboarding()
-                    } label: {
-                        Text("Skip")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(PHTheme.subtext)
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.top, 14)
-                    .padding(.bottom, 44)
-                    .opacity(currentPage < pages.count - 1 ? 1 : 0)
-                    .animation(.easeInOut(duration: 0.2), value: currentPage)
+                VStack {
+                    Spacer()
+                    bottomControls
                 }
-                .background(
-                    LinearGradient(
-                        colors: [PHTheme.background.opacity(0), PHTheme.background],
-                        startPoint: .top,
-                        endPoint: .init(x: 0.5, y: 0.25)
-                    )
-                    .ignoresSafeArea()
-                )
             }
         }
     }
 
-    private var ctaTextColor: Color { .white }
+    private var bottomControls: some View {
+        VStack(spacing: 18) {
+            HStack(spacing: 6) {
+                ForEach(pages.indices, id: \.self) { index in
+                    Capsule()
+                        .fill(index == currentPage ? Color.black : Color.black.opacity(0.14))
+                        .frame(width: index == currentPage ? 22 : 6, height: 6)
+                        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: currentPage)
+                }
+            }
+
+            Button {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                    if currentPage < pages.count - 1 {
+                        currentPage += 1
+                    } else {
+                        finishOnboarding()
+                    }
+                }
+            } label: {
+                HStack(spacing: 10) {
+                    Text(currentPage < pages.count - 1 ? "Next" : "Get Started")
+                    Image(systemName: "arrow.right")
+                }
+                .font(.system(size: 16, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
+                .background(Color.black)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 24)
+
+            Button {
+                finishOnboarding()
+            } label: {
+                Text("Skip for now")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.black.opacity(0.45))
+            }
+            .buttonStyle(.plain)
+            .opacity(currentPage < pages.count - 1 ? 1 : 0)
+        }
+        .padding(.bottom, 34)
+        .background(
+            LinearGradient(
+                colors: [.white.opacity(0), .white, .white],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: 210)
+            .ignoresSafeArea()
+        )
+    }
 
     private func finishOnboarding() {
         hasSeenOnboarding = true
-        withAnimation(.easeInOut(duration: 0.35)) {
+        withAnimation(.easeInOut(duration: 0.25)) {
             showWelcome = true
         }
     }
 }
 
-// MARK: - Onboarding Slide
-
-private struct OnboardingSlide: View {
+private struct ModernOnboardingSlide: View {
     let page: OnboardingPage
+
     private var accent: Color { Color(hex: page.accentHex) }
 
     var body: some View {
         VStack(spacing: 0) {
-            Spacer()
+            Spacer(minLength: 70)
 
-            // Illustration
             ZStack {
-                // Glow bg
                 Circle()
-                    .fill(accent.opacity(0.08))
-                    .frame(width: 200, height: 200)
+                    .fill(accent.opacity(0.14))
+                    .frame(width: 210, height: 210)
+                    .blur(radius: 2)
 
-                RoundedRectangle(cornerRadius: 40)
-                    .fill(accent.opacity(0.1))
-                    .frame(width: 160, height: 160)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 40)
-                            .stroke(accent.opacity(0.2), lineWidth: 1)
-                    )
-
-                Text(page.emoji)
-                    .font(.system(size: 72))
-
-                // Floating badges
-                ForEach(page.floatingEmojis.indices, id: \.self) { i in
-                    let f = page.floatingEmojis[i]
-                    Text(f.emoji)
-                        .font(.system(size: 26))
-                        .frame(width: 46, height: 46)
-                        .background(
-                            Circle()
-                                .fill(PHTheme.surface)
-                                .overlay(Circle().stroke(PHTheme.border, lineWidth: 0.5))
-                        )
-                        .offset(
-                            x: f.x * 86,
-                            y: f.y * 86
-                        )
+                ForEach(Array(page.cards.enumerated()), id: \.offset) { _, card in
+                    PetFloatingCard(card: card)
                 }
+
+                Text(page.animal)
+                    .font(.system(size: 104))
+                    .padding(34)
+                    .background(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 42, style: .continuous))
+                    .shadow(color: .black.opacity(0.08), radius: 24, x: 0, y: 14)
             }
-            .frame(height: 240)
-            .padding(.bottom, 44)
+            .frame(height: 330)
 
-            // Text
-            Text(page.title)
-                .font(.system(size: 24, weight: .bold))
-                .multilineTextAlignment(.center)
-                .foregroundStyle(PHTheme.text)
-                .lineSpacing(2)
-                .padding(.horizontal, 32)
-                .padding(.bottom, 14)
+            VStack(spacing: 14) {
+                Text(page.step)
+                    .font(.system(size: 10, weight: .black, design: .rounded))
+                    .tracking(2)
+                    .foregroundStyle(.black.opacity(0.35))
 
-            Text(page.body)
-                .font(.system(size: 14))
-                .multilineTextAlignment(.center)
-                .foregroundStyle(PHTheme.subtext)
-                .lineSpacing(4)
-                .padding(.horizontal, 36)
-                .padding(.bottom, 28)
+                Text(page.title)
+                    .font(.system(size: 34, weight: .black, design: .rounded))
+                    .foregroundStyle(.black)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(-1)
+                    .padding(.horizontal, 26)
 
-            // Pills
-            HStack(spacing: 8) {
-                ForEach(page.pills, id: \.label) { pill in
-                    Text(pill.label)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(Color(hex: pill.hex))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(
-                            Capsule()
-                                .fill(Color(hex: pill.hex).opacity(0.1))
-                                .overlay(
-                                    Capsule()
-                                        .stroke(Color(hex: pill.hex).opacity(0.3), lineWidth: 0.5)
-                                )
-                        )
-                }
+                Text(page.body)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(.black.opacity(0.55))
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(4)
+                    .padding(.horizontal, 34)
             }
 
             Spacer()
-            // Bottom padding so dots/CTA don't overlap
-            Spacer().frame(height: 160)
+            Spacer().frame(height: 170)
         }
     }
 }
 
-// MARK: - Preview
+private struct PetFloatingCard: View {
+    let card: MiniPetCard
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Text(card.emoji)
+                .font(.system(size: 26))
+
+            Text(card.text)
+                .font(.system(size: 13, weight: .black, design: .rounded))
+                .foregroundStyle(.black)
+        }
+        .frame(width: 96, height: 94)
+        .background(Color(hex: card.color))
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .rotationEffect(.degrees(card.rotation))
+        .offset(x: card.x, y: card.y)
+        .shadow(color: .black.opacity(0.08), radius: 14, x: 0, y: 8)
+    }
+}
 
 #Preview {
     OnboardingView()

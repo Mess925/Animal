@@ -375,10 +375,10 @@ struct ActivityView: View {
             }
         }
         .background(
-            RoundedRectangle(cornerRadius: 20)
+            RoundedRectangle(cornerRadius: 28)
                 .fill(PHTheme.surface2)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 20)
+                    RoundedRectangle(cornerRadius: 28)
                         .stroke(PHTheme.divider, lineWidth: 0.5)
                 )
         )

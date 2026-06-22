@@ -190,6 +190,9 @@ struct EditRoomView: View {
             }
             dismiss()
         } catch {
+            #if DEBUG
+            print("EditRoomView.swift:192 error:", error)
+            #endif
         }
         isLoading = false
     }

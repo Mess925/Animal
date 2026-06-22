@@ -225,6 +225,9 @@ struct ChatView: View {
             await channel.unsubscribe()
 
         } catch {
+            #if DEBUG
+            print("ChatView.swift:227 error:", error)
+            #endif
         }
     }
 
@@ -373,6 +376,9 @@ struct ChatView: View {
                 return
             }
         } catch {
+            #if DEBUG
+            print("ChatView.swift:375 error:", error)
+            #endif
         }
     }
 
@@ -412,6 +418,9 @@ struct ChatView: View {
                     .execute()
             }
         } catch {
+            #if DEBUG
+            print("ChatView.swift:414 error:", error)
+            #endif
         }
 
     }
@@ -467,6 +476,9 @@ struct ChatView: View {
                 selectedImage = nil
             }
         } catch {
+            #if DEBUG
+            print("ChatView.swift:469 error:", error)
+            #endif
         }
     }
 }

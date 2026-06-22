@@ -23,5 +23,7 @@
     <string>PetHub uses your location to show nearby lost and found pet reports.</string>
     <key>NSCameraUsageDescription</key>
     <string>PetHub uses your camera to capture and share pet photos.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>PetHub uses your photo library to set your pet room's cover photo.</string>
 </dict>
 </plist>

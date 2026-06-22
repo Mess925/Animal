@@ -287,9 +287,9 @@ struct ForgotPasswordView: View {
                     .padding(.horizontal, 16)
                     .padding(.vertical, 15)
                     .background(PHTheme.surface.opacity(0.96))
-                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        RoundedRectangle(cornerRadius: 22, style: .continuous)
                             .stroke(otpFocused ? PHTheme.accent.opacity(0.75) : PHTheme.border, lineWidth: 0.9)
                     )
                     .onChange(of: otpCode) { _, val in
@@ -399,7 +399,7 @@ struct ForgotPasswordView: View {
             .foregroundStyle(.white)
             .padding(.vertical, 16)
             .background(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .fill(canProceed ? PHTheme.accent : PHTheme.subtext.opacity(0.25))
             )
         }
@@ -488,7 +488,7 @@ struct AuthHeroCard: View {
             HStack {
                 ZStack {
                     Circle()
-                        .fill(PHTheme.accent.opacity(0.14))
+                        .fill(PHTheme.text.opacity(0.07))
                         .frame(width: 48, height: 48)
                     Image(systemName: icon)
                         .font(.system(size: 19, weight: .bold))
@@ -574,12 +574,12 @@ struct AuthField: View {
                 }
             }
             .background(PHTheme.background.opacity(0.92))
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .stroke(isFocused.wrappedValue ? PHTheme.accent.opacity(0.85) : PHTheme.border, lineWidth: isFocused.wrappedValue ? 1.1 : 0.8)
             )
-            .shadow(color: isFocused.wrappedValue ? PHTheme.accent.opacity(0.10) : Color.black.opacity(0.025), radius: 14, x: 0, y: 7)
+            .shadow(color: isFocused.wrappedValue ? PHTheme.text.opacity(0.06) : Color.black.opacity(0.025), radius: 14, x: 0, y: 7)
             .animation(.easeInOut(duration: 0.18), value: isFocused.wrappedValue)
         }
     }
@@ -618,9 +618,9 @@ struct AuthSocialButton: View {
             .frame(maxWidth: .infinity)
             .frame(height: 56)
             .background(PHTheme.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .stroke(PHTheme.border, lineWidth: 0.8)
             )
             .shadow(color: Color.black.opacity(0.035), radius: 16, x: 0, y: 8)

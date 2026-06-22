@@ -94,10 +94,10 @@ struct PeopleView: View {
                         }
                     }
                     .background(
-                        RoundedRectangle(cornerRadius: 20)
+                        RoundedRectangle(cornerRadius: 28)
                             .fill(PHTheme.surface2)
                             .overlay(
-                                RoundedRectangle(cornerRadius: 20)
+                                RoundedRectangle(cornerRadius: 28)
                                     .stroke(PHTheme.divider, lineWidth: 0.5)
                             )
                     )
@@ -194,6 +194,9 @@ struct PeopleView: View {
             }
 
         } catch {
+            #if DEBUG
+            print("PeopleView.swift:196 error:", error)
+            #endif
         }
     }
 
@@ -285,10 +288,10 @@ struct GroupChatRow: View {
         }
         .padding(14)
         .background(
-            RoundedRectangle(cornerRadius: 18)
+            RoundedRectangle(cornerRadius: 22)
                 .fill(room.accent.opacity(0.06))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 18)
+                    RoundedRectangle(cornerRadius: 22)
                         .stroke(room.accent.opacity(0.14), lineWidth: 0.5)
                 )
         )

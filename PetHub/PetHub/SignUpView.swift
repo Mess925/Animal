@@ -12,6 +12,7 @@ struct SignUpView: View {
     @State private var password = ""
     @State private var isCreating = false
     @State private var authError: String?
+    @State private var hasAcceptedTerms = false
     @StateObject private var appleHandler = AppleSignInHandler()
     
     @AppStorage("needsUserOnboarding") var needsUserOnboarding = false
@@ -34,6 +35,7 @@ struct SignUpView: View {
         !cleanedName.isEmpty
         && isValidEmail(cleanedEmail)
         && password.count >= 8
+        && hasAcceptedTerms
         && !isCreating
     }
     
@@ -87,6 +89,30 @@ struct SignUpView: View {
                         AuthErrorBanner(message: authError)
                     }
                     
+                    HStack(alignment: .top, spacing: 10) {
+                        Button {
+                            hasAcceptedTerms.toggle()
+                        } label: {
+                            Image(systemName: hasAcceptedTerms ? "checkmark.square.fill" : "square")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundStyle(hasAcceptedTerms ? PHTheme.accent : PHTheme.subtext)
+                        }
+                        .buttonStyle(.plain)
+
+                        HStack(spacing: 4) {
+                            Text("I agree to the")
+                                .font(.system(size: 13))
+                                .foregroundStyle(PHTheme.subtext)
+
+                            NavigationLink(destination: TermsOfServiceView()) {
+                                Text("Terms of Service")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundStyle(PHTheme.accent)
+                            }
+                        }
+
+                        Spacer()
+                    }
                     PHButton(
                         "Create Account",
                         icon: "pawprint.fill",
@@ -101,6 +127,8 @@ struct SignUpView: View {
                     AuthSocialButton(title: "Continue with Apple", systemImage: "apple.logo") {
                         signUpWithApple()
                     }
+                    .disabled(!hasAcceptedTerms || isCreating)
+                    .opacity(hasAcceptedTerms ? 1 : 0.55)
                     
                     HStack(spacing: 4) {
                         Spacer()
@@ -127,7 +155,7 @@ struct SignUpView: View {
         authError = nil
         
         guard canCreate else {
-            authError = "Please enter your name, a valid email, and an 8+ character password."
+            authError = "Please enter your name, a valid email, an 8+ character password, and accept the Terms of Service."
             return
         }
         
@@ -162,6 +190,12 @@ struct SignUpView: View {
     
     private func signUpWithApple() {
         authError = nil
+
+        guard hasAcceptedTerms else {
+            authError = "Please accept the Terms of Service before continuing."
+            return
+        }
+
         isSigningUpWithApple = true  // block the listener
 
         appleHandler.onSuccess = { profileExists in

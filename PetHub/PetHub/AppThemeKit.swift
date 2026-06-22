@@ -12,31 +12,31 @@ import UIKit
 // MARK: - PetHub Modern Design System
 
 enum PHTheme {
-    // Premium minimal palette: clean white light mode + deep dark mode.
-    // Purple stays as the PetHub identity, but the UI no longer feels warm/yellow.
-    static let accent = Color(light: "6F4EF6", dark: "A970FF")
-    static let accent2 = Color(light: "FF6B2C", dark: "FF8A4C")
-    static let accent3 = Color(light: "111111", dark: "F4F4F5")
+    // PetHub 2026: soft monochrome, frosted surfaces, small animal-green accent.
+    // Inspired by the reference shots: clean cards, deep dark mode, high whitespace.
+    static let accent = Color(light: "111111", dark: "F7F7F7")
+    static let accent2 = Color(light: "FF8A3D", dark: "FFB477")
+    static let accent3 = Color(light: "5F7CFF", dark: "9AAEFF")
     static let danger = Color(light: "E5484D", dark: "FF7373")
     static let success = Color(light: "21A67A", dark: "65D6B8")
     static let warning = Color(light: "D99A26", dark: "F2C46D")
 
-    static let background = Color(light: "F7F7F5", dark: "09090B")
-    static let background2 = Color(light: "FFFFFF", dark: "111113")
-    static let surface = Color(light: "FFFFFF", dark: "1A1A1D")
-    static let surface2 = Color(light: "EFEFED", dark: "242428")
-    static let elevated = Color(light: "FFFFFF", dark: "202024")
-    static let text = Color(light: "111111", dark: "F7F7F8")
-    static let subtext = Color(light: "6B6B70", dark: "A1A1AA")
-    static let muted = Color(light: "98A2B3", dark: "7D8796")
-    static let border = Color(light: "E7E7E4", dark: "2D2D31")
-    static let divider = Color(light: "ECECEA", dark: "2A2A2E")
-    static let placeholder = Color(light: "A6AFBF", dark: "7F8794")
+    static let background = Color(light: "FFFFFF", dark: "050506")
+    static let background2 = Color(light: "F7F7F5", dark: "0C0C0E")
+    static let surface = Color(light: "FFFFFF", dark: "151518")
+    static let surface2 = Color(light: "F1F1EF", dark: "232326")
+    static let elevated = Color(light: "FFFFFF", dark: "1D1D21")
+    static let text = Color(light: "111214", dark: "F8F8F8")
+    static let subtext = Color(light: "777A80", dark: "A3A3AA")
+    static let muted = Color(light: "A0A5AA", dark: "777A82")
+    static let border = Color(light: "E8E8E4", dark: "2B2B30")
+    static let divider = Color(light: "ECEDE9", dark: "28282C")
+    static let placeholder = Color(light: "A8ADB3", dark: "777D86")
     static let textOnAccent = Color.white
 
     static let pagePadding: CGFloat = 20
-    static let cardRadius: CGFloat = 24
-    static let fieldRadius: CGFloat = 16
+    static let cardRadius: CGFloat = 28
+    static let fieldRadius: CGFloat = 18
 
     static var brandGradient: LinearGradient {
         LinearGradient(colors: [accent, accent.opacity(0.88)], startPoint: .topLeading, endPoint: .bottomTrailing)
@@ -65,12 +65,18 @@ struct PHBackground: View {
             )
             .ignoresSafeArea()
 
-            // A very subtle brand wash, enough to feel designed without becoming noisy.
             Circle()
-                .fill(PHTheme.accent.opacity(scheme == .dark ? 0.10 : 0.025))
-                .frame(width: 300, height: 300)
-                .blur(radius: 90)
-                .offset(x: -170, y: -300)
+                .fill(PHTheme.accent2.opacity(scheme == .dark ? 0.10 : 0.06))
+                .frame(width: 330, height: 330)
+                .blur(radius: 95)
+                .offset(x: -180, y: -310)
+                .ignoresSafeArea()
+
+            Circle()
+                .fill(PHTheme.accent3.opacity(scheme == .dark ? 0.06 : 0.045))
+                .frame(width: 260, height: 260)
+                .blur(radius: 70)
+                .offset(x: 180, y: -180)
                 .ignoresSafeArea()
         }
     }
@@ -121,7 +127,7 @@ struct PHHeader: View {
                 }
 
                 Text(title)
-                    .font(.system(size: 31, weight: .bold, design: .rounded))
+                    .font(.system(size: 34, weight: .black, design: .rounded))
                     .foregroundStyle(PHTheme.text)
                     .lineSpacing(1)
 
@@ -157,7 +163,7 @@ struct PHCard<Content: View>: View {
             .background(
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
                     .fill(PHTheme.surface)
-                    .shadow(color: Color.black.opacity(0.035), radius: 12, x: 0, y: 6)
+                    .shadow(color: Color.black.opacity(0.035), radius: 22, x: 0, y: 12)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
@@ -194,7 +200,7 @@ struct PHGradientCard<Content: View>: View {
                 RoundedRectangle(cornerRadius: 26, style: .continuous)
                     .stroke(PHTheme.border.opacity(0.9), lineWidth: 0.8)
             )
-            .shadow(color: Color.black.opacity(0.035), radius: 12, x: 0, y: 6)
+            .shadow(color: Color.black.opacity(0.035), radius: 22, x: 0, y: 12)
     }
 }
 
@@ -224,11 +230,11 @@ struct PHButton: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 54)
+            .frame(height: 58)
             .foregroundStyle(foreground)
             .background(background)
-            .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 17, style: .continuous).stroke(border, lineWidth: 0.8))
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(border, lineWidth: 0.8))
             .shadow(color: shadow, radius: kind == .secondary ? 0 : 10, x: 0, y: 5)
             .opacity(isDisabled ? 0.5 : 1)
         }
@@ -236,7 +242,7 @@ struct PHButton: View {
         .disabled(isDisabled || isLoading)
     }
 
-    private var foreground: Color { kind == .secondary ? PHTheme.text : .white }
+    private var foreground: Color { kind == .secondary ? PHTheme.text : (kind == .primary ? PHTheme.textOnAccent : .white) }
     @ViewBuilder private var background: some View {
         switch kind {
         case .primary: LinearGradient(colors: [PHTheme.accent, PHTheme.accent], startPoint: .topLeading, endPoint: .bottomTrailing)

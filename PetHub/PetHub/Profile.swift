@@ -321,10 +321,10 @@ struct ProfileView: View {
             StatCell(value: "\(totalPhotos)", label: "Photos")
         }
         .background(
-            RoundedRectangle(cornerRadius: 20)
+            RoundedRectangle(cornerRadius: 28)
                 .fill(PHTheme.surface2)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 20)
+                    RoundedRectangle(cornerRadius: 28)
                         .stroke(PHTheme.divider, lineWidth: 0.5)
                 )
         )
@@ -389,6 +389,9 @@ struct ProfileView: View {
                 .value
             profile = fetched
         } catch {
+            #if DEBUG
+            print("Profile.swift:391 error:", error)
+            #endif
         }
     }
 }
@@ -451,10 +454,10 @@ struct PetChip: View {
         .padding(.vertical, 14)
         .padding(.horizontal, 8)
         .background(
-            RoundedRectangle(cornerRadius: 18)
+            RoundedRectangle(cornerRadius: 22)
                 .fill(PHTheme.surface2)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 18)
+                    RoundedRectangle(cornerRadius: 22)
                         .stroke(PHTheme.divider, lineWidth: 0.5)
                 )
         )
@@ -599,10 +602,10 @@ struct ProfileCard<Content: View>: View {
     var body: some View {
         VStack(spacing: 0) { content }
             .background(
-                RoundedRectangle(cornerRadius: 20)
+                RoundedRectangle(cornerRadius: 28)
                     .fill(PHTheme.surface2)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 20)
+                        RoundedRectangle(cornerRadius: 28)
                             .stroke(PHTheme.divider, lineWidth: 0.5)
                     )
             )
@@ -771,10 +774,10 @@ struct EditProfileView: View {
                                 .padding(12)
                         }
                         .background(
-                            RoundedRectangle(cornerRadius: 18)
+                            RoundedRectangle(cornerRadius: 22)
                                 .fill(PHTheme.surface2)
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 18)
+                                    RoundedRectangle(cornerRadius: 22)
                                         .stroke(
                                             PHTheme.divider,
                                             lineWidth: 0.5
@@ -807,6 +810,9 @@ struct EditProfileView: View {
             profile.bio = bio
             dismiss()
         } catch {
+            #if DEBUG
+            print("Profile.swift:809 error:", error)
+            #endif
         }
     }
 }
@@ -1015,10 +1021,10 @@ struct DeleteAccountView: View {
                     .foregroundStyle(PHTheme.text)
                     .padding(16)
                     .background(
-                        RoundedRectangle(cornerRadius: 18)
+                        RoundedRectangle(cornerRadius: 22)
                             .fill(PHTheme.surface2)
                             .overlay(
-                                RoundedRectangle(cornerRadius: 18)
+                                RoundedRectangle(cornerRadius: 22)
                                     .stroke(PHTheme.divider, lineWidth: 0.5)
                             )
                     )
@@ -1051,7 +1057,7 @@ struct DeleteAccountView: View {
                     .foregroundStyle(PHTheme.accent)
                     .padding(.vertical, 15)
                     .background(
-                        RoundedRectangle(cornerRadius: 18)
+                        RoundedRectangle(cornerRadius: 22)
                             .fill(
                                 canDelete
                                     ? PHTheme.danger : PHTheme.divider
@@ -1130,10 +1136,10 @@ struct ProfileInputField: View {
             .padding(.horizontal, 16)
             .frame(height: 52)
             .background(
-                RoundedRectangle(cornerRadius: 18)
+                RoundedRectangle(cornerRadius: 22)
                     .fill(PHTheme.surface2)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 18)
+                        RoundedRectangle(cornerRadius: 22)
                             .stroke(PHTheme.divider, lineWidth: 0.5)
                     )
             )

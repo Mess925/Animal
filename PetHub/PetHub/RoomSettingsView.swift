@@ -93,10 +93,10 @@ struct RoomSettingsView: View {
                 }
                 .padding(16)
                 .background(
-                    RoundedRectangle(cornerRadius: 20)
+                    RoundedRectangle(cornerRadius: 28)
                         .fill(selectedAccent.opacity(0.06))
                         .overlay(
-                            RoundedRectangle(cornerRadius: 20)
+                            RoundedRectangle(cornerRadius: 28)
                                 .stroke(selectedAccent.opacity(0.12), lineWidth: 0.5)
                         )
                 )
@@ -474,6 +474,9 @@ struct RoomSettingsView: View {
                 .upsert(payload, onConflict: "user_id,room_id")
                 .execute()
         } catch {
+            #if DEBUG
+            print("RoomSettingsView.swift:476 error:", error)
+            #endif
         }
     }
 
@@ -494,6 +497,9 @@ struct RoomSettingsView: View {
                 }
             }
         } catch {
+            #if DEBUG
+            print("RoomSettingsView.swift:496 error:", error)
+            #endif
         }
     }
 
@@ -546,6 +552,9 @@ struct RoomSettingsView: View {
                 members = fetchedMembers
             }
         } catch {
+            #if DEBUG
+            print("RoomSettingsView.swift:548 error:", error)
+            #endif
         }
     }
 
@@ -574,6 +583,9 @@ struct RoomSettingsView: View {
                 dismiss()
             }
         } catch {
+            #if DEBUG
+            print("RoomSettingsView.swift:576 error:", error)
+            #endif
         }
     }
 
@@ -590,6 +602,9 @@ struct RoomSettingsView: View {
                 dismiss()
             }
         } catch {
+            #if DEBUG
+            print("RoomSettingsView.swift:592 error:", error)
+            #endif
         }
     }
 }
@@ -619,10 +634,10 @@ struct SettingsCard<Content: View>: View {
             content
         }
         .background(
-            RoundedRectangle(cornerRadius: 20)
+            RoundedRectangle(cornerRadius: 28)
                 .fill(PHTheme.surface2)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 20)
+                    RoundedRectangle(cornerRadius: 28)
                         .stroke(PHTheme.divider, lineWidth: 0.5)
                 )
         )

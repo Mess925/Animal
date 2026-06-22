@@ -75,6 +75,9 @@ struct StepUsernameView: View {
                 .execute()
             onNext()
         } catch {
+            #if DEBUG
+            print("SetupUsernameView.swift:77 error:", error)
+            #endif
         }
     }
 }

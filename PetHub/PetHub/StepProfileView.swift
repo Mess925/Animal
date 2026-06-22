@@ -132,6 +132,9 @@ struct StepProfileView: View {
                 .execute()
             onNext()
         } catch {
+            #if DEBUG
+            print("StepProfileView.swift:134 error:", error)
+            #endif
         }
     }
 }

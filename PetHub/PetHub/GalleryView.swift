@@ -191,6 +191,9 @@ struct GalleryView: View {
                 }
             }
         } catch {
+            #if DEBUG
+            print("GalleryView.swift:193 error:", error)
+            #endif
         }
     }
 }
@@ -324,6 +327,9 @@ struct PhotoCell: View {
                 .value
             commentCount = comments.count
         } catch {
+            #if DEBUG
+            print("GalleryView.swift:326 error:", error)
+            #endif
         }
     }
 }
@@ -390,9 +396,9 @@ struct PhotoDetailView: View {
                             .frame(maxWidth: .infinity)
                             .frame(height: 300)
                             .clipped()
-                            .clipShape(RoundedRectangle(cornerRadius: 24))
+                            .clipShape(RoundedRectangle(cornerRadius: 28))
                     } else {
-                        RoundedRectangle(cornerRadius: 24)
+                        RoundedRectangle(cornerRadius: 28)
                             .fill(photo.background)
                             .frame(height: 300)
                         ProgressView().tint(.white)
@@ -526,10 +532,10 @@ struct PhotoDetailView: View {
                     .padding(.horizontal, 14)
                     .frame(height: 40)
                     .background(
-                        RoundedRectangle(cornerRadius: 20)
+                        RoundedRectangle(cornerRadius: 28)
                             .fill(PHTheme.divider)
                             .overlay(
-                                RoundedRectangle(cornerRadius: 20)
+                                RoundedRectangle(cornerRadius: 28)
                                     .stroke(PHTheme.border, lineWidth: 0.5)
                             )
                     )
@@ -631,6 +637,9 @@ struct PhotoDetailView: View {
                 commentsWithNames = result
             }
         } catch {
+            #if DEBUG
+            print("GalleryView.swift:633 error:", error)
+            #endif
         }
     }
 
@@ -670,6 +679,9 @@ struct PhotoDetailView: View {
                 likeCount += 1
             }
         } catch {
+            #if DEBUG
+            print("GalleryView.swift:672 error:", error)
+            #endif
         }
     }
 
@@ -699,6 +711,9 @@ struct PhotoDetailView: View {
 
             await fetchLikesAndComments()
         } catch {
+            #if DEBUG
+            print("GalleryView.swift:701 error:", error)
+            #endif
         }
     }
 

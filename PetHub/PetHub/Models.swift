@@ -171,11 +171,22 @@ struct PetRoom: Identifiable, Hashable {
     var owner: Member? { members.first(where: { $0.isOwner }) }
 }
 
+extension Member {
+    static let me = Member(
+        id: UUID(),
+        name: "Me",
+        initials: "M",
+        accentHex: "AA9DFF",
+        isOnline: true,
+        isOwner: true
+    )
+}
+
 // MARK: - Sample Data (debug / previews only)
 
 #if DEBUG
 extension Member {
-    static let me    = Member(id: UUID(), name: "Me",    initials: "M", accentHex: "AA9DFF", isOnline: true,  isOwner: true)
+//    static let me    = Member(id: UUID(), name: "Me",    initials: "M", accentHex: "AA9DFF", isOnline: true,  isOwner: true)
     static let sarah = Member(id: UUID(), name: "Sarah", initials: "S", accentHex: "7EC8C8", isOnline: true,  isOwner: false)
     static let jake  = Member(id: UUID(), name: "Jake",  initials: "J", accentHex: "F4A84A", isOnline: false, isOwner: false)
     static let priya = Member(id: UUID(), name: "Priya", initials: "P", accentHex: "AA9DFF", isOnline: true,  isOwner: false)

@@ -564,6 +564,9 @@ struct LostAndFoundView: View {
 
             await fetchPosts()
         } catch {
+            #if DEBUG
+            print("LostAndFoundView.swift:566 error:", error)
+            #endif
         }
     }
 
@@ -615,7 +618,10 @@ struct LostAndFoundView: View {
                         ])
                         .execute()
                 } catch {
-                }
+            #if DEBUG
+            print("LostAndFoundView.swift:617 error:", error)
+            #endif
+        }
             }
         }
     }
@@ -727,15 +733,15 @@ struct MatchAlertCard: View {
                 .padding(.horizontal, 10)
                 .padding(.vertical, 5)
                 .background(
-                    Capsule().fill(PHTheme.accent.opacity(0.14))
+                    Capsule().fill(PHTheme.text.opacity(0.07))
                 )
         }
         .padding(15)
         .background(
-            RoundedRectangle(cornerRadius: 20)
+            RoundedRectangle(cornerRadius: 28)
                 .fill(PHTheme.surface2)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 20)
+                    RoundedRectangle(cornerRadius: 28)
                         .stroke(PHTheme.accent.opacity(0.35), lineWidth: 1)
                 )
         )
@@ -876,10 +882,10 @@ struct LostFoundCard: View {
         .padding(14)
         .opacity(isReunited ? 0.82 : 1)
         .background(
-            RoundedRectangle(cornerRadius: 20)
+            RoundedRectangle(cornerRadius: 28)
                 .fill(PHTheme.surface2)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 20)
+                    RoundedRectangle(cornerRadius: 28)
                         .stroke(
                             isOwnPost
                             ? PHTheme.accent.opacity(0.7)
@@ -1154,10 +1160,10 @@ struct AddLostFoundView: View {
                                         .padding(12)
                                 }
                                 .background(
-                                    RoundedRectangle(cornerRadius: 18)
+                                    RoundedRectangle(cornerRadius: 22)
                                         .fill(PHTheme.surface2)
                                         .overlay(
-                                            RoundedRectangle(cornerRadius: 18)
+                                            RoundedRectangle(cornerRadius: 22)
                                                 .stroke(PHTheme.divider, lineWidth: 0.5)
                                         )
                                 )
@@ -1245,6 +1251,9 @@ struct AddLostFoundView: View {
             onComplete()
             dismiss()
         } catch {
+            #if DEBUG
+            print("LostAndFoundView.swift:1247 error:", error)
+            #endif
         }
 
         isLoading = false
@@ -1363,7 +1372,7 @@ struct LostFoundMessagesView: View {
                         }
                     }
                     .background(
-                        RoundedRectangle(cornerRadius: 20)
+                        RoundedRectangle(cornerRadius: 28)
                             .fill(PHTheme.surface2)
                     )
                     .padding(.horizontal, 16)

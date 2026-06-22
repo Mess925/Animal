@@ -20,6 +20,8 @@ struct PetHubApp: App {
     @State private var isStartingApp = true
 
     init() {
+        UNUserNotificationCenter.current().delegate = NotificationManager.shared
+
         #if DEBUG
         Purchases.logLevel = .debug
         #endif
@@ -85,7 +87,10 @@ struct PetHubApp: App {
             do {
                 try await supabase.auth.signOut()
             } catch {
-            }
+            #if DEBUG
+            print("PetHubApp.swift:87 error:", error)
+            #endif
+        }
 
             isLoggedIn = false
             needsUserOnboarding = true

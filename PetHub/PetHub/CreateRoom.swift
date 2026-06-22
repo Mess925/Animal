@@ -88,7 +88,7 @@ struct CreateRoomView: View {
 
                     // Preview Card
                     ZStack {
-                        RoundedRectangle(cornerRadius: 24)
+                        RoundedRectangle(cornerRadius: 28)
                             .fill(selectedColor.opacity(0.12))
                             .frame(height: 220)
 
@@ -256,10 +256,10 @@ struct CreateRoomView: View {
                                     height: 120
                                 ).padding(12)
                             }.background(
-                                RoundedRectangle(cornerRadius: 18).fill(
+                                RoundedRectangle(cornerRadius: 22).fill(
                                     PHTheme.surface2
                                 ).overlay(
-                                    RoundedRectangle(cornerRadius: 18).stroke(
+                                    RoundedRectangle(cornerRadius: 22).stroke(
                                         PHTheme.divider,
                                         lineWidth: 0.5
                                     )
@@ -351,6 +351,9 @@ struct CreateRoomView: View {
             dismiss()
             onComplete?(newRoom.toPetRoom())
         } catch {
+            #if DEBUG
+            print("CreateRoom.swift:353 error:", error)
+            #endif
         }
     }
     

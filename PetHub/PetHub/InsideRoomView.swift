@@ -123,6 +123,9 @@ struct RoomView: View {
                 currentRoom.members = fetchedMembers
             }
         } catch {
+            #if DEBUG
+            print("InsideRoomView.swift:125 error:", error)
+            #endif
         }
     }
 }
@@ -305,16 +308,16 @@ struct LostPetRoomBanner: View {
                 .padding(.vertical, 10)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(PHTheme.accent.opacity(0.14))
+                        .fill(PHTheme.text.opacity(0.07))
                 )
             }
         }
         .padding(14)
         .background(
-            RoundedRectangle(cornerRadius: 20)
+            RoundedRectangle(cornerRadius: 28)
                 .fill(PHTheme.danger.opacity(0.08))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 20)
+                    RoundedRectangle(cornerRadius: 28)
                         .stroke(PHTheme.danger.opacity(0.35), lineWidth: 0.8)
                 )
         )
@@ -334,8 +337,8 @@ struct RoomTabBar: View {
         }
         .padding(5)
         .background(PHTheme.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(PHTheme.border, lineWidth: 0.7))
+        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).stroke(PHTheme.border, lineWidth: 0.7))
         .shadow(color: Color.black.opacity(0.04), radius: 12, y: 6)
     }
 }

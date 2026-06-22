@@ -203,6 +203,9 @@ struct StepCreateRoomView: View {
             onFinish()
 
         } catch {
+            #if DEBUG
+            print("StepCreateRoomView.swift:205 error:", error)
+            #endif
         }
     }
 }

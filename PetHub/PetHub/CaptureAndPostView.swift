@@ -182,6 +182,9 @@ struct CaptureAndPostView: View {
             onPost(image, caption)
             dismiss()
         } catch {
+            #if DEBUG
+            print("CaptureAndPostView.swift:184 error:", error)
+            #endif
         }
         isUploading = false
     }

@@ -207,10 +207,10 @@ struct LostFoundDetailView: View {
         }
         .padding(15)
         .background(
-            RoundedRectangle(cornerRadius: 18)
+            RoundedRectangle(cornerRadius: 22)
                 .fill(PHTheme.surface2)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 18)
+                    RoundedRectangle(cornerRadius: 22)
                         .stroke(PHTheme.success.opacity(0.35), lineWidth: 1)
                 )
         )
@@ -261,10 +261,10 @@ struct LostFoundDetailView: View {
             }
         }
         .background(
-            RoundedRectangle(cornerRadius: 20)
+            RoundedRectangle(cornerRadius: 28)
                 .fill(PHTheme.surface2)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 20)
+                    RoundedRectangle(cornerRadius: 28)
                         .stroke(PHTheme.divider, lineWidth: 0.5)
                 )
         )
@@ -304,7 +304,7 @@ struct LostFoundDetailView: View {
                     .foregroundStyle(PHTheme.accent)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
-                    .background(PHTheme.accent.opacity(0.12), in: Capsule())
+                    .background(PHTheme.text.opacity(0.06), in: Capsule())
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 13)
@@ -330,10 +330,10 @@ struct LostFoundDetailView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(16)
             .background(
-                RoundedRectangle(cornerRadius: 20)
+                RoundedRectangle(cornerRadius: 28)
                     .fill(PHTheme.surface2)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 20)
+                        RoundedRectangle(cornerRadius: 28)
                             .stroke(PHTheme.divider, lineWidth: 0.5)
                     )
             )
@@ -376,10 +376,10 @@ struct LostFoundDetailView: View {
             }
             .padding(16)
             .background(
-                RoundedRectangle(cornerRadius: 20)
+                RoundedRectangle(cornerRadius: 28)
                     .fill(PHTheme.surface2)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 20)
+                        RoundedRectangle(cornerRadius: 28)
                             .stroke(accent.opacity(0.2), lineWidth: 0.5)
                     )
             )
@@ -517,6 +517,9 @@ struct LostFoundDetailView: View {
                 dismiss()
             }
         } catch {
+            #if DEBUG
+            print("LostFoundDetailView.swift:519 error:", error)
+            #endif
         }
     }
 
@@ -533,6 +536,9 @@ struct LostFoundDetailView: View {
                 dismiss()
             }
         } catch {
+            #if DEBUG
+            print("LostFoundDetailView.swift:535 error:", error)
+            #endif
         }
     }
 
@@ -559,6 +565,9 @@ struct LostFoundDetailView: View {
                 }
             }
         } catch {
+            #if DEBUG
+            print("LostFoundDetailView.swift:561 error:", error)
+            #endif
         }
     }
 }

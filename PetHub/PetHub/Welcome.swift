@@ -10,24 +10,29 @@ struct WelcomeView: View {
         NavigationStack {
             PHPage {
                 VStack(spacing: 0) {
-                    Spacer(minLength: 24)
+                    Spacer(minLength: 34)
 
                     hero
-                        .padding(.bottom, 28)
+                        .padding(.bottom, 30)
 
-                    VStack(spacing: 14) {
-                        Text("One home for every pet moment.")
-                            .font(.system(size: 33, weight: .bold, design: .rounded))
+                    VStack(spacing: 12) {
+                        Text("PetHub")
+                            .font(.system(size: 12, weight: .black, design: .rounded))
+                            .tracking(2.4)
+                            .foregroundStyle(PHTheme.subtext)
+
+                        Text("Everything about your pet, in one place")
+                            .font(.system(size: 36, weight: .black, design: .rounded))
                             .foregroundStyle(PHTheme.text)
                             .multilineTextAlignment(.center)
-                            .lineSpacing(2)
+                            .lineSpacing(-1)
 
-                        Text("Rooms, photos, care notes, chat, and lost & found alerts — redesigned to feel clean, warm, and modern.")
+                        Text("Create rooms, save memories, invite family, and help lost pets get home faster.")
                             .font(.system(size: 15, weight: .medium))
                             .foregroundStyle(PHTheme.subtext)
                             .multilineTextAlignment(.center)
                             .lineSpacing(4)
-                            .padding(.horizontal, 10)
+                            .padding(.horizontal, 8)
                     }
 
                     Spacer()
@@ -39,12 +44,11 @@ struct WelcomeView: View {
                                 Image(systemName: "arrow.right")
                             }
                             .font(.system(size: 16, weight: .bold, design: .rounded))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(PHTheme.background)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 58)
-                            .background(PHTheme.accent)
-                            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                            .shadow(color: PHTheme.accent.opacity(0.12), radius: 10, x: 0, y: 5)
+                            .frame(height: 60)
+                            .background(PHTheme.text)
+                            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
                         }
                         .buttonStyle(.plain)
 
@@ -53,14 +57,14 @@ struct WelcomeView: View {
                                 .font(.system(size: 15, weight: .bold, design: .rounded))
                                 .foregroundStyle(PHTheme.text)
                                 .frame(maxWidth: .infinity)
-                                .frame(height: 56)
-                                .background(PHTheme.elevated)
-                                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                                .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(PHTheme.border.opacity(0.95), lineWidth: 1))
+                                .frame(height: 58)
+                                .background(PHTheme.surface)
+                                .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                                .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(PHTheme.border, lineWidth: 1))
                         }
                         .buttonStyle(.plain)
                     }
-                    .padding(.bottom, 28)
+                    .padding(.bottom, 30)
                 }
                 .padding(.horizontal, PHTheme.pagePadding)
             }
@@ -70,43 +74,44 @@ struct WelcomeView: View {
 
     private var hero: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 42, style: .continuous)
-                .fill(PHTheme.surface)
-                .frame(width: 210, height: 210)
-                .rotationEffect(.degrees(-5))
-                .overlay(RoundedRectangle(cornerRadius: 42).stroke(PHTheme.border, lineWidth: 1))
-                .shadow(color: Color.black.opacity(0.045), radius: 16, x: 0, y: 8)
+            Circle()
+                .fill(PHTheme.accent2.opacity(0.13))
+                .frame(width: 220, height: 220)
+                .blur(radius: 2)
 
-            RoundedRectangle(cornerRadius: 38, style: .continuous)
-                .fill(PHTheme.accent.opacity(0.10))
-                .frame(width: 178, height: 178)
-                .overlay(RoundedRectangle(cornerRadius: 38).stroke(PHTheme.accent.opacity(0.18), lineWidth: 1))
+            miniCard("🐶", "Rooms", color: "FFE1CC", rotation: -9, x: -96, y: 8)
+            miniCard("📸", "Photos", color: "DCE7FF", rotation: 8, x: 96, y: -18)
+            miniCard("🏡", "Home", color: "E2F8E8", rotation: -4, x: 0, y: 96)
 
             VStack(spacing: 8) {
                 Text("🐾")
-                    .font(.system(size: 72))
+                    .font(.system(size: 78))
                 Text("PetHub")
                     .font(.system(size: 20, weight: .black, design: .rounded))
                     .foregroundStyle(PHTheme.text)
             }
-
-            floatingEmoji("🐶", x: 106, y: 83, color: PHTheme.accent3)
-            floatingEmoji("🐱", x: -103, y: -82, color: PHTheme.accent2)
-            floatingEmoji("🐦", x: 98, y: -72, color: PHTheme.warning)
-            floatingEmoji("🐰", x: -94, y: 80, color: PHTheme.accent)
+            .frame(width: 178, height: 178)
+            .background(PHTheme.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 42, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 42).stroke(PHTheme.border, lineWidth: 1))
+            .shadow(color: .black.opacity(0.07), radius: 24, x: 0, y: 14)
         }
-        .frame(height: 285)
+        .frame(height: 330)
     }
 
-    private func floatingEmoji(_ emoji: String, x: CGFloat, y: CGFloat, color: Color) -> some View {
-        Text(emoji)
-            .font(.system(size: 28))
-            .frame(width: 56, height: 56)
-            .background(PHTheme.elevated)
-            .clipShape(Circle())
-            .overlay(Circle().stroke(color.opacity(0.22), lineWidth: 1))
-            .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
-            .offset(x: x, y: y)
+    private func miniCard(_ emoji: String, _ label: String, color: String, rotation: Double, x: CGFloat, y: CGFloat) -> some View {
+        VStack(spacing: 7) {
+            Text(emoji).font(.system(size: 27))
+            Text(label)
+                .font(.system(size: 12, weight: .black, design: .rounded))
+                .foregroundStyle(.black)
+        }
+        .frame(width: 86, height: 82)
+        .background(Color(hex: color))
+        .clipShape(RoundedRectangle(cornerRadius: 23, style: .continuous))
+        .rotationEffect(.degrees(rotation))
+        .offset(x: x, y: y)
+        .shadow(color: .black.opacity(0.07), radius: 14, x: 0, y: 8)
     }
 }
 

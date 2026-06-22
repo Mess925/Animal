@@ -178,7 +178,7 @@ struct UpgradeView: View {
         HStack(spacing: 12) {
             ZStack {
                 RoundedRectangle(cornerRadius: 14)
-                    .fill(PHTheme.accent.opacity(0.14))
+                    .fill(PHTheme.text.opacity(0.07))
                     .frame(width: 44, height: 44)
                 Image(systemName: "checkmark.seal.fill")
                     .font(.system(size: 20))
@@ -208,10 +208,10 @@ struct UpgradeView: View {
         }
         .padding(16)
         .background(
-            RoundedRectangle(cornerRadius: 20)
+            RoundedRectangle(cornerRadius: 28)
                 .fill(PHTheme.surface2)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 20)
+                    RoundedRectangle(cornerRadius: 28)
                         .stroke(PHTheme.divider, lineWidth: 0.5)
                 )
         )
