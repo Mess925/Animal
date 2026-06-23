@@ -153,6 +153,18 @@ struct SignInView: View {
 
         do {
             try await supabase.auth.signIn(email: cleanedEmail, password: password)
+
+            let user = try await supabase.auth.session.user
+
+            let profile: UserProfile = try await supabase
+                .from("profiles")
+                .select()
+                .eq("id", value: user.id.uuidString)
+                .single()
+                .execute()
+                .value
+
+            needsUserOnboarding = !(profile.isOnboarded ?? false)
             isLoggedIn = true
         } catch {
             authError = friendlyAuthError(error)

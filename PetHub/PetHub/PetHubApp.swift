@@ -8,7 +8,7 @@ struct PetHubApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
-    @AppStorage("needsUserOnboarding") private var needsUserOnboarding = true
+    @AppStorage("needsUserOnboarding") private var needsUserOnboarding = false
     @AppStorage("isLoggedIn") private var isLoggedIn = false
     @AppStorage("isSigningUpWithApple") private var isSigningUpWithApple = false
     @AppStorage("isResettingPassword") private var isResettingPassword = false
