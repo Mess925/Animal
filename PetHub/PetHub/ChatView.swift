@@ -883,19 +883,11 @@ struct ChatInputBar: View {
             } label: {
                 ZStack {
                     Circle()
-                        .fill(canSend ? accent : PHTheme.border)
+                        .fill(canSend ? accent : PHTheme.divider)
                         .frame(width: 38, height: 38)
-                    Image(systemName: canSend ? "arrow.up" : "mic.fill")
-                        .font(
-                            .system(
-                                size: text.isEmpty ? 15 : 16,
-                                weight: .semibold
-                            )
-                        )
-                        .foregroundStyle(
-                            text.isEmpty
-                                ? PHTheme.subtext : PHTheme.accent
-                        )
+                    Image(systemName: "arrow.up")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(canSend ? PHTheme.textOnAccent : PHTheme.subtext)
                 }
             }
             .buttonStyle(.plain)

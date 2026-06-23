@@ -60,6 +60,10 @@ struct ProfileView: View {
     @EnvironmentObject private var subscriptionManager: SubscriptionManager
     @State private var showUpgradeSheet = false
     @State private var showTermsOfService = false
+    @AppStorage("isLoggedIn") private var isLoggedIn = false
+    @AppStorage("needsUserOnboarding") private var needsUserOnboarding = false
+    @AppStorage("isResettingPassword") private var isResettingPassword = false
+    @AppStorage("isSigningUpWithApple") private var isSigningUpWithApple = false
 
     var body: some View {
         PHPage {
@@ -255,7 +259,18 @@ struct ProfileView: View {
         .alert("Log Out?", isPresented: $showLogoutAlert) {
             Button("Log Out", role: .destructive) {
                 Task {
-                    try? await supabase.auth.signOut()
+                    do {
+                        try await supabase.auth.signOut()
+                    } catch {
+                        #if DEBUG
+                        print("Sign out error:", error)
+                        #endif
+                    }
+
+                    isResettingPassword = false
+                    isSigningUpWithApple = false
+                    needsUserOnboarding = false
+                    isLoggedIn = false
                 }
             }
             Button("Cancel", role: .cancel) {}

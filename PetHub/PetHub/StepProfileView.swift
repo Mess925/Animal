@@ -29,7 +29,7 @@ struct StepProfileView: View {
 
                 Group {
                     Text("Your ")
-                        + Text("profile. 🧑")
+                        + Text("profile. \(avatarEmoji.isEmpty ? "🧑" : avatarEmoji)")
                         .font(.custom("Georgia-Italic", size: 28))
                         .foregroundColor(PHTheme.accent)
                 }

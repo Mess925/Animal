@@ -15,8 +15,11 @@ struct UpgradeView: View {
     @State private var isYearly = false
     @State private var currentOffering: Offering?
     @State private var isLoading = true
-    @State private var isPurchasing = false
+    @State private var purchasingTier: SubscriptionTier? = nil
+    @State private var isRestoring = false
     @State private var errorMessage: String?
+
+    private var isPurchasing: Bool { purchasingTier != nil }
 
     private var currentPlanName: String {
         switch subscriptionManager.tier {
@@ -143,7 +146,7 @@ struct UpgradeView: View {
             }
             .font(.system(size: 13, weight: .medium))
             .foregroundStyle(PHTheme.accent)
-            .disabled(isPurchasing)
+            .disabled(isPurchasing || isRestoring)
         }
     }
 
@@ -151,11 +154,12 @@ struct UpgradeView: View {
         VStack(spacing: 14) {
             ZStack {
                 RoundedRectangle(cornerRadius: 22)
-                    .fill(PHTheme.accent)
+                    .fill(.black)
                     .frame(width: 72, height: 72)
+
                 Image(systemName: "pawprint.fill")
-                    .font(.system(size: 32))
-                    .foregroundStyle(PHTheme.accent)
+                    .font(.system(size: 34, weight: .bold))
+                    .foregroundStyle(.white)
             }
 
             VStack(spacing: 6) {
@@ -291,6 +295,7 @@ struct UpgradeView: View {
         let isIncludedInCurrentPlan = tier == .semiPro && subscriptionManager.tier == .pro
         let isProCard = tier == .pro
         let price = isYearly ? yearlyPrice : monthlyPrice
+        let isThisTierPurchasing = purchasingTier == tier
 
         return VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .top) {
@@ -341,7 +346,7 @@ struct UpgradeView: View {
                 Task {
                     let id = isYearly ? packageYearlyId : packageMonthlyId
                     if let package = findPackage(id) {
-                        await purchase(package)
+                        await purchase(package, tier: tier)
                     } else {
                         errorMessage = "Plan is not available. Missing package/product id: \(id)"
                     }
@@ -349,7 +354,7 @@ struct UpgradeView: View {
             } label: {
                 HStack {
                     Spacer()
-                    if isPurchasing && !isCurrent {
+                    if isThisTierPurchasing {
                         ProgressView()
                             .tint(isProCard ? PHTheme.text : .white)
                     } else {
@@ -358,7 +363,7 @@ struct UpgradeView: View {
                     }
                     Spacer()
                 }
-                .foregroundStyle(isCurrent || isIncludedInCurrentPlan ? PHTheme.subtext : (isProCard ? PHTheme.text : .white))
+                .foregroundStyle(isCurrent || isIncludedInCurrentPlan ? PHTheme.subtext : .white)
                 .padding(.vertical, 14)
                 .background(
                     RoundedRectangle(cornerRadius: 16)
@@ -366,7 +371,7 @@ struct UpgradeView: View {
                 )
             }
             .buttonStyle(.plain)
-            .disabled(isCurrent || isIncludedInCurrentPlan || isPurchasing)
+            .disabled(isCurrent || isIncludedInCurrentPlan || isPurchasing || isRestoring)
         }
         .padding(20)
         .background(
@@ -429,6 +434,7 @@ struct UpgradeView: View {
     }
 
     // MARK: - RevenueCat
+
     private func loadOfferings() async {
         do {
             let offerings = try await Purchases.shared.offerings()
@@ -449,9 +455,9 @@ struct UpgradeView: View {
         }
     }
 
-    private func purchase(_ package: Package) async {
+    private func purchase(_ package: Package, tier: SubscriptionTier) async {
         await MainActor.run {
-            isPurchasing = true
+            purchasingTier = tier
             errorMessage = nil
         }
 
@@ -464,12 +470,12 @@ struct UpgradeView: View {
             }
         }
 
-        await MainActor.run { isPurchasing = false }
+        await MainActor.run { purchasingTier = nil }
     }
 
     private func restore() async {
         await MainActor.run {
-            isPurchasing = true
+            isRestoring = true
             errorMessage = nil
         }
 
@@ -482,7 +488,7 @@ struct UpgradeView: View {
             }
         }
 
-        await MainActor.run { isPurchasing = false }
+        await MainActor.run { isRestoring = false }
     }
 }
 

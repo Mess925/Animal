@@ -13,7 +13,7 @@ struct UserOnboardingView: View {
     @State private var step = 1
     @State private var username = ""
     @State private var bio = ""
-    @State private var avatarEmoji = "🧑"
+    @State private var avatarEmoji = ""
 
     var body: some View {
         ZStack {
