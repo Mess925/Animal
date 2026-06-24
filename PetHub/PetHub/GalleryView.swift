@@ -247,8 +247,6 @@ struct PhotoCell: View {
     @State private var likeCount = 0
     @State private var commentCount = 0
 
-    var isWide: Bool { index % 5 == 0 }
-
     var body: some View {
         GeometryReader { geo in
             ZStack(alignment: .bottomLeading) {
@@ -290,8 +288,7 @@ struct PhotoCell: View {
                 .padding(.bottom, 7)
             }
         }
-        .aspectRatio(isWide ? 2 : 1, contentMode: .fit)
-        .gridCellColumns(isWide ? 2 : 1)
+        .aspectRatio(1, contentMode: .fit)
         .clipped()
         .task {
             await loadImage()
