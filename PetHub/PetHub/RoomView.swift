@@ -1502,17 +1502,14 @@ struct RoomsSearchSheet: View {
 }
 
 // MARK: - Rooms Segmented Control
-
 struct RoomsSegmentedControl: View {
     @Binding var selectedSegment: RoomsSegment
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 2) {
             ForEach(RoomsSegment.allCases, id: \.self) { segment in
                 Button {
-                    withAnimation(
-                        .spring(response: 0.28, dampingFraction: 0.82)
-                    ) {
+                    withAnimation(.easeInOut(duration: 0.18)) {
                         selectedSegment = segment
                     }
                 } label: {
@@ -1520,34 +1517,30 @@ struct RoomsSegmentedControl: View {
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(
                             selectedSegment == segment
-                                ? .white : PHTheme.subtext
+                            ? Color.white
+                            : Color.primary
                         )
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 11)
-                        .background(
-                            RoundedRectangle(cornerRadius: 15)
-                                .fill(
-                                    selectedSegment == segment
-                                        ? PHTheme.coolGradient
-                                        : LinearGradient(
-                                            colors: [.clear],
-                                            startPoint: .top,
-                                            endPoint: .bottom
-                                        )
-                                )
-                        )
+                        .frame(height: 34)
+                        .background {
+                            if selectedSegment == segment {
+                                RoundedRectangle(cornerRadius: 9)
+                                    .fill(Color.black)
+                                    .shadow(
+                                        color: .black.opacity(0.08),
+                                        radius: 3,
+                                        y: 1
+                                    )
+                            }
+                        }
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(4)
+        .padding(3)
         .background(
-            RoundedRectangle(cornerRadius: 17)
-                .fill(PHTheme.surface.opacity(0.92))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 17)
-                        .stroke(PHTheme.border, lineWidth: 0.5)
-                )
+            RoundedRectangle(cornerRadius: 11)
+                .fill(Color(.systemGray5))
         )
     }
 }

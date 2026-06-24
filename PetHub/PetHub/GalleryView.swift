@@ -355,34 +355,9 @@ struct PhotoDetailView: View {
         ZStack {
             PHTheme.background.ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                // Top bar
-                HStack {
-                    Button {
-                        dismiss()
-                    } label: {
-                        ZStack {
-                            Circle()
-                                .fill(PHTheme.divider)
-                                .frame(width: 36, height: 36)
-                            Image(systemName: "xmark")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(
-                                    PHTheme.textOnAccent.opacity(0.8)
-                                )
-                        }
-                    }
-                    Spacer()
-                    Button {
-                    } label: {
-                        Image(systemName: "square.and.arrow.up")
-                            .font(.system(size: 17))
-                            .foregroundStyle(PHTheme.subtext)
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-                .padding(.bottom, 16)
+            VStack(spacing: 10)
+            {
+                Spacer()
 
                 // Photo
                 ZStack {
@@ -756,9 +731,8 @@ struct CommentRow: View {
     }
 }
 
-// MARK: - Preview
-
+//
+//
 //#Preview {
-//    GalleryView(room: .mochi)
-//        .background(PHTheme.background)
+//    PhotoDetailView(photo: <#Binding<PhotoPost>#>, room: <#PetRoom#>)
 //}

@@ -363,7 +363,7 @@ struct RoomTabItem: View {
                 Text(label)
                     .font(.system(size: 12, weight: .bold))
             }
-            .foregroundStyle(isActive ? .white : PHTheme.subtext)
+            .foregroundStyle(isActive ? PHTheme.background : PHTheme.subtext)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
             .background(

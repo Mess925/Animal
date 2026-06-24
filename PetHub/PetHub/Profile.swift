@@ -701,13 +701,11 @@ struct EditProfileView: View {
                     } label: {
                         ZStack {
                             Circle()
-                                .fill(PHTheme.divider)
+                                .fill(PHTheme.surface2)
                                 .frame(width: 36, height: 36)
                             Image(systemName: "xmark")
                                 .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(
-                                    PHTheme.textOnAccent.opacity(0.8)
-                                )
+                                .foregroundStyle(PHTheme.text)
                         }
                     }
                     Spacer()
@@ -716,7 +714,7 @@ struct EditProfileView: View {
                     } label: {
                         Text("Save")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(PHTheme.accent)
+                            .foregroundStyle(PHTheme.background)
                             .padding(.horizontal, 20)
                             .padding(.vertical, 9)
                             .background(Capsule().fill(PHTheme.accent))
@@ -749,7 +747,7 @@ struct EditProfileView: View {
                                 .frame(width: 26, height: 26)
                             Image(systemName: "camera.fill")
                                 .font(.system(size: 11))
-                                .foregroundStyle(PHTheme.accent)
+                                .foregroundStyle(PHTheme.background)
                         }
                         .offset(x: 26, y: 26)
                     }
@@ -862,11 +860,11 @@ struct ChangePasswordView: View {
                     } label: {
                         ZStack {
                             Circle()
-                                .fill(PHTheme.divider)
+                                .fill(PHTheme.surface2)
                                 .frame(width: 36, height: 36)
                             Image(systemName: "xmark")
                                 .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(Color.white.opacity(0.7))
+                                .foregroundStyle(PHTheme.text)
                         }
                     }
                     Spacer()
@@ -877,8 +875,8 @@ struct ChangePasswordView: View {
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(
                                 canSave
-                                    ? Color.black.opacity(0.8)
-                                    : Color.white.opacity(0.2)
+                                    ? PHTheme.background
+                                    : PHTheme.subtext
                             )
                             .padding(.horizontal, 20)
                             .padding(.vertical, 9)
@@ -887,7 +885,7 @@ struct ChangePasswordView: View {
                                     .fill(
                                         canSave
                                             ? PHTheme.accent
-                                            : Color.white.opacity(0.06)
+                                            : PHTheme.surface2
                                     )
                             )
                     }
@@ -991,13 +989,11 @@ struct DeleteAccountView: View {
                     } label: {
                         ZStack {
                             Circle()
-                                .fill(PHTheme.divider)
+                                .fill(PHTheme.surface2)
                                 .frame(width: 36, height: 36)
                             Image(systemName: "xmark")
                                 .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(
-                                    PHTheme.textOnAccent.opacity(0.8)
-                                )
+                                .foregroundStyle(PHTheme.text)
                         }
                     }
                     .disabled(isDeleting)
@@ -1069,13 +1065,17 @@ struct DeleteAccountView: View {
                         }
                         Spacer()
                     }
-                    .foregroundStyle(PHTheme.accent)
+                    .foregroundStyle(
+                        canDelete
+                            ? Color.white
+                            : PHTheme.subtext
+                    )
                     .padding(.vertical, 15)
                     .background(
                         RoundedRectangle(cornerRadius: 22)
                             .fill(
                                 canDelete
-                                    ? PHTheme.danger : PHTheme.divider
+                                    ? PHTheme.danger : PHTheme.surface2
                             )
                     )
                 }
