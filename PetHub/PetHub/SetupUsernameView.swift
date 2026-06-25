@@ -41,7 +41,6 @@ struct StepUsernameView: View {
             }
             .padding(.bottom, 32)
 
-            // Input
             AuthField(
                 label: "Username",
                 placeholder: "@yourname",
@@ -49,6 +48,11 @@ struct StepUsernameView: View {
                 isFocused: $isFocused,
                 isSecure: false
             )
+            .onChange(of: username) { _, newValue in
+                if !newValue.isEmpty && !newValue.hasPrefix("@") {
+                    username = "@\(newValue)"
+                }
+            }
             .padding(.bottom, 32)
 
             // Next button

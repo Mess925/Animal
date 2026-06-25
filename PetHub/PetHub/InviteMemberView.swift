@@ -80,6 +80,11 @@ struct InviteMemberView: View {
                                         .stroke(PHTheme.border, lineWidth: 0.5)
                                 )
                         )
+                        .onChange(of: username) { _, newValue in
+                            if !newValue.isEmpty && !newValue.hasPrefix("@") {
+                                username = "@\(newValue)"
+                            }
+                        }
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 24)
@@ -136,7 +141,7 @@ struct InviteMemberView: View {
         successMessage = ""
 
         do {
-            let searchUsername = username.hasPrefix("@") ? username : "@\(username)"
+            let searchUsername = username
             
             let users: [UserProfile] = try await supabase
                 .from("profiles")

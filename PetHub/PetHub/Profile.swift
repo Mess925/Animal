@@ -838,6 +838,11 @@ struct EditProfileView: View {
                         placeholder: "@username",
                         text: $username
                     )
+                    .onChange(of: username) { _, newValue in
+                        if !newValue.isEmpty && !newValue.hasPrefix("@") {
+                            username = "@\(newValue)"
+                        }
+                    }
 
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Bio")
