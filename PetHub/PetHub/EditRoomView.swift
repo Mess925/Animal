@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 import Supabase
+import PhotosUI
 
 struct EditRoomView: View {
     let room: PetRoom
@@ -21,6 +22,16 @@ struct EditRoomView: View {
     @State private var selectedAccent: String
     @State private var isLoading = false
 
+    @State private var roomImageUrl: String?
+    @State private var pickedImage: UIImage?
+    @State private var cameraImage: UIImage?
+    @State private var selectedPhoto: PhotosPickerItem?
+    @State private var showImageSourceDialog = false
+    @State private var showCamera = false
+    @State private var isUploadingImage = false
+    @State private var imageErrorMessage: String?
+    @State private var showPhotosPicker = false
+
     let icons = ["pawprint.fill", "bird.fill", "fish.fill", "ant.fill", "hare.fill", "tortoise.fill", "dog.fill", "cat.fill"]
     let accents = ["AA9DFF", "7EC8C8", "F4A84A", "E25718", "6EE7B7", "F472B6", "FF6B6B", "06D6A0"]
 
@@ -31,6 +42,7 @@ struct EditRoomView: View {
         _age = State(initialValue: room.age)
         _selectedIcon = State(initialValue: room.icon)
         _selectedAccent = State(initialValue: room.accentHex)
+        _roomImageUrl = State(initialValue: room.imageUrl)
     }
 
     var body: some View {
@@ -89,6 +101,100 @@ struct EditRoomView: View {
                             .foregroundStyle(PHTheme.text)
                         }
                         .padding(.horizontal, 24)
+
+                        // Room photo picker
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("ROOM PHOTO")
+                                .font(.system(size: 10, weight: .medium))
+                                .tracking(1.2)
+                                .foregroundStyle(PHTheme.subtext)
+                                .padding(.horizontal, 24)
+
+                            Button {
+                                showImageSourceDialog = true
+                            } label: {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 22)
+                                        .fill(Color(hex: selectedAccent).opacity(0.1))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 22)
+                                                .stroke(Color(hex: selectedAccent).opacity(0.2), lineWidth: 0.5)
+                                        )
+                                        .frame(height: 140)
+
+                                    if let pickedImage {
+                                        Image(uiImage: pickedImage)
+                                            .resizable()
+                                            .scaledToFill()
+                                            .frame(maxWidth: .infinity)
+                                            .frame(height: 140)
+                                            .clipShape(RoundedRectangle(cornerRadius: 22))
+                                    } else if let roomImageUrl, let url = URL(string: roomImageUrl) {
+                                        AsyncImage(url: url) { image in
+                                            image
+                                                .resizable()
+                                                .scaledToFill()
+                                        } placeholder: {
+                                            ProgressView().tint(Color(hex: selectedAccent))
+                                        }
+                                        .frame(maxWidth: .infinity)
+                                        .frame(height: 140)
+                                        .clipShape(RoundedRectangle(cornerRadius: 22))
+                                    } else {
+                                        VStack(spacing: 8) {
+                                            if isUploadingImage {
+                                                ProgressView().tint(Color(hex: selectedAccent))
+                                            } else {
+                                                Image(systemName: "camera.fill")
+                                                    .font(.system(size: 22))
+                                                    .foregroundStyle(Color(hex: selectedAccent))
+                                                Text("Add a photo of \(petName.isEmpty ? "your pet" : petName)")
+                                                    .font(.system(size: 13))
+                                                    .foregroundStyle(PHTheme.subtext)
+                                            }
+                                        }
+                                    }
+
+                                    // Upload overlay
+                                    if isUploadingImage {
+                                        RoundedRectangle(cornerRadius: 22)
+                                            .fill(Color.black.opacity(0.35))
+                                            .frame(height: 140)
+                                        ProgressView().tint(.white)
+                                    }
+
+                                    // Edit badge
+                                    if pickedImage != nil || roomImageUrl != nil {
+                                        VStack {
+                                            Spacer()
+                                            HStack {
+                                                Spacer()
+                                                ZStack {
+                                                    Circle()
+                                                        .fill(Color(hex: selectedAccent))
+                                                        .frame(width: 30, height: 30)
+                                                    Image(systemName: "camera.fill")
+                                                        .font(.system(size: 12))
+                                                        .foregroundStyle(.white)
+                                                }
+                                                .padding(10)
+                                            }
+                                        }
+                                        .frame(height: 140)
+                                    }
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(isUploadingImage)
+                            .padding(.horizontal, 24)
+
+                            if let imageErrorMessage {
+                                Text(imageErrorMessage)
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(PHTheme.danger)
+                                    .padding(.horizontal, 24)
+                            }
+                        }
 
                         // Fields
                         VStack(spacing: 12) {
@@ -158,9 +264,98 @@ struct EditRoomView: View {
                 }
             }
         }
+        .confirmationDialog("Room photo", isPresented: $showImageSourceDialog) {
+            Button("Take Photo") {
+                if UIImagePickerController.isSourceTypeAvailable(.camera) {
+                    showCamera = true
+                } else {
+                    imageErrorMessage = "Camera is not available on this device."
+                }
+            }
+            Button("Choose from Library") {
+                showPhotosPicker = true
+            }
+            Button("Cancel", role: .cancel) {}
+        }
+        .photosPicker(isPresented: $showPhotosPicker, selection: $selectedPhoto, matching: .images)
+        .onChange(of: selectedPhoto) { _, newItem in
+            Task {
+                guard let newItem else { return }
+                do {
+                    guard let data = try await newItem.loadTransferable(type: Data.self),
+                          let image = UIImage(data: data)
+                    else {
+                        imageErrorMessage = "Could not read that photo."
+                        return
+                    }
+                    pickedImage = image
+                    await uploadRoomImage(image)
+                } catch {
+                    imageErrorMessage = "Photo picker error: \(error.localizedDescription)"
+                }
+            }
+        }
+        .sheet(isPresented: $showCamera) {
+            CameraPicker(image: $cameraImage)
+                .ignoresSafeArea()
+        }
+        .onChange(of: cameraImage) { _, image in
+            guard let image else { return }
+            pickedImage = image
+            Task { await uploadRoomImage(image) }
+        }
         .onChange(of: age) { _, newValue in
             let filtered = newValue.filter { $0.isNumber }
             if filtered != newValue { age = filtered }
+        }
+    }
+
+    private func uploadRoomImage(_ image: UIImage) async {
+        guard !isUploadingImage else { return }
+        isUploadingImage = true
+        imageErrorMessage = nil
+        defer { isUploadingImage = false }
+
+        do {
+            guard let data = image.jpegData(compressionQuality: 0.75) else {
+                imageErrorMessage = "Could not prepare that image."
+                return
+            }
+
+            let fileName = "room_\(room.id.uuidString).jpg"
+
+            try await supabase.storage
+                .from("photos")
+                .upload(
+                    path: fileName,
+                    file: data,
+                    options: FileOptions(contentType: "image/jpeg", upsert: true)
+                )
+
+            let publicURL = try supabase.storage
+                .from("photos")
+                .getPublicURL(path: fileName)
+
+            let urlString = publicURL.absoluteString
+
+            try await supabase
+                .from("rooms")
+                .update(["image_url": urlString])
+                .eq("id", value: room.id.uuidString)
+                .execute()
+
+            roomImageUrl = urlString
+
+            await MainActor.run {
+                if let idx = store.rooms.firstIndex(where: { $0.id == room.id }) {
+                    store.rooms[idx].imageUrl = urlString
+                }
+            }
+        } catch {
+            imageErrorMessage = "Upload error: \(error.localizedDescription)"
+            #if DEBUG
+            print("EditRoomView uploadRoomImage error:", error)
+            #endif
         }
     }
 

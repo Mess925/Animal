@@ -131,13 +131,13 @@ struct RoomView: View {
 }
 
 
-
 struct RoomHeroHeader: View {
     let room: PetRoom
     let onBack: () -> Void
 
     var body: some View {
         VStack(spacing: 14) {
+            // Nav bar
             HStack(spacing: 12) {
                 Button(action: onBack) {
                     Image(systemName: "chevron.left")
@@ -151,12 +151,28 @@ struct RoomHeroHeader: View {
                 .buttonStyle(.plain)
 
                 HStack(spacing: 10) {
-                    Image(systemName: room.icon)
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundStyle(room.accent)
-                        .frame(width: 40, height: 40)
-                        .background(room.accent.opacity(0.13))
-                        .clipShape(Circle())
+                    // Small icon with image support
+                    ZStack {
+                        Circle()
+                            .fill(room.accent.opacity(0.13))
+                            .frame(width: 40, height: 40)
+
+                        if let imageUrl = room.imageUrl, let url = URL(string: imageUrl) {
+                            AsyncImage(url: url) { image in
+                                image.resizable().scaledToFill()
+                            } placeholder: {
+                                Image(systemName: room.icon)
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundStyle(room.accent)
+                            }
+                            .frame(width: 40, height: 40)
+                            .clipShape(Circle())
+                        } else {
+                            Image(systemName: room.icon)
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundStyle(room.accent)
+                        }
+                    }
 
                     VStack(alignment: .leading, spacing: 1) {
                         Text("\(room.name)'s Room")
@@ -172,6 +188,7 @@ struct RoomHeroHeader: View {
                 Spacer()
             }
 
+            // Hero card
             ZStack(alignment: .bottomLeading) {
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
                     .fill(PHTheme.surface)
@@ -184,45 +201,69 @@ struct RoomHeroHeader: View {
                         .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
                     )
                     .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).stroke(PHTheme.border, lineWidth: 0.8))
-                    .shadow(color: Color.black.opacity(0.06), radius: 18, y: 10)
 
-                Image(systemName: room.icon)
-                    .font(.system(size: 86, weight: .bold))
-                    .foregroundStyle(room.accent.opacity(0.14))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
-                    .padding(.trailing, 22)
+                // Background: image or icon
+                if let imageUrl = room.imageUrl, let url = URL(string: imageUrl) {
+                    AsyncImage(url: url) { image in
+                        image.resizable().scaledToFill()
+                    } placeholder: {
+                        Image(systemName: room.icon)
+                            .font(.system(size: 86, weight: .bold))
+                            .foregroundStyle(room.accent.opacity(0.14))
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+                            .padding(.trailing, 22)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 164)
+                    .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                    .overlay(
+                        LinearGradient(
+                            colors: [.black.opacity(0.6), .black.opacity(0.1)],
+                            startPoint: .bottom,
+                            endPoint: .top
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                    )
+                } else {
+                    Image(systemName: room.icon)
+                        .font(.system(size: 86, weight: .bold))
+                        .foregroundStyle(room.accent.opacity(0.14))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+                        .padding(.trailing, 22)
+                }
 
+                // Info overlay (always on top)
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(spacing: 8) {
                         Text(room.breed)
                             .font(.system(size: 12, weight: .bold))
-                            .foregroundStyle(room.accent)
+                            .foregroundStyle(room.imageUrl != nil ? .white : room.accent)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 7)
-                            .background(room.accent.opacity(0.13))
+                            .background((room.imageUrl != nil ? Color.white.opacity(0.2) : room.accent.opacity(0.13)))
                             .clipShape(Capsule())
 
                         if !room.age.isEmpty {
                             Text(room.age)
                                 .font(.system(size: 12, weight: .bold))
-                                .foregroundStyle(PHTheme.subtext)
+                                .foregroundStyle(room.imageUrl != nil ? .white.opacity(0.85) : PHTheme.subtext)
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 7)
-                                .background(PHTheme.surface2)
+                                .background(room.imageUrl != nil ? Color.white.opacity(0.15) : PHTheme.surface2)
                                 .clipShape(Capsule())
                         }
                     }
 
                     Text(room.name)
                         .font(.system(size: 38, weight: .black, design: .rounded))
-                        .foregroundStyle(PHTheme.text)
+                        .foregroundStyle(room.imageUrl != nil ? .white : PHTheme.text)
                         .lineLimit(1)
 
                     HStack(spacing: 10) {
                         MemberAvatarStack(members: room.members)
                         Text("Room is active")
                             .font(.system(size: 12, weight: .bold))
-                            .foregroundStyle(PHTheme.subtext)
+                            .foregroundStyle(room.imageUrl != nil ? .white.opacity(0.8) : PHTheme.subtext)
                         Circle()
                             .fill(PHTheme.success)
                             .frame(width: 7, height: 7)
@@ -411,7 +452,6 @@ struct MemberAvatarStack: View {
 }
 
 // MARK: - Member Avatar (reusable)
-
 struct MemberAvatar: View {
     let member: Member
     var size: CGFloat = 36
@@ -421,9 +461,22 @@ struct MemberAvatar: View {
             Circle()
                 .fill(member.accent.opacity(0.18))
                 .frame(width: size, height: size)
-            Text(member.initials)
-                .font(.system(size: size * 0.33, weight: .semibold))
-                .foregroundStyle(member.accent)
+
+            if let avatarUrl = member.avatarUrl, let url = URL(string: avatarUrl) {
+                AsyncImage(url: url) { image in
+                    image.resizable().scaledToFill()
+                } placeholder: {
+                    Text(member.initials)
+                        .font(.system(size: size * 0.33, weight: .semibold))
+                        .foregroundStyle(member.accent)
+                }
+                .frame(width: size, height: size)
+                .clipShape(Circle())
+            } else {
+                Text(member.initials)
+                    .font(.system(size: size * 0.33, weight: .semibold))
+                    .foregroundStyle(member.accent)
+            }
         }
     }
 }

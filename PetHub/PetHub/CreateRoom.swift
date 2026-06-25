@@ -346,7 +346,8 @@ struct CreateRoomView: View {
                 breed: breed,
                 age: age,
                 icon: selectedPetIcon,
-                accentHex: roomColors.first(where: { $0.0 == selectedColor })?.1 ?? "AA9DFF"
+                accentHex: roomColors.first(where: { $0.0 == selectedColor })?.1 ?? "AA9DFF",
+                imageUrl: nil
             )
             dismiss()
             onComplete?(newRoom.toPetRoom())

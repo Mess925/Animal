@@ -8,6 +8,8 @@ import Foundation
 //
 import Supabase
 import SwiftUI
+import PhotosUI
+import UIKit
 
 // MARK: - User Profile Model
 
@@ -18,6 +20,7 @@ struct UserProfile: Codable {
     var bio: String
     var avatarEmoji: String
     var avatarAccentHex: String?
+    var avatarUrl: String?
     var isOnboarded: Bool?
     var subscriptionTier: String?
 
@@ -30,6 +33,7 @@ struct UserProfile: Codable {
         case bio
         case avatarEmoji = "avatar_emoji"
         case avatarAccentHex = "avatar_accent_hex"
+        case avatarUrl = "avatar_url"
         case isOnboarded = "is_onboarded"
         case subscriptionTier = "subscription_tier"
     }
@@ -42,6 +46,7 @@ extension UserProfile {
         bio: "",
         avatarEmoji: "🧑",
         avatarAccentHex: "AA9DFF",
+        avatarUrl: nil,
         isOnboarded: false
     )
 }
@@ -296,8 +301,21 @@ struct ProfileView: View {
                         .fill(profile.accent.opacity(0.2))
                         .frame(width: 80, height: 80)
 
-                    Text(profile.avatarEmoji)
-                        .font(.system(size: 38))
+                    if let avatarUrl = profile.avatarUrl, let url = URL(string: avatarUrl) {
+                        AsyncImage(url: url) { image in
+                            image
+                                .resizable()
+                                .scaledToFill()
+                        } placeholder: {
+                            Text(profile.avatarEmoji)
+                                .font(.system(size: 38))
+                        }
+                        .frame(width: 80, height: 80)
+                        .clipShape(Circle())
+                    } else {
+                        Text(profile.avatarEmoji)
+                            .font(.system(size: 38))
+                    }
                 }
                 .offset(y: 40)
             }
@@ -672,7 +690,6 @@ struct ProfileActionRow: View {
 }
 
 // MARK: - Edit Profile Sheet
-
 struct EditProfileView: View {
     @Binding var profile: UserProfile
     @Environment(\.dismiss) private var dismiss
@@ -680,12 +697,22 @@ struct EditProfileView: View {
     @State private var name: String
     @State private var username: String
     @State private var bio: String
+    @State private var avatarUrl: String?
+    @State private var selectedPhoto: PhotosPickerItem?
+    @State private var showImageSourceDialog = false
+    @State private var showCamera = false
+    @State private var pickedImage: UIImage?
+    @State private var cameraImage: UIImage?
+    @State private var isUploadingAvatar = false
+    @State private var avatarErrorMessage: String?
+    @State private var showPhotosPicker = false
 
     init(profile: Binding<UserProfile>) {
         _profile = profile
         _name = State(initialValue: profile.wrappedValue.name)
         _username = State(initialValue: profile.wrappedValue.username)
         _bio = State(initialValue: profile.wrappedValue.bio)
+        _avatarUrl = State(initialValue: profile.wrappedValue.avatarUrl)
     }
 
     var body: some View {
@@ -731,29 +758,74 @@ struct EditProfileView: View {
                     .padding(.horizontal, 20)
                     .padding(.bottom, 28)
 
-                // Avatar picker (emoji for now)
+                // Avatar picker
                 HStack {
                     Spacer()
-                    ZStack {
-                        Circle()
-                            .fill(PHTheme.accent.opacity(0.15))
-                            .frame(width: 80, height: 80)
-                        Text(profile.avatarEmoji)
-                            .font(.system(size: 36))
-                        // Camera badge
+
+                    Button {
+                        showImageSourceDialog = true
+                    } label: {
                         ZStack {
                             Circle()
-                                .fill(PHTheme.accent)
-                                .frame(width: 26, height: 26)
-                            Image(systemName: "camera.fill")
-                                .font(.system(size: 11))
-                                .foregroundStyle(PHTheme.background)
+                                .fill(PHTheme.accent.opacity(0.15))
+                                .frame(width: 92, height: 92)
+
+                            if let pickedImage {
+                                Image(uiImage: pickedImage)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 84, height: 84)
+                                    .clipShape(Circle())
+                            } else if let avatarUrl, let url = URL(string: avatarUrl) {
+                                AsyncImage(url: url) { image in
+                                    image
+                                        .resizable()
+                                        .scaledToFill()
+                                } placeholder: {
+                                    ProgressView()
+                                        .tint(PHTheme.accent)
+                                }
+                                .frame(width: 84, height: 84)
+                                .clipShape(Circle())
+                            } else {
+                                Text(profile.avatarEmoji)
+                                    .font(.system(size: 36))
+                            }
+
+                            ZStack {
+                                Circle()
+                                    .fill(PHTheme.accent)
+                                    .frame(width: 28, height: 28)
+
+                                if isUploadingAvatar {
+                                    ProgressView()
+                                        .scaleEffect(0.65)
+                                        .tint(PHTheme.background)
+                                } else {
+                                    Image(systemName: "camera.fill")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(PHTheme.background)
+                                }
+                            }
+                            .offset(x: 30, y: 30)
                         }
-                        .offset(x: 26, y: 26)
                     }
+                    .buttonStyle(.plain)
+                    .disabled(isUploadingAvatar)
+
                     Spacer()
                 }
-                .padding(.bottom, 32)
+                .padding(.bottom, avatarErrorMessage == nil ? 32 : 10)
+
+                if let avatarErrorMessage {
+                    Text(avatarErrorMessage)
+                        .font(.system(size: 12))
+                        .foregroundStyle(PHTheme.danger)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 22)
+                }
 
                 VStack(spacing: 16) {
                     ProfileInputField(
@@ -804,6 +876,98 @@ struct EditProfileView: View {
                 Spacer()
             }
         }
+        .confirmationDialog("Update profile photo", isPresented: $showImageSourceDialog) {
+            Button("Take Photo") {
+                if UIImagePickerController.isSourceTypeAvailable(.camera) {
+                    showCamera = true
+                } else {
+                    avatarErrorMessage = "Camera is not available on this device."
+                }
+            }
+            Button("Choose from Library") {
+                showPhotosPicker = true
+            }
+            Button("Cancel", role: .cancel) {}
+        }
+        .photosPicker(isPresented: $showPhotosPicker, selection: $selectedPhoto, matching: .images)
+        .onChange(of: selectedPhoto) { _, newItem in
+            Task {
+                guard let newItem else { return }
+                do {
+                    guard let data = try await newItem.loadTransferable(type: Data.self),
+                          let image = UIImage(data: data)
+                    else {
+                        avatarErrorMessage = "Could not read that photo."
+                        return
+                    }
+                    pickedImage = image
+                    await uploadAvatar(image)
+                } catch {
+                    avatarErrorMessage = "Photo picker error: \(error.localizedDescription)"
+                }
+            }
+        }
+        .sheet(isPresented: $showCamera) {
+            CameraPicker(image: $cameraImage)
+                .ignoresSafeArea()
+        }
+        .onChange(of: cameraImage) { _, image in
+            guard let image else { return }
+            pickedImage = image
+            Task { await uploadAvatar(image) }
+        }
+    }
+
+    private func uploadAvatar(_ image: UIImage) async {
+        guard !isUploadingAvatar else { return }
+
+        isUploadingAvatar = true
+        avatarErrorMessage = nil
+        defer { isUploadingAvatar = false }
+
+        do {
+            let user = try await supabase.auth.session.user
+
+            guard let data = image.jpegData(compressionQuality: 0.75) else {
+                avatarErrorMessage = "Could not prepare that image."
+                return
+            }
+
+            let fileName = "\(user.id.uuidString).jpg"
+
+            try await supabase.storage
+                .from("photos")
+                .upload(
+                    path: fileName,
+                    file: data,
+                    options: FileOptions(
+                        contentType: "image/jpeg",
+                        upsert: true
+                    )
+                )
+
+            let publicURL = try supabase.storage
+                .from("photos")
+                .getPublicURL(path: fileName)
+
+            let urlString = publicURL.absoluteString
+
+            try await supabase
+                .from("profiles")
+                .update([
+                    "avatar_url": urlString
+                ])
+                .eq("id", value: user.id.uuidString)
+                .execute()
+
+            avatarUrl = urlString
+            profile.avatarUrl = urlString
+        } catch {
+            avatarErrorMessage = "Avatar upload error: \(error.localizedDescription)"
+            #if DEBUG
+            print("Avatar upload error:", error)
+            #endif
+        }
     }
 
     private func saveProfile() async {
@@ -815,12 +979,14 @@ struct EditProfileView: View {
                     "name": name,
                     "username": username,
                     "bio": bio,
+                    "avatar_url": avatarUrl ?? "",
                 ])
                 .eq("id", value: user.id.uuidString)
                 .execute()
             profile.name = name
             profile.username = username
             profile.bio = bio
+            profile.avatarUrl = avatarUrl
             dismiss()
         } catch {
             #if DEBUG
@@ -1162,6 +1328,55 @@ struct ProfileInputField: View {
         }
     }
 }
+
+// MARK: - Camera Picker
+
+
+struct CameraPicker: UIViewControllerRepresentable {
+    @Binding var image: UIImage?
+    @Environment(\.dismiss) private var dismiss
+
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.sourceType = .camera
+        picker.allowsEditing = true
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    final class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let parent: CameraPicker
+
+        init(_ parent: CameraPicker) {
+            self.parent = parent
+        }
+
+        func imagePickerController(
+            _ picker: UIImagePickerController,
+            didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
+        ) {
+            if let editedImage = info[.editedImage] as? UIImage {
+                parent.image = editedImage
+            } else if let originalImage = info[.originalImage] as? UIImage {
+                parent.image = originalImage
+            }
+
+            picker.dismiss(animated: true)
+        }
+
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            picker.dismiss(animated: true)
+        }
+    }
+}
+
+// MARK: - Camera Picker
 
 // MARK: - Preview
 

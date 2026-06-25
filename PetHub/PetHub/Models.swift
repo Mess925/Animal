@@ -11,6 +11,7 @@ struct Member: Identifiable, Equatable {
     let name: String
     let initials: String
     let accentHex: String
+    var avatarUrl: String? = nil
     var isOnline: Bool
     var isOwner: Bool
 
@@ -124,10 +125,12 @@ struct SupabaseRoom: Codable {
     let age: String
     let icon: String
     let accentHex: String
+    let imageUrl: String?
 
     enum CodingKeys: String, CodingKey {
         case id, name, breed, age, icon
         case accentHex = "accent_hex"
+        case imageUrl = "image_url"
     }
 
     func toPetRoom(isOwned: Bool = true) -> PetRoom {
@@ -142,7 +145,8 @@ struct SupabaseRoom: Codable {
             photos: [],
             groupMessages: [],
             dmThreads: [],
-            isOwned: isOwned
+            isOwned: isOwned,
+            imageUrl: imageUrl
         )
     }
 }
@@ -164,6 +168,7 @@ struct PetRoom: Identifiable, Hashable {
     var groupMessages: [Message]
     var dmThreads: [DMThread]
     var isOwned: Bool = true
+    var imageUrl: String? = nil
     var lastMessage: String = ""
     var lastActivity: Date = Date.distantPast
 

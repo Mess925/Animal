@@ -54,9 +54,22 @@ struct RoomSettingsView: View {
                         RoundedRectangle(cornerRadius: 16)
                             .fill(selectedAccent.opacity(0.12))
                             .frame(width: 60, height: 60)
-                        Image(systemName: room.icon)
-                            .font(.system(size: 28))
-                            .foregroundStyle(selectedAccent)
+
+                        if let imageUrl = room.imageUrl, let url = URL(string: imageUrl) {
+                            AsyncImage(url: url) { image in
+                                image.resizable().scaledToFill()
+                            } placeholder: {
+                                Image(systemName: room.icon)
+                                    .font(.system(size: 28))
+                                    .foregroundStyle(selectedAccent)
+                            }
+                            .frame(width: 60, height: 60)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                        } else {
+                            Image(systemName: room.icon)
+                                .font(.system(size: 28))
+                                .foregroundStyle(selectedAccent)
+                        }
                     }
 
                     VStack(alignment: .leading, spacing: 3) {
@@ -556,6 +569,7 @@ struct RoomSettingsView: View {
                             name: p.name,
                             initials: String(p.name.prefix(1)),
                             accentHex: p.avatarAccentHex ?? "AA9DFF",
+                            avatarUrl: p.avatarUrl,
                             isOnline: false,
                             isOwner: row.role == "owner"
                         )

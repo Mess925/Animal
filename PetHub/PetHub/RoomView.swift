@@ -625,12 +625,31 @@ struct HomePetBubble: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             ZStack(alignment: .bottomTrailing) {
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(room.accent.opacity(0.13))
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(room.accent.opacity(0.13))
+
+            if let imageUrl = room.imageUrl, let url = URL(string: imageUrl) {
+                AsyncImage(url: url) { image in
+                    image.resizable().scaledToFill()
+                } placeholder: {
+                    Image(systemName: room.icon)
+                        .font(.system(size: 30, weight: .bold))
+                        .foregroundStyle(room.accent)
+                }
+                .frame(height: 82)
+                .frame(maxWidth: .infinity)
+                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            } else {
                 Image(systemName: room.icon)
                     .font(.system(size: 30, weight: .bold))
                     .foregroundStyle(room.accent)
             }
+        }
+        .frame(height: 82)
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(room.accent.opacity(0.18), lineWidth: 1)
+        )
             .frame(height: 82)
             .overlay(
                 RoundedRectangle(cornerRadius: 24, style: .continuous)
@@ -1086,14 +1105,26 @@ struct HomeRoomActivityRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: room.icon)
-                .font(.system(size: 18, weight: .bold))
-                .foregroundStyle(room.accent)
-                .frame(width: 42, height: 42)
-                .background(room.accent.opacity(0.12))
-                .clipShape(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                )
+            Group {
+                if let imageUrl = room.imageUrl, let url = URL(string: imageUrl) {
+                    AsyncImage(url: url) { image in
+                        image.resizable().scaledToFill()
+                    } placeholder: {
+                        Image(systemName: room.icon)
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundStyle(room.accent)
+                    }
+                    .frame(width: 42, height: 42)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                } else {
+                    Image(systemName: room.icon)
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(room.accent)
+                        .frame(width: 42, height: 42)
+                        .background(room.accent.opacity(0.12))
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                }
+            }
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(room.name)
@@ -1353,7 +1384,8 @@ struct RoomsTabContent: View {
                                 accentHex: room.accentHex,
                                 memberCount: store.memberCounts[room.id]
                                     ?? max(room.members.count, 1),
-                                lastMessage: room.lastMessage
+                                lastMessage: room.lastMessage,
+                                imageUrl: room.imageUrl
                             )
                         }
                         .buttonStyle(.plain)
@@ -1734,6 +1766,7 @@ struct PetRoomCard: View {
     let accentHex: String
     let memberCount: Int
     var lastMessage: String = ""
+    var imageUrl: String? = nil
 
     private var accent: Color { Color(hex: accentHex) }
     private var detailText: String {
@@ -1747,9 +1780,22 @@ struct PetRoomCard: View {
             ZStack(alignment: .bottomTrailing) {
                 RoundedRectangle(cornerRadius: 19, style: .continuous)
                     .fill(accent.opacity(0.13))
-                Image(systemName: icon)
-                    .font(.system(size: 25, weight: .bold))
-                    .foregroundStyle(accent)
+
+                if let imageUrl = imageUrl, let url = URL(string: imageUrl) {
+                    AsyncImage(url: url) { image in
+                        image.resizable().scaledToFill()
+                    } placeholder: {
+                        Image(systemName: icon)
+                            .font(.system(size: 25, weight: .bold))
+                            .foregroundStyle(accent)
+                    }
+                    .frame(width: 64, height: 64)
+                    .clipShape(RoundedRectangle(cornerRadius: 19, style: .continuous))
+                } else {
+                    Image(systemName: icon)
+                        .font(.system(size: 25, weight: .bold))
+                        .foregroundStyle(accent)
+                }
 
                 if !lastMessage.isEmpty {
                     Circle()

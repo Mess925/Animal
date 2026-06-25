@@ -182,6 +182,7 @@ struct PeopleView: View {
                             name: profile.name,
                             initials: String(profile.name.prefix(1)),
                             accentHex: profile.avatarAccentHex ?? "AA9DFF",
+                            avatarUrl: profile.avatarUrl,
                             isOnline: false,
                             isOwner: row.role == "owner"
                         )
@@ -250,8 +251,9 @@ struct PeopleSectionLabel: View {
 // MARK: - Group Chat Row
     
 struct GroupChatRow: View {
-        let room: PetRoom
-        let members: [Member]
+    let room: PetRoom
+    let members: [Member]
+
     private var memberNames: String {
         let names = members.map { $0.name }
         if names.isEmpty { return "No members yet" }
@@ -259,15 +261,29 @@ struct GroupChatRow: View {
         if names.count > 3 { return "\(preview) +\(names.count - 3) more" }
         return preview
     }
+
     var body: some View {
         HStack(spacing: 12) {
             ZStack {
                 RoundedRectangle(cornerRadius: 14)
                     .fill(room.accent.opacity(0.12))
                     .frame(width: 46, height: 46)
-                Image(systemName: "person.3.fill")
-                    .font(.system(size: 18))
-                    .foregroundStyle(room.accent)
+
+                if let imageUrl = room.imageUrl, let url = URL(string: imageUrl) {
+                    AsyncImage(url: url) { image in
+                        image.resizable().scaledToFill()
+                    } placeholder: {
+                        Image(systemName: "person.3.fill")
+                            .font(.system(size: 18))
+                            .foregroundStyle(room.accent)
+                    }
+                    .frame(width: 46, height: 46)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                } else {
+                    Image(systemName: "person.3.fill")
+                        .font(.system(size: 18))
+                        .foregroundStyle(room.accent)
+                }
             }
 
             VStack(alignment: .leading, spacing: 3) {

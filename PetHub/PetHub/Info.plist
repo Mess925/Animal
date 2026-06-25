@@ -25,5 +25,10 @@
     <string>PetHub uses your camera to capture and share pet photos.</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>PetHub uses your photo library to set your pet room's cover photo.</string>
+    <key>NSCameraUsageDescription</key>
+    <string>PetHub needs camera access so you can take a profile photo.</string>
+
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>PetHub needs photo library access so you can choose a profile photo.</string>
 </dict>
 </plist>
