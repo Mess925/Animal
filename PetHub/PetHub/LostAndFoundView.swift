@@ -1013,11 +1013,11 @@ struct AddLostFoundView: View {
                     } label: {
                         Group {
                             if isLoading {
-                                ProgressView().tint(PHTheme.accent)
+                                ProgressView().tint(Color.white)
                             } else {
                                 Text("Post")
                                     .font(.system(size: 14, weight: .semibold))
-                                    .foregroundStyle(PHTheme.accent)
+                                    .foregroundStyle(Color.white)
                             }
                         }
                         .padding(.horizontal, 20)

@@ -1095,8 +1095,9 @@ struct DeleteAccountView: View {
         errorMessage = nil
 
         do {
-            // Create this RPC in Supabase. It must delete the current user's related data
-            // and then delete auth.users where id = auth.uid().
+            let session = try await supabase.auth.session
+            print("Deleting user:", session.user.id)
+
             try await supabase
                 .rpc("delete_my_account")
                 .execute()

@@ -182,6 +182,14 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 
     func application(
         _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+    ) -> Bool {
+        KeyboardDismissManager.shared.start()
+        return true
+    }
+
+    func application(
+        _ application: UIApplication,
         didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
     ) {
         NotificationManager.shared.didRegisterForRemoteNotifications(
@@ -194,5 +202,72 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         didFailToRegisterForRemoteNotificationsWithError error: Error
     ) {
         print("APNs registration failed:", error)
+    }
+}
+
+
+// MARK: - Global Keyboard Dismiss
+
+final class KeyboardDismissManager: NSObject, UIGestureRecognizerDelegate {
+    static let shared = KeyboardDismissManager()
+
+    private var installedWindowIDs = Set<ObjectIdentifier>()
+
+    func start() {
+        installTapRecognizers()
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(windowBecameKey),
+            name: UIWindow.didBecomeKeyNotification,
+            object: nil
+        )
+    }
+
+    @objc private func windowBecameKey() {
+        installTapRecognizers()
+    }
+
+    private func installTapRecognizers() {
+        DispatchQueue.main.async {
+            let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+            let windows = scenes.flatMap { $0.windows }
+
+            for window in windows {
+                let id = ObjectIdentifier(window)
+                guard !self.installedWindowIDs.contains(id) else { continue }
+
+                let tap = UITapGestureRecognizer(target: self, action: #selector(self.dismissKeyboard(_:)))
+                tap.cancelsTouchesInView = false
+                tap.delegate = self
+                window.addGestureRecognizer(tap)
+
+                self.installedWindowIDs.insert(id)
+            }
+        }
+    }
+
+    @objc private func dismissKeyboard(_ recognizer: UITapGestureRecognizer) {
+        recognizer.view?.endEditing(true)
+    }
+
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+        var view: UIView? = touch.view
+
+        while let current = view {
+            if current is UITextField || current is UITextView {
+                return false
+            }
+            view = current.superview
+        }
+
+        return true
+    }
+
+    func gestureRecognizer(
+        _ gestureRecognizer: UIGestureRecognizer,
+        shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
+    ) -> Bool {
+        true
     }
 }

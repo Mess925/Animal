@@ -668,7 +668,7 @@ struct HomeCreateRoomTile: View {
             VStack(spacing: 12) {
                 Image(systemName: "plus")
                     .font(.system(size: 20, weight: .black))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(PHTheme.background)
                     .frame(width: 48, height: 48)
                     .background(PHTheme.brandGradient)
                     .clipShape(Circle())
@@ -699,7 +699,7 @@ struct HomeCreateFirstRoomCard: View {
         HStack(spacing: 14) {
             Image(systemName: "plus")
                 .font(.system(size: 18, weight: .black))
-                .foregroundStyle(.white)
+                .foregroundStyle(PHTheme.background)
                 .frame(width: 48, height: 48)
                 .background(PHTheme.brandGradient)
                 .clipShape(Circle())
@@ -1517,15 +1517,15 @@ struct RoomsSegmentedControl: View {
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(
                             selectedSegment == segment
-                            ? Color.white
-                            : Color.primary
+                            ? PHTheme.background
+                            : PHTheme.subtext
                         )
                         .frame(maxWidth: .infinity)
                         .frame(height: 34)
                         .background {
                             if selectedSegment == segment {
                                 RoundedRectangle(cornerRadius: 9)
-                                    .fill(Color.black)
+                                    .fill(PHTheme.accent)
                                     .shadow(
                                         color: .black.opacity(0.08),
                                         radius: 3,
@@ -1540,7 +1540,7 @@ struct RoomsSegmentedControl: View {
         .padding(3)
         .background(
             RoundedRectangle(cornerRadius: 11)
-                .fill(Color(.systemGray5))
+                .fill(PHTheme.surface2)
         )
     }
 }
@@ -1824,7 +1824,7 @@ struct AddPetCard: View {
             VStack(spacing: 8) {
                 Image(systemName: "plus")
                     .font(.system(size: 28, weight: .bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(PHTheme.background)
                     .frame(width: 62, height: 62)
                     .background(PHTheme.brandGradient)
                     .clipShape(Circle())

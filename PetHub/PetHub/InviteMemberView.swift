@@ -106,11 +106,11 @@ struct InviteMemberView: View {
                 } label: {
                     Group {
                         if isLoading {
-                            ProgressView().tint(PHTheme.accent)
+                            ProgressView().tint(PHTheme.background)
                         } else {
                             Text("Send Invite")
                                 .font(.system(size: 15, weight: .semibold))
-                                .foregroundStyle(PHTheme.accent)
+                                .foregroundStyle(PHTheme.background)
                         }
                     }
                     .frame(maxWidth: .infinity)

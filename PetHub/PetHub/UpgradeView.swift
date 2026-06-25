@@ -154,12 +154,12 @@ struct UpgradeView: View {
         VStack(spacing: 14) {
             ZStack {
                 RoundedRectangle(cornerRadius: 22)
-                    .fill(.black)
+                    .fill(PHTheme.accent)
                     .frame(width: 72, height: 72)
 
                 Image(systemName: "pawprint.fill")
                     .font(.system(size: 34, weight: .bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(PHTheme.background)
             }
 
             VStack(spacing: 6) {
@@ -363,7 +363,7 @@ struct UpgradeView: View {
                     }
                     Spacer()
                 }
-                .foregroundStyle(isCurrent || isIncludedInCurrentPlan ? PHTheme.subtext : .white)
+                .foregroundStyle(isCurrent || isIncludedInCurrentPlan ? PHTheme.subtext : PHTheme.background)
                 .padding(.vertical, 14)
                 .background(
                     RoundedRectangle(cornerRadius: 16)

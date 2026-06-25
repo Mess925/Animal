@@ -110,53 +110,68 @@ struct RoomSettingsView: View {
                     .padding(.bottom, 12)
 
                 SettingsCard {
-                    SettingsToggleRow(
-                        icon: "bell.fill",
-                        iconColor: selectedAccent,
-                        label: "New photos",
-                        sublabel: "When someone posts a photo",
-                        isOn: $notifyPhotos
-                    )
+                    if isLoadingNotificationSettings {
+                        HStack(spacing: 12) {
+                            ProgressView()
+                                .tint(PHTheme.accent)
 
-                    SettingsDivider()
+                            Text("Loading notification settings…")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(PHTheme.subtext)
 
-                    SettingsToggleRow(
-                        icon: "bubble.left.fill",
-                        iconColor: PHTheme.accent2,
-                        label: "Chat messages",
-                        sublabel: "New messages in room",
-                        isOn: $notifyMessages
-                    )
+                            Spacer()
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 18)
+                    } else {
+                        SettingsToggleRow(
+                            icon: "bell.fill",
+                            iconColor: selectedAccent,
+                            label: "New photos",
+                            sublabel: "When someone posts a photo",
+                            isOn: $notifyPhotos
+                        )
 
-                    SettingsDivider()
+                        SettingsDivider()
 
-                    SettingsToggleRow(
-                        icon: "heart.fill",
-                        iconColor: PHTheme.warning,
-                        label: "Reactions & comments",
-                        sublabel: "Likes and comments on photos",
-                        isOn: $notifyReactions
-                    )
+                        SettingsToggleRow(
+                            icon: "bubble.left.fill",
+                            iconColor: PHTheme.accent2,
+                            label: "Chat messages",
+                            sublabel: "New messages in room",
+                            isOn: $notifyMessages
+                        )
 
-                    SettingsDivider()
+                        SettingsDivider()
 
-                    SettingsToggleRow(
-                        icon: "paperplane.fill",
-                        iconColor: PHTheme.accent,
-                        label: "Direct messages",
-                        sublabel: "Private messages from members",
-                        isOn: $notifyDM
-                    )
+                        SettingsToggleRow(
+                            icon: "heart.fill",
+                            iconColor: PHTheme.warning,
+                            label: "Reactions & comments",
+                            sublabel: "Likes and comments on photos",
+                            isOn: $notifyReactions
+                        )
 
-                    SettingsDivider()
+                        SettingsDivider()
 
-                    SettingsToggleRow(
-                        icon: "pawprint.fill",
-                        iconColor: PHTheme.success,
-                        label: "Found your pet",
-                        sublabel: "Possible found-pet matches",
-                        isOn: $notifyFoundPet
-                    )
+                        SettingsToggleRow(
+                            icon: "paperplane.fill",
+                            iconColor: PHTheme.accent,
+                            label: "Direct messages",
+                            sublabel: "Private messages from members",
+                            isOn: $notifyDM
+                        )
+
+                        SettingsDivider()
+
+                        SettingsToggleRow(
+                            icon: "pawprint.fill",
+                            iconColor: PHTheme.success,
+                            label: "Found your pet",
+                            sublabel: "Possible found-pet matches",
+                            isOn: $notifyFoundPet
+                        )
+                    }
                 }
                 .padding(.horizontal, 16)
 

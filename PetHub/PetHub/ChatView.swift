@@ -506,7 +506,7 @@ struct ChatTopBar: View {
                         .frame(width: 36, height: 36)
                     Image(systemName: "chevron.left")
                         .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(PHTheme.textOnAccent)
+                        .foregroundStyle(PHTheme.text)
                 }
             }
 

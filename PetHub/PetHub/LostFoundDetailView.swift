@@ -443,7 +443,7 @@ struct LostFoundDetailView: View {
                 Text(isLost ? "I found this animal" : "This is my pet")
                     .font(.system(size: 15, weight: .semibold))
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(isLost ? Color.white : PHTheme.background)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
             .background(

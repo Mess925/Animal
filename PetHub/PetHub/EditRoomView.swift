@@ -57,11 +57,11 @@ struct EditRoomView: View {
                     } label: {
                         Group {
                             if isLoading {
-                                ProgressView().tint(.white)
+                                ProgressView().tint(PHTheme.background)
                             } else {
                                 Text("Save")
                                     .font(.system(size: 14, weight: .semibold))
-                                    .foregroundStyle(.white)
+                                    .foregroundStyle(PHTheme.background)
                             }
                         }
                         .padding(.horizontal, 20)

@@ -64,13 +64,13 @@ struct CaptureAndPostView: View {
                             Group {
                                 if isUploading {
                                     ProgressView()
-                                        .tint(PHTheme.accent)
+                                        .tint(Color.white)
                                 } else {
                                     Text("Post")
                                         .font(
                                             .system(size: 15, weight: .semibold)
                                         )
-                                        .foregroundStyle(PHTheme.accent)
+                                        .foregroundStyle(Color.white)
                                 }
                             }
                             .frame(maxWidth: .infinity)

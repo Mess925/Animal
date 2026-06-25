@@ -32,7 +32,7 @@ enum PHTheme {
     static let border = Color(light: "E8E8E4", dark: "2B2B30")
     static let divider = Color(light: "ECEDE9", dark: "28282C")
     static let placeholder = Color(light: "A8ADB3", dark: "777D86")
-    static let textOnAccent = Color.white
+    static let textOnAccent = Color(light: "FFFFFF", dark: "050506")
 
     static let pagePadding: CGFloat = 20
     static let cardRadius: CGFloat = 28

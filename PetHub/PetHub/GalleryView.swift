@@ -107,7 +107,7 @@ struct GalleryView: View {
                         )
                     Image(systemName: "camera.fill")
                         .font(.system(size: 20))
-                        .foregroundStyle(PHTheme.accent)
+                        .foregroundStyle(Color.white)
                 }
             }
             .buttonStyle(.plain)
@@ -373,7 +373,7 @@ struct PhotoDetailView: View {
                         RoundedRectangle(cornerRadius: 28)
                             .fill(photo.background)
                             .frame(height: 300)
-                        ProgressView().tint(.white)
+                        ProgressView().tint(PHTheme.background)
                     }
                 }
                 .padding(.horizontal, 16)
@@ -524,7 +524,7 @@ struct PhotoDetailView: View {
                                 )
                                 Image(systemName: "arrow.up")
                                     .font(.system(size: 14, weight: .semibold))
-                                    .foregroundStyle(PHTheme.accent)
+                                    .foregroundStyle(PHTheme.background)
                             }
                         }
                         .buttonStyle(.plain)

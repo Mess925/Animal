@@ -401,18 +401,18 @@ struct ForgotPasswordView: View {
             HStack {
                 Spacer()
                 if isLoading {
-                    ProgressView().tint(.white)
+                    ProgressView().tint(PHTheme.background)
                 } else {
                     Text(label)
                         .font(.system(size: 15, weight: .semibold))
                 }
                 Spacer()
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(canProceed ? PHTheme.background : PHTheme.subtext)
             .padding(.vertical, 16)
             .background(
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(canProceed ? PHTheme.accent : PHTheme.subtext.opacity(0.25))
+                    .fill(canProceed ? PHTheme.accent : PHTheme.surface2)
             )
         }
         .buttonStyle(.plain)

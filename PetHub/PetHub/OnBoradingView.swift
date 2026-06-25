@@ -119,10 +119,10 @@ struct OnboardingView: View {
                     Image(systemName: "arrow.right")
                 }
                 .font(.system(size: 16, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
+                .foregroundStyle(PHTheme.background)
                 .frame(maxWidth: .infinity)
                 .frame(height: 56)
-                .background(Color.black)
+                .background(PHTheme.accent)
                 .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
             }
             .buttonStyle(.plain)
