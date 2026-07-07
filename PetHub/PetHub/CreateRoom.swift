@@ -16,7 +16,10 @@ struct CreateRoomView: View {
     @State private var petName = ""
     @State private var petType = "Dog"
     @State private var breed = ""
-    @State private var age = ""
+
+    @State private var birthYear = ""
+    @State private var birthMonth = ""
+
     @State private var bio = ""
 
     @State private var customPetType = ""
@@ -43,7 +46,8 @@ struct CreateRoomView: View {
     private var canCreate: Bool {
         !petName.trimmingCharacters(in: .whitespaces).isEmpty
             && !breed.trimmingCharacters(in: .whitespaces).isEmpty
-            && !age.trimmingCharacters(in: .whitespaces).isEmpty
+            && !birthYear.trimmingCharacters(in: .whitespaces).isEmpty
+            && !birthMonth.trimmingCharacters(in: .whitespaces).isEmpty
             && (petType != "Other"
                 || !customPetType.trimmingCharacters(in: .whitespaces).isEmpty)
     }
@@ -56,7 +60,6 @@ struct CreateRoomView: View {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 28) {
 
-                    // Header
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             Button {
@@ -67,11 +70,10 @@ struct CreateRoomView: View {
                                         .fill(PHTheme.divider.opacity(0.6))
                                         .frame(width: 38, height: 38)
                                     Image(systemName: "chevron.left")
-                                        .foregroundStyle(
-                                            PHTheme.textOnAccent
-                                        )
+                                        .foregroundStyle(PHTheme.textOnAccent)
                                 }
                             }
+
                             Spacer()
                         }
 
@@ -86,14 +88,12 @@ struct CreateRoomView: View {
                         }
                     }
 
-                    // Preview Card
                     ZStack {
                         RoundedRectangle(cornerRadius: 28)
                             .fill(selectedColor.opacity(0.12))
                             .frame(height: 220)
 
                         VStack(spacing: 14) {
-
                             ZStack {
                                 Circle()
                                     .fill(selectedColor.opacity(0.18))
@@ -135,10 +135,7 @@ struct CreateRoomView: View {
                         }
                     }
 
-                    // Form
                     VStack(spacing: 18) {
-
-                        // Colors
                         VStack(alignment: .leading, spacing: 10) {
                             Text("Room Color")
                                 .foregroundStyle(PHTheme.subtext)
@@ -158,7 +155,6 @@ struct CreateRoomView: View {
                             }
                         }
 
-                        // Pet Name
                         CreateRoomInput(
                             title: "Pet Name",
                             placeholder: "e.g. Mochi",
@@ -166,7 +162,6 @@ struct CreateRoomView: View {
                             isRequired: true
                         )
 
-                        // Pet Type
                         VStack(alignment: .leading, spacing: 10) {
                             Text("Pet Type")
                                 .foregroundStyle(PHTheme.subtext)
@@ -183,17 +178,15 @@ struct CreateRoomView: View {
                                         } label: {
                                             Text(type)
                                                 .foregroundStyle(
-                                                    petType == type
-                                                        ? PHTheme.accent
-                                                        : .white.opacity(0.45)
+                                                    petType == type ? .white : selectedColor
                                                 )
                                                 .padding(.horizontal, 16)
                                                 .padding(.vertical, 10)
                                                 .background(
                                                     Capsule().fill(
-                                                        Color.white.opacity(
-                                                            0.05
-                                                        )
+                                                        petType == type
+                                                            ? selectedColor
+                                                            : selectedColor.opacity(0.18)
                                                     )
                                                 )
                                         }
@@ -202,7 +195,6 @@ struct CreateRoomView: View {
                             }
                         }
 
-                        // Custom type
                         if petType == "Other" {
                             CreateRoomInput(
                                 title: "Custom Type",
@@ -212,7 +204,6 @@ struct CreateRoomView: View {
                             )
                         }
 
-                        // Breed + Age
                         HStack(spacing: 14) {
                             CreateRoomInput(
                                 title: "Breed",
@@ -221,54 +212,64 @@ struct CreateRoomView: View {
                                 isRequired: true
                             )
 
-                            CreateRoomInput(
-                                title: "Age",
-                                placeholder: "e.g. 2",
-                                text: $age,
-                                isRequired: true,
-                                keyboardType: .numberPad
-                            )
+                        }
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack(spacing: 10) {
+                                CreateRoomInput(
+                                    title: "Birth Year",
+                                    placeholder: "2022",
+                                    text: $birthYear,
+                                    isRequired: true,
+                                    keyboardType: .numberPad
+                                )
+
+                                CreateRoomInput(
+                                    title: "Month",
+                                    placeholder: "6",
+                                    text: $birthMonth,
+                                    isRequired: true,
+                                    keyboardType: .numberPad
+                                )
+                            }
                         }
 
-                        // Bio
                         VStack(alignment: .leading, spacing: 10) {
                             HStack {
-                                Text("Bio").font(
-                                    .system(size: 12, weight: .medium)
-                                ).foregroundStyle(PHTheme.subtext)
-                                Text("optional").font(.system(size: 10))
+                                Text("Bio")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundStyle(PHTheme.subtext)
+
+                                Text("optional")
+                                    .font(.system(size: 10))
                                     .foregroundStyle(PHTheme.placeholder)
                             }
+
                             ZStack(alignment: .topLeading) {
                                 if bio.isEmpty {
                                     Text("Tell something about your pet...")
                                         .font(.system(size: 14))
-                                        .foregroundStyle(
-                                            PHTheme.placeholder
-                                        ).padding(.top, 14).padding(
-                                            .leading,
-                                            16
-                                        )
+                                        .foregroundStyle(PHTheme.placeholder)
+                                        .padding(.top, 14)
+                                        .padding(.leading, 16)
                                 }
-                                TextEditor(text: $bio).scrollContentBackground(
-                                    .hidden
-                                ).foregroundStyle(PHTheme.text).frame(
-                                    height: 120
-                                ).padding(12)
-                            }.background(
-                                RoundedRectangle(cornerRadius: 22).fill(
-                                    PHTheme.surface2
-                                ).overlay(
-                                    RoundedRectangle(cornerRadius: 22).stroke(
-                                        PHTheme.divider,
-                                        lineWidth: 0.5
+
+                                TextEditor(text: $bio)
+                                    .scrollContentBackground(.hidden)
+                                    .foregroundStyle(PHTheme.text)
+                                    .frame(height: 120)
+                                    .padding(12)
+                            }
+                            .background(
+                                RoundedRectangle(cornerRadius: 22)
+                                    .fill(PHTheme.surface2)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 22)
+                                            .stroke(PHTheme.divider, lineWidth: 0.5)
                                     )
-                                )
                             )
                         }
                     }
 
-                    // Create Button
                     Button {
                         guard canCreate else { return }
                         Task { await createRoom() }
@@ -276,14 +277,8 @@ struct CreateRoomView: View {
                         Text("Create Room")
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(
-                                canCreate
-                                    ? PHTheme.accent
-                                    : PHTheme.border
-                            )
-                            .foregroundStyle(
-                                canCreate ? .white : PHTheme.placeholder
-                            )
+                            .background(canCreate ? PHTheme.accent : PHTheme.border)
+                            .foregroundStyle(PHTheme.background)
                             .cornerRadius(20)
                     }
                     .disabled(!canCreate)
@@ -293,9 +288,20 @@ struct CreateRoomView: View {
                 .padding(.horizontal, 20)
             }
         }
-        .onChange(of: age) { _, newValue in
+        .onChange(of: birthYear) { _, newValue in
             let filtered = newValue.filter { $0.isNumber }
-            if filtered != newValue { age = filtered }
+            if filtered != newValue { birthYear = filtered }
+        }
+        .onChange(of: birthMonth) { _, newValue in
+            let filtered = newValue.filter { $0.isNumber }
+            if filtered != newValue {
+                birthMonth = filtered
+                return
+            }
+
+            if let month = Int(filtered), month > 12 {
+                birthMonth = "12"
+            }
         }
         .sheet(isPresented: $showImagePicker) {
             ImagePicker(image: $selectedImage)
@@ -311,56 +317,94 @@ struct CreateRoomView: View {
         default: return "pawprint.fill"
         }
     }
-    
+
+    private var calculatedAgeText: String {
+        guard let year = Int(birthYear),
+              let month = Int(birthMonth),
+              month >= 1,
+              month <= 12
+        else {
+            return ""
+        }
+
+        let calendar = Calendar.current
+        let now = Date()
+        let currentYear = calendar.component(.year, from: now)
+        let currentMonth = calendar.component(.month, from: now)
+
+        var years = currentYear - year
+        var months = currentMonth - month
+
+        if months < 0 {
+            years -= 1
+            months += 12
+        }
+
+        if years < 0 {
+            return ""
+        }
+
+        var parts: [String] = []
+
+        if years > 0 {
+            parts.append("\(years) \(years == 1 ? "year" : "years")")
+        }
+
+        if months > 0 {
+            parts.append("\(months) \(months == 1 ? "month" : "months")")
+        }
+
+        if parts.isEmpty {
+            return "Less than 1 month"
+        }
+
+        return parts.joined(separator: " ")
+    }
+
     private func createRoom() async {
         do {
             let user = try await supabase.auth.session.user
             let roomId = UUID()
-            
+
             try await supabase
                 .from("rooms")
                 .insert([
                     "id": roomId.uuidString,
                     "name": petName,
                     "breed": breed,
-                    "age": age,
+                    "age": calculatedAgeText,
+                    "birth_year": birthYear,
+                    "birth_month": birthMonth,
                     "icon": selectedPetIcon,
                     "accent_hex": roomColors.first(where: { $0.0 == selectedColor })?.1 ?? "AA9DFF",
                     "owner_id": user.id.uuidString
                 ])
                 .execute()
 
-            // Add owner to room_members ← THIS WAS REMOVED
-//            try await supabase
-//                .from("room_members")
-//                .insert([
-//                    "room_id": roomId.uuidString,
-//                    "user_id": user.id.uuidString,
-//                    "role": "owner"
-//                ])
-//                .execute()
-
             let newRoom = SupabaseRoom(
                 id: roomId,
                 name: petName,
                 breed: breed,
-                age: age,
+                age: calculatedAgeText,
+                birthYear: Int(birthYear) ?? 0,
+                birthMonth: Int(birthMonth) ?? 0,
                 icon: selectedPetIcon,
                 accentHex: roomColors.first(where: { $0.0 == selectedColor })?.1 ?? "AA9DFF",
                 imageUrl: nil
             )
+
             dismiss()
             onComplete?(newRoom.toPetRoom())
         } catch {
             #if DEBUG
-            print("CreateRoom.swift:353 error:", error)
+            print("CreateRoom.swift createRoom error:", error)
             #endif
         }
     }
-    
+
     private var breedAgePreview: String {
         let b = breed.isEmpty ? displayPetType : breed
-        let a = age.isEmpty ? "" : " · \(age)"
+        let a = calculatedAgeText.isEmpty ? "" : " · \(calculatedAgeText)"
         return b + a
     }
 }
@@ -415,12 +459,12 @@ struct ImagePicker: UIViewControllerRepresentable {
 
         func imagePickerController(
             _ picker: UIImagePickerController,
-            didFinishPickingMediaWithInfo info: [UIImagePickerController
-                .InfoKey: Any]
+            didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
         ) {
             if let img = info[.originalImage] as? UIImage {
                 parent.image = img
             }
+
             picker.dismiss(animated: true)
         }
     }

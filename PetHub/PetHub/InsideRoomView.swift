@@ -134,6 +134,44 @@ struct RoomView: View {
 struct RoomHeroHeader: View {
     let room: PetRoom
     let onBack: () -> Void
+    
+    private var displayAge: String {
+        guard let birthYear = room.birthYear,
+              let birthMonth = room.birthMonth
+        else {
+            return room.age
+        }
+
+        let calendar = Calendar.current
+        let now = Date()
+
+        let currentYear = calendar.component(.year, from: now)
+        let currentMonth = calendar.component(.month, from: now)
+
+        var years = currentYear - birthYear
+        var months = currentMonth - birthMonth
+
+        if months < 0 {
+            years -= 1
+            months += 12
+        }
+
+        var parts: [String] = []
+
+        if years > 0 {
+            parts.append("\(years)y")
+        }
+
+        if months > 0 {
+            parts.append("\(months)m")
+        }
+
+        if parts.isEmpty {
+            return "< 1m"
+        }
+
+        return parts.joined(separator: " ")
+    }
 
     var body: some View {
         VStack(spacing: 14) {
@@ -244,7 +282,7 @@ struct RoomHeroHeader: View {
                             .clipShape(Capsule())
 
                         if !room.age.isEmpty {
-                            Text(room.age)
+                            Text(displayAge)
                                 .font(.system(size: 12, weight: .bold))
                                 .foregroundStyle(room.imageUrl != nil ? .white.opacity(0.85) : PHTheme.subtext)
                                 .padding(.horizontal, 10)

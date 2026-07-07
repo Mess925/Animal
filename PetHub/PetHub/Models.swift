@@ -117,18 +117,21 @@ struct PhotoPost: Identifiable {
 }
 
 // MARK: - Supabase Room
-
 struct SupabaseRoom: Codable {
     let id: UUID
     let name: String
     let breed: String
     let age: String
+    let birthYear: Int?
+    let birthMonth: Int?
     let icon: String
     let accentHex: String
     let imageUrl: String?
 
     enum CodingKeys: String, CodingKey {
         case id, name, breed, age, icon
+        case birthYear = "birth_year"
+        case birthMonth = "birth_month"
         case accentHex = "accent_hex"
         case imageUrl = "image_url"
     }
@@ -139,6 +142,8 @@ struct SupabaseRoom: Codable {
             name: name,
             breed: breed,
             age: age,
+            birthYear: birthYear,
+            birthMonth: birthMonth,
             icon: icon,
             accentHex: accentHex,
             members: [],
@@ -161,6 +166,8 @@ struct PetRoom: Identifiable, Hashable {
     var name: String
     var breed: String
     var age: String
+    var birthYear: Int? = nil
+    var birthMonth: Int? = nil
     var icon: String
     var accentHex: String
     var members: [Member]
@@ -231,7 +238,7 @@ extension PetRoom {
         ]
 
         return PetRoom(
-            id: UUID(), name: "Mochi", breed: "Golden Retriever", age: "2y",
+            id: UUID(), name: "Mochi", breed: "Golden Retriever", age: "2y",birthYear: 2024, birthMonth: 6,
             icon: "dog.fill", accentHex: "AA9DFF",
             members: [me, sarah, jake, priya],
             photos: photos,
