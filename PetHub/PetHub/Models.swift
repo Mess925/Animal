@@ -98,6 +98,27 @@ struct RoomMembership: Codable {
     }
 }
 
+
+// MARK: - Room Invitation
+
+struct RoomInvitation: Codable, Identifiable {
+    let id: UUID
+    let roomId: UUID
+    let invitedUserId: UUID
+    let invitedBy: UUID
+    let status: String
+    let createdAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case roomId = "room_id"
+        case invitedUserId = "invited_user_id"
+        case invitedBy = "invited_by"
+        case status
+        case createdAt = "created_at"
+    }
+}
+
 // MARK: - Photo Post
 
 struct PhotoPost: Identifiable {

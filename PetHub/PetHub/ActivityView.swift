@@ -83,6 +83,9 @@ struct ActivityView: View {
     @EnvironmentObject private var store: RoomStore
 
     @State private var items: [ActivityItem] = []
+    @State private var invitations: [RoomInvitation] = []
+    @State private var invitationRooms: [UUID: PetRoom] = [:]
+    @State private var invitationSenders: [UUID: UserProfile] = [:]
     @State private var isLoading = true
 
     @State private var roomNotificationSettings: [UUID: RoomNotificationSetting] = [:]
@@ -103,7 +106,7 @@ struct ActivityView: View {
                 if isLoading {
                     ProgressView()
                         .tint(PHTheme.accent)
-                } else if items.isEmpty {
+                } else if items.isEmpty && invitations.isEmpty {
                     VStack(spacing: 12) {
                         Image(systemName: "bell.slash")
                             .font(.system(size: 44))
@@ -128,6 +131,30 @@ struct ActivityView: View {
                                 .padding(.horizontal, 20)
                                 .padding(.top, 20)
                                 .padding(.bottom, 24)
+
+                            if !invitations.isEmpty {
+                                ActivitySectionLabel(title: "Room Invites")
+                                    .padding(.horizontal, 20)
+                                    .padding(.bottom, 8)
+
+                                VStack(spacing: 10) {
+                                    ForEach(invitations) { invitation in
+                                        RoomInvitationRow(
+                                            invitation: invitation,
+                                            room: invitationRooms[invitation.roomId],
+                                            sender: invitationSenders[invitation.invitedBy],
+                                            onAccept: {
+                                                Task { await respondToInvitation(invitation, accepted: true) }
+                                            },
+                                            onDecline: {
+                                                Task { await respondToInvitation(invitation, accepted: false) }
+                                            }
+                                        )
+                                    }
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.bottom, 28)
+                            }
 
                             if !todayItems.isEmpty {
                                 ActivitySectionLabel(title: "Today")
@@ -173,6 +200,7 @@ struct ActivityView: View {
             let roomIds = store.rooms.map { $0.id.uuidString }
 
             await loadNotificationSettings(userId: user.id.uuidString)
+            await loadPendingInvitations(userId: user.id.uuidString)
 
             let roomActivities: [SupabaseActivity]
 
@@ -297,6 +325,113 @@ struct ActivityView: View {
         }
     }
 
+    private func loadPendingInvitations(userId: String) async {
+        do {
+            let pending: [RoomInvitation] = try await supabase
+                .from("room_invitations")
+                .select()
+                .eq("invited_user_id", value: userId)
+                .eq("status", value: "pending")
+                .order("created_at", ascending: false)
+                .execute()
+                .value
+
+            var rooms: [UUID: PetRoom] = [:]
+            var senders: [UUID: UserProfile] = [:]
+
+            for invitation in pending {
+                if let existingRoom = store.rooms.first(where: { $0.id == invitation.roomId }) {
+                    rooms[invitation.roomId] = existingRoom
+                } else {
+                    let fetchedRooms: [SupabaseRoom] = try await supabase
+                        .from("rooms")
+                        .select()
+                        .eq("id", value: invitation.roomId.uuidString)
+                        .execute()
+                        .value
+                    if let fetchedRoom = fetchedRooms.first {
+                        rooms[invitation.roomId] = fetchedRoom.toPetRoom(isOwned: false)
+                    }
+                }
+
+                let profiles: [UserProfile] = try await supabase
+                    .from("profiles")
+                    .select()
+                    .eq("id", value: invitation.invitedBy.uuidString)
+                    .execute()
+                    .value
+                if let sender = profiles.first {
+                    senders[invitation.invitedBy] = sender
+                }
+            }
+
+            await MainActor.run {
+                invitations = pending
+                invitationRooms = rooms
+                invitationSenders = senders
+            }
+        } catch {
+            await MainActor.run {
+                invitations = []
+                invitationRooms = [:]
+                invitationSenders = [:]
+            }
+        }
+    }
+
+    private func respondToInvitation(_ invitation: RoomInvitation, accepted: Bool) async {
+        do {
+            let currentUser = try await supabase.auth.session.user
+
+            if accepted {
+                let existing: [RoomMembership] = try await supabase
+                    .from("room_members")
+                    .select()
+                    .eq("room_id", value: invitation.roomId.uuidString)
+                    .eq("user_id", value: currentUser.id.uuidString)
+                    .execute()
+                    .value
+
+                if existing.isEmpty {
+                    try await supabase
+                        .from("room_members")
+                        .insert([
+                            "room_id": invitation.roomId.uuidString.lowercased(),
+                            "user_id": currentUser.id.uuidString.lowercased(),
+                            "role": "member"
+                        ])
+                        .execute()
+                }
+            }
+
+            try await supabase
+                .from("room_invitations")
+                .update(["status": accepted ? "accepted" : "declined"])
+                .eq("id", value: invitation.id.uuidString)
+                .execute()
+
+            if accepted {
+                let roomName = invitationRooms[invitation.roomId]?.name ?? "a room"
+                try? await supabase
+                    .from("activities")
+                    .insert([
+                        "type": "room_joined",
+                        "actor_id": currentUser.id.uuidString,
+                        "room_id": invitation.roomId.uuidString,
+                        "body": "Joined \(roomName)"
+                    ])
+                    .execute()
+            }
+
+            await store.fetchRooms()
+            await fetchActivities()
+        } catch {
+            #if DEBUG
+            print("Invitation response error:", error)
+            #endif
+        }
+    }
+
     private func loadNotificationSettings(userId: String) async {
         do {
             let rows: [RoomNotificationSetting] =
@@ -379,6 +514,77 @@ struct ActivityView: View {
                 .fill(PHTheme.surface2)
                 .overlay(
                     RoundedRectangle(cornerRadius: 28)
+                        .stroke(PHTheme.divider, lineWidth: 0.5)
+                )
+        )
+    }
+}
+
+// MARK: - Room Invitation Row
+
+struct RoomInvitationRow: View {
+    let invitation: RoomInvitation
+    let room: PetRoom?
+    let sender: UserProfile?
+    let onAccept: () -> Void
+    let onDecline: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top, spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(Color(hex: sender?.avatarAccentHex ?? "AA9DFF").opacity(0.18))
+                        .frame(width: 44, height: 44)
+
+                    Text(String((sender?.name ?? "?").prefix(1)).uppercased())
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(Color(hex: sender?.avatarAccentHex ?? "AA9DFF"))
+                }
+
+                VStack(alignment: .leading, spacing: 5) {
+                    Text("\(sender?.name ?? "Someone") invited you to join \(room?.name ?? "a room")")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(PHTheme.text)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Text("Accept only if you know this person. You will not join until you accept.")
+                        .font(.system(size: 12))
+                        .foregroundStyle(PHTheme.subtext)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer()
+            }
+
+            HStack(spacing: 10) {
+                Button(action: onDecline) {
+                    Text("Decline")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(PHTheme.subtext)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 11)
+                        .background(RoundedRectangle(cornerRadius: 12).fill(PHTheme.surface))
+                }
+                .buttonStyle(.plain)
+
+                Button(action: onAccept) {
+                    Text("Accept")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(PHTheme.background)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 11)
+                        .background(RoundedRectangle(cornerRadius: 12).fill(PHTheme.accent))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 24)
+                .fill(PHTheme.surface2)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24)
                         .stroke(PHTheme.divider, lineWidth: 0.5)
                 )
         )

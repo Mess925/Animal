@@ -23,6 +23,7 @@ struct UserProfile: Codable {
     var avatarUrl: String?
     var isOnboarded: Bool?
     var subscriptionTier: String?
+    var inviteCode: String? = nil
 
     var accent: Color { Color(hex: avatarAccentHex ?? "AA9DFF") }
 
@@ -36,6 +37,7 @@ struct UserProfile: Codable {
         case avatarUrl = "avatar_url"
         case isOnboarded = "is_onboarded"
         case subscriptionTier = "subscription_tier"
+        case inviteCode = "invite_code"
     }
 }
 
@@ -330,6 +332,20 @@ struct ProfileView: View {
                     .font(.system(size: 13))
                     .foregroundStyle(profile.accent.opacity(0.8))
 
+                if let inviteCode = profile.inviteCode, !inviteCode.isEmpty {
+                    HStack(spacing: 6) {
+                        Image(systemName: "person.crop.circle.badge.plus")
+                            .font(.system(size: 11, weight: .semibold))
+                        Text("Invite code: \(inviteCode)")
+                            .font(.system(size: 12, weight: .semibold))
+                    }
+                    .foregroundStyle(PHTheme.accent)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 7)
+                    .background(Capsule().fill(PHTheme.accent.opacity(0.12)))
+                    .padding(.top, 2)
+                }
+
                 if !profile.bio.isEmpty {
                     Text(profile.bio)
                         .font(.system(size: 13))
@@ -421,10 +437,36 @@ struct ProfileView: View {
                 .execute()
                 .value
             profile = fetched
+            if fetched.inviteCode == nil || fetched.inviteCode?.isEmpty == true {
+                await createInviteCodeIfNeeded(userId: user.id.uuidString)
+            }
         } catch {
             #if DEBUG
             print("Profile.swift:391 error:", error)
             #endif
+        }
+    }
+
+    private func createInviteCodeIfNeeded(userId: String) async {
+        let alphabet = Array("ABCDEFGHJKLMNPQRSTUVWXYZ23456789")
+
+        for _ in 0..<8 {
+            let code = "PH-" + String((0..<6).compactMap { _ in alphabet.randomElement() })
+
+            do {
+                try await supabase
+                    .from("profiles")
+                    .update(["invite_code": code])
+                    .eq("id", value: userId)
+                    .execute()
+
+                await MainActor.run {
+                    profile.inviteCode = code
+                }
+                return
+            } catch {
+                continue
+            }
         }
     }
 }

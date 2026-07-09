@@ -14,14 +14,17 @@ struct StepCreateRoomView: View {
 
     @State private var petName = ""
     @State private var breed = ""
-    @State private var age = ""
+    @State private var birthYear = ""
+    @State private var birthMonth = ""
+
     @State private var selectedIcon = "pawprint.fill"
     @State private var selectedAccent = "AA9DFF"
     @State private var isLoading = false
 
     @FocusState private var nameFocused: Bool
     @FocusState private var breedFocused: Bool
-    @FocusState private var ageFocused: Bool
+    @FocusState private var birthYearFocused: Bool
+    @FocusState private var birthMonthFocused: Bool
 
     let icons = [
         "pawprint.fill", "bird.fill", "fish.fill", "ant.fill", "hare.fill",
@@ -32,13 +35,58 @@ struct StepCreateRoomView: View {
 
     private var canFinish: Bool {
         !petName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        !age.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        !breed.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        !birthYear.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        !birthMonth.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        !calculatedAgeText.isEmpty &&
         !isLoading
+    }
+
+    private var calculatedAgeText: String {
+        guard let year = Int(birthYear),
+              let month = Int(birthMonth),
+              month >= 1,
+              month <= 12
+        else {
+            return ""
+        }
+
+        let calendar = Calendar.current
+        let now = Date()
+        let currentYear = calendar.component(.year, from: now)
+        let currentMonth = calendar.component(.month, from: now)
+
+        var years = currentYear - year
+        var months = currentMonth - month
+
+        if months < 0 {
+            years -= 1
+            months += 12
+        }
+
+        if years < 0 {
+            return ""
+        }
+
+        var parts: [String] = []
+
+        if years > 0 {
+            parts.append("\(years) \(years == 1 ? "year" : "years")")
+        }
+
+        if months > 0 {
+            parts.append("\(months) \(months == 1 ? "month" : "months")")
+        }
+
+        if parts.isEmpty {
+            return "Less than 1 month"
+        }
+
+        return parts.joined(separator: " ")
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-
             Spacer()
 
             VStack(alignment: .leading, spacing: 6) {
@@ -78,14 +126,32 @@ struct StepCreateRoomView: View {
                     isSecure: false
                 )
 
-                AuthField(
-                    label: "Age",
-                    placeholder: "e.g. 2",
-                    text: $age,
-                    isFocused: $ageFocused,
-                    isSecure: false,
-                    keyboardType: .numberPad
-                )
+                HStack(spacing: 12) {
+                    AuthField(
+                        label: "Birth Year",
+                        placeholder: "2022",
+                        text: $birthYear,
+                        isFocused: $birthYearFocused,
+                        isSecure: false,
+                        keyboardType: .numberPad
+                    )
+
+                    AuthField(
+                        label: "Month",
+                        placeholder: "6",
+                        text: $birthMonth,
+                        isFocused: $birthMonthFocused,
+                        isSecure: false,
+                        keyboardType: .numberPad
+                    )
+                }
+
+                if !calculatedAgeText.isEmpty {
+                    Text("Age: \(calculatedAgeText)")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(PHTheme.subtext)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
             .padding(.bottom, 24)
 
@@ -164,9 +230,23 @@ struct StepCreateRoomView: View {
             Spacer()
         }
         .padding(.horizontal, 24)
-        .onChange(of: age) { _, newValue in
+        .onChange(of: birthYear) { _, newValue in
             let filtered = newValue.filter { $0.isNumber }
-            if filtered != newValue { age = filtered }
+            if filtered != newValue {
+                birthYear = filtered
+            }
+        }
+        .onChange(of: birthMonth) { _, newValue in
+            let filtered = newValue.filter { $0.isNumber }
+
+            if filtered != newValue {
+                birthMonth = filtered
+                return
+            }
+
+            if let month = Int(filtered), month > 12 {
+                birthMonth = "12"
+            }
         }
     }
 
@@ -186,7 +266,9 @@ struct StepCreateRoomView: View {
                     "id": roomId.uuidString,
                     "name": petName.trimmingCharacters(in: .whitespacesAndNewlines),
                     "breed": breed.trimmingCharacters(in: .whitespacesAndNewlines),
-                    "age": age.trimmingCharacters(in: .whitespacesAndNewlines),
+                    "age": calculatedAgeText,
+                    "birth_year": birthYear.trimmingCharacters(in: .whitespacesAndNewlines),
+                    "birth_month": birthMonth.trimmingCharacters(in: .whitespacesAndNewlines),
                     "icon": selectedIcon,
                     "accent_hex": selectedAccent,
                     "owner_id": user.id.uuidString,
@@ -204,7 +286,7 @@ struct StepCreateRoomView: View {
 
         } catch {
             #if DEBUG
-            print("StepCreateRoomView.swift:205 error:", error)
+            print("StepCreateRoomView.swift completeOnboarding error:", error)
             #endif
         }
     }

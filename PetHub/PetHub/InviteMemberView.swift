@@ -12,7 +12,7 @@ import Supabase
 struct InviteMemberView: View {
     let room: PetRoom
     @Environment(\.dismiss) private var dismiss
-    @State private var username = ""
+    @State private var inviteCode = ""
     @State private var isLoading = false
     @State private var errorMessage = ""
     @State private var successMessage = ""
@@ -52,7 +52,7 @@ struct InviteMemberView: View {
                     .font(.system(size: 26, weight: .bold))
                     .foregroundStyle(PHTheme.text)
 
-                    Text("Enter their username to invite them")
+                    Text("Enter their invite code to send a room request")
                         .font(.system(size: 12))
                         .foregroundStyle(PHTheme.subtext)
                 }
@@ -61,13 +61,13 @@ struct InviteMemberView: View {
 
                 // Input
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("USERNAME")
+                    Text("INVITE CODE")
                         .font(.system(size: 10, weight: .medium))
                         .tracking(1.2)
                         .foregroundStyle(PHTheme.subtext)
 
-                    TextField("", text: $username, prompt: Text("@username").foregroundStyle(PHTheme.placeholder))
-                        .autocapitalization(.none)
+                    TextField("", text: $inviteCode, prompt: Text("PH-8K42Q").foregroundStyle(PHTheme.placeholder))
+                        .textInputAutocapitalization(.characters)
                         .foregroundStyle(PHTheme.text)
                         .font(.system(size: 15))
                         .padding(.horizontal, 16)
@@ -80,10 +80,8 @@ struct InviteMemberView: View {
                                         .stroke(PHTheme.border, lineWidth: 0.5)
                                 )
                         )
-                        .onChange(of: username) { _, newValue in
-                            if !newValue.isEmpty && !newValue.hasPrefix("@") {
-                                username = "@\(newValue)"
-                            }
+                        .onChange(of: inviteCode) { _, newValue in
+                            inviteCode = formatInviteCode(newValue)
                         }
                 }
                 .padding(.horizontal, 24)
@@ -122,11 +120,11 @@ struct InviteMemberView: View {
                     .padding(.vertical, 16)
                     .background(
                         RoundedRectangle(cornerRadius: 16)
-                            .fill(username.isEmpty ? PHTheme.accent.opacity(0.4) : PHTheme.accent)
+                            .fill(inviteCode.isEmpty ? PHTheme.accent.opacity(0.4) : PHTheme.accent)
                     )
                 }
                 .buttonStyle(.plain)
-                .disabled(username.isEmpty || isLoading)
+                .disabled(inviteCode.isEmpty || isLoading)
                 .padding(.horizontal, 24)
 
                 Spacer()
@@ -141,22 +139,28 @@ struct InviteMemberView: View {
         successMessage = ""
 
         do {
-            let searchUsername = username
-            
+            let currentUser = try await supabase.auth.session.user
+            let code = inviteCode.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+
             let users: [UserProfile] = try await supabase
                 .from("profiles")
                 .select()
-                .eq("username", value: searchUsername)
+                .eq("invite_code", value: code)
                 .execute()
                 .value
 
             guard let user = users.first, let userId = user.id else {
-                errorMessage = "No user found with that username."
+                errorMessage = "No user found with that invite code."
                 isLoading = false
                 return
             }
 
-            // Check if already a member
+            if userId == currentUser.id {
+                errorMessage = "You cannot invite yourself."
+                isLoading = false
+                return
+            }
+
             let existing: [RoomMembership] = try await supabase
                 .from("room_members")
                 .select()
@@ -171,31 +175,64 @@ struct InviteMemberView: View {
                 return
             }
 
+            let pendingInvites: [RoomInvitation] = try await supabase
+                .from("room_invitations")
+                .select()
+                .eq("room_id", value: room.id.uuidString)
+                .eq("invited_user_id", value: userId.uuidString)
+                .eq("status", value: "pending")
+                .execute()
+                .value
+
+            if !pendingInvites.isEmpty {
+                errorMessage = "This user already has a pending invite."
+                isLoading = false
+                return
+            }
+
             try await supabase
-                .from("room_members")
+                .from("room_invitations")
                 .insert([
                     "room_id": room.id.uuidString.lowercased(),
-                    "user_id": userId.uuidString.lowercased(),
-                    "role": "member"
+                    "invited_user_id": userId.uuidString.lowercased(),
+                    "invited_by": currentUser.id.uuidString.lowercased(),
+                    "status": "pending"
                 ])
                 .execute()
 
-            // Activity V1: roomJoined
             try? await supabase
                 .from("activities")
                 .insert([
-                    "type": "room_joined",
-                    "actor_id": userId.uuidString,
+                    "type": "room_invite",
+                    "actor_id": currentUser.id.uuidString,
+                    "recipient_id": userId.uuidString,
                     "room_id": room.id.uuidString,
-                    "body": "\(user.name) joined \(room.name)'s room"
+                    "body": "You were invited to join \(room.name)'s room"
                 ])
                 .execute()
 
-            successMessage = "Invited successfully! 🎉"
-        } catch {
-            errorMessage = "Something went wrong. Try again."
+            successMessage = "Invite request sent to \(user.name)."
+        } catch {print("Invite error:", error)
+            errorMessage = "\(error)"
         }
 
         isLoading = false
+    }
+
+    private func formatInviteCode(_ value: String) -> String {
+        let cleaned = value
+            .uppercased()
+            .filter { $0.isLetter || $0.isNumber }
+
+        if cleaned.hasPrefix("PH"), cleaned.count > 2 {
+            let suffix = cleaned.dropFirst(2)
+            return "PH-" + String(suffix.prefix(6))
+        }
+
+        if cleaned.count > 2 {
+            return "PH-" + String(cleaned.prefix(6))
+        }
+
+        return cleaned
     }
 }
