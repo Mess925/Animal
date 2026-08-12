@@ -11,6 +11,7 @@ import RevenueCat
 struct UpgradeView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var subscriptionManager: SubscriptionManager
+    @Environment(\.openURL) private var openURL
 
     @State private var isYearly = false
     @State private var currentOffering: Offering?
@@ -426,11 +427,30 @@ struct UpgradeView: View {
                 .multilineTextAlignment(.center)
                 .lineSpacing(3)
 
+            HStack(spacing: 14) {
+                Button("Privacy Policy") { openPrivacyPolicy() }
+                Text("•").foregroundStyle(PHTheme.subtext.opacity(0.5))
+                Button("Terms of Use") { openTermsOfUse() }
+            }
+            .font(.system(size: 11, weight: .medium))
+            .foregroundStyle(PHTheme.subtext)
+            .underline()
+
             Button("Maybe later") { dismiss() }
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(PHTheme.subtext)
                 .padding(.top, 2)
         }
+    }
+
+    private func openPrivacyPolicy() {
+        guard let url = URL(string: "https://gist.githubusercontent.com/Mess925/8f03559c3b2ea299b29f37fbd580bd50/raw/537d1fd4b460bb08072630df554eb27133f8f650/pethub-privacy-policy.md") else { return }
+        openURL(url)
+    }
+
+    private func openTermsOfUse() {
+        guard let url = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/") else { return }
+        openURL(url)
     }
 
     // MARK: - RevenueCat

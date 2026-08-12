@@ -6,13 +6,8 @@
 //
 
 import Foundation
-//
-//  AppleSignIn.swift
-//  PetHub
-//
 import AuthenticationServices
 import CryptoKit
-import Foundation
 import Security
 import Supabase
 import SwiftUI
@@ -61,59 +56,9 @@ extension AppleSignInHandler: ASAuthorizationControllerDelegate {
         Task { @MainActor in
             do {
                 let result = try await supabase.auth.signInWithIdToken(
-                    credentials: .init(
-                        provider: .apple,
-                        idToken: idToken,
-                        nonce: nonce
-                    )
+                    credentials: .init(provider: .apple, idToken: idToken, nonce: nonce)
                 )
-
-                let user = result.user
-                let existingProfiles: [UserProfile] = try await supabase
-                    .from("profiles")
-                    .select()
-                    .eq("id", value: user.id.uuidString)
-                    .limit(1)
-                    .execute()
-                    .value
-
-                let profileExists = !existingProfiles.isEmpty
-
-                let appleName = [
-                    credential.fullName?.givenName,
-                    credential.fullName?.familyName
-                ]
-                .compactMap { $0 }
-                .joined(separator: " ")
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-
-                let emailPrefix = user.email?
-                    .components(separatedBy: "@")
-                    .first
-
-                let fallbackName = appleName.isEmpty
-                    ? (emailPrefix ?? "PetHub User")
-                    : appleName
-
-                let fallbackUsername = "@\(emailPrefix ?? String(user.id.uuidString.prefix(8)))"
-
-                if !profileExists {
-                    let profile = AppleProfileUpsert(
-                        id: user.id.uuidString,
-                        name: fallbackName,
-                        username: fallbackUsername,
-                        bio: "",
-                        avatarEmoji: "🧑",
-                        avatarAccentHex: "AA9DFF",
-                        isOnboarded: false
-                    )
-
-                    try await supabase
-                        .from("profiles")
-                        .upsert(profile, onConflict: "id")
-                        .execute()
-                }
-
+                let profileExists = try await resolveOrCreateProfile(for: result.user, credential: credential)
                 onSuccess?(profileExists)
             } catch {
                 onError?("Apple sign in failed. Please try again.")
@@ -127,6 +72,60 @@ extension AppleSignInHandler: ASAuthorizationControllerDelegate {
     ) {
         if (error as? ASAuthorizationError)?.code == .canceled { return }
         onError?("Apple sign in failed. Please try again.")
+    }
+
+    // MARK: - Profile resolution (with retry for first-sign-in race condition)
+
+    private func resolveOrCreateProfile(
+        for user: User,
+        credential: ASAuthorizationAppleIDCredential
+    ) async throws -> Bool {
+        do {
+            return try await fetchOrCreateProfile(for: user, credential: credential)
+        } catch {
+            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s — let the session settle
+            return try await fetchOrCreateProfile(for: user, credential: credential)
+        }
+    }
+
+    private func fetchOrCreateProfile(
+        for user: User,
+        credential: ASAuthorizationAppleIDCredential
+    ) async throws -> Bool {
+        let existingProfiles: [UserProfile] = try await supabase
+            .from("profiles")
+            .select()
+            .eq("id", value: user.id.uuidString)
+            .limit(1)
+            .execute()
+            .value
+
+        let profileExists = !existingProfiles.isEmpty
+
+        if !profileExists {
+            let appleName = [credential.fullName?.givenName, credential.fullName?.familyName]
+                .compactMap { $0 }
+                .joined(separator: " ")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+
+            let emailPrefix = user.email?.components(separatedBy: "@").first
+            let fallbackName = appleName.isEmpty ? (emailPrefix ?? "PetHub User") : appleName
+            let fallbackUsername = "@\(emailPrefix ?? String(user.id.uuidString.prefix(8)))"
+
+            let profile = AppleProfileUpsert(
+                id: user.id.uuidString,
+                name: fallbackName,
+                username: fallbackUsername,
+                bio: "",
+                avatarEmoji: "🧑",
+                avatarAccentHex: "AA9DFF",
+                isOnboarded: false
+            )
+
+            try await supabase.from("profiles").upsert(profile, onConflict: "id").execute()
+        }
+
+        return profileExists
     }
 }
 
