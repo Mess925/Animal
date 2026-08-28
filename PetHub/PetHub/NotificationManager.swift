@@ -16,6 +16,7 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
     static let shared = NotificationManager()
 
     func requestPermission() async {
+        await waitUntilAppIsActive()
         do {
             let granted = try await UNUserNotificationCenter.current()
                 .requestAuthorization(options: [.alert, .badge, .sound])
@@ -27,6 +28,23 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
             }
         } catch {
             print("Notification permission error:", error)
+        }
+    }
+    
+    private func waitUntilAppIsActive() async {
+        let isActive = await MainActor.run { UIApplication.shared.applicationState == .active }
+        if isActive { return }
+
+        await withCheckedContinuation { continuation in
+            var observer: NSObjectProtocol?
+            observer = NotificationCenter.default.addObserver(
+                forName: UIApplication.didBecomeActiveNotification,
+                object: nil,
+                queue: .main
+            ) { _ in
+                if let observer { NotificationCenter.default.removeObserver(observer) }
+                continuation.resume()
+            }
         }
     }
 
