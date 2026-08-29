@@ -183,6 +183,7 @@ struct SignUpView: View {
             
             needsUserOnboarding = true
             isLoggedIn = true
+            await NotificationManager.shared.requestPermission()
         } catch {
             authError = friendlyAuthError(error)
         }
@@ -206,9 +207,9 @@ struct SignUpView: View {
                 authError = "This Apple account already exists. Please sign in instead."
                 return
             }
-
             needsUserOnboarding = true
             isLoggedIn = true
+            Task { await NotificationManager.shared.requestPermission() }
         }
         appleHandler.onError = { message in
             isSigningUpWithApple = false

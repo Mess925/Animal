@@ -172,6 +172,8 @@ struct ChatView: View {
                 selectedImage = image
             }
         }
+        .navigationBarHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
     }
     
     private func subscribeToMessages() async {
@@ -179,7 +181,16 @@ struct ChatView: View {
             let channel: RealtimeChannelV2
             let changes: AsyncStream<AnyAction>
 
-            if let recipientId = recipientId {
+            if isLostFound {
+                channel = supabase.realtimeV2.channel("lf-messages-\(roomId)")
+
+                changes = channel.postgresChange(
+                    AnyAction.self,
+                    schema: "public",
+                    table: "lost_found_messages"
+                )
+
+            } else if let recipientId = recipientId {
                 let user = try await supabase.auth.session.user
                 let myId = user.id.uuidString.lowercased()
                 let ids = [myId, recipientId.lowercased()].sorted()
@@ -189,15 +200,6 @@ struct ChatView: View {
                     AnyAction.self,
                     schema: "public",
                     table: "dm_messages"
-                )
-
-            } else if isLostFound {
-                channel = supabase.realtimeV2.channel("lf-messages-\(roomId)")
-
-                changes = channel.postgresChange(
-                    AnyAction.self,
-                    schema: "public",
-                    table: "lost_found_messages"
                 )
 
             } else {
@@ -234,6 +236,44 @@ struct ChatView: View {
     private func fetchMessages() async {
         do {
             let user = try await supabase.auth.session.user
+
+            if isLostFound {
+                struct LFMessage: Codable {
+                    let id: UUID
+                    let body: String?
+                    let senderId: UUID
+                    let createdAt: Date
+                    enum CodingKeys: String, CodingKey {
+                        case id, body
+                        case senderId = "sender_id"
+                        case createdAt = "created_at"
+                    }
+                }
+                let fetched: [LFMessage] =
+                    try await supabase
+                    .from("lost_found_messages")
+                    .select()
+                    .eq("post_id", value: roomId)
+                    .or(
+                        "and(sender_id.eq.\(user.id.uuidString),recipient_id.eq.\(recipientId ?? "")),and(sender_id.eq.\(recipientId ?? ""),recipient_id.eq.\(user.id.uuidString))"
+                    )
+                    .order("created_at", ascending: true)
+                    .execute()
+                    .value
+                await MainActor.run {
+                    allMessages = fetched.map { m in
+                        let isOwn = m.senderId == user.id
+                        return Message(
+                            id: m.id,
+                            sender: isOwn ? .me : members.first,
+                            content: .text(m.body ?? ""),
+                            timestamp: m.createdAt,
+                            isOwn: isOwn
+                        )
+                    }
+                }
+                return
+            }
 
             if let recipientId = recipientId {
                 // DM messages
@@ -337,44 +377,6 @@ struct ChatView: View {
                     }
                 }
             }
-
-            if isLostFound {
-                struct LFMessage: Codable {
-                    let id: UUID
-                    let body: String?
-                    let senderId: UUID
-                    let createdAt: Date
-                    enum CodingKeys: String, CodingKey {
-                        case id, body
-                        case senderId = "sender_id"
-                        case createdAt = "created_at"
-                    }
-                }
-                let fetched: [LFMessage] =
-                    try await supabase
-                    .from("lost_found_messages")
-                    .select()
-                    .eq("post_id", value: roomId)
-                    .or(
-                        "and(sender_id.eq.\(user.id.uuidString),recipient_id.eq.\(recipientId ?? "")),and(sender_id.eq.\(recipientId ?? ""),recipient_id.eq.\(user.id.uuidString))"
-                    )
-                    .order("created_at", ascending: true)
-                    .execute()
-                    .value
-                await MainActor.run {
-                    allMessages = fetched.map { m in
-                        let isOwn = m.senderId == user.id
-                        return Message(
-                            id: m.id,
-                            sender: isOwn ? .me : members.first,
-                            content: .text(m.body ?? ""),
-                            timestamp: m.createdAt,
-                            isOwn: isOwn
-                        )
-                    }
-                }
-                return
-            }
         } catch {
             #if DEBUG
             print("ChatView.swift:375 error:", error)
@@ -385,6 +387,19 @@ struct ChatView: View {
     private func sendMessageToSupabase(_ text: String) async {
         do {
             let user = try await supabase.auth.session.user
+
+            if isLostFound {
+                try await supabase
+                    .from("lost_found_messages")
+                    .insert([
+                        "post_id": roomId,
+                        "sender_id": user.id.uuidString,
+                        "recipient_id": recipientId ?? "",
+                        "body": text,
+                    ])
+                    .execute()
+                return
+            }
 
             if let recipientId = recipientId {
                 try await supabase
@@ -402,17 +417,6 @@ struct ChatView: View {
                     .insert([
                         "room_id": roomId,
                         "sender_id": user.id.uuidString,
-                        "body": text,
-                    ])
-                    .execute()
-            }
-            if isLostFound {
-                try await supabase
-                    .from("lost_found_messages")
-                    .insert([
-                        "post_id": roomId,
-                        "sender_id": user.id.uuidString,
-                        "recipient_id": recipientId ?? "",
                         "body": text,
                     ])
                     .execute()

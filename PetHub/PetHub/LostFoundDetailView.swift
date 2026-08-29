@@ -15,7 +15,7 @@ struct LostFoundDetailView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var showFoundConfirm = false
-    @State private var showChat = false
+//    @State private var showChat = false
     @State private var showUpgrade = false
     @State private var ownerMember: Member? = nil
     @State private var currentUserId: UUID? = nil
@@ -79,20 +79,18 @@ struct LostFoundDetailView: View {
         } message: {
             Text("This will open a chat with the \(isLost ? "owner" : "finder").")
         }
-        .sheet(isPresented: $showChat) {
-            if let owner = ownerMember {
-                ChatView(
-                    title: owner.name,
-                    subtitle: "About your lost pet",
-                    accentHex: owner.accentHex,
-                    roomId: post.id.uuidString,
-                    recipientId: owner.id.uuidString,
-                    isLostFound: true,
-                    messages: [],
-                    isGroup: false,
-                    members: [owner]
-                )
-            }
+        .sheet(item: $ownerMember) { owner in
+            ChatView(
+                title: owner.name,
+                subtitle: "About your lost pet",
+                accentHex: owner.accentHex,
+                roomId: post.id.uuidString,
+                recipientId: owner.id.uuidString,
+                isLostFound: true,
+                messages: [],
+                isGroup: false,
+                members: [owner]
+            )
         }
         .sheet(isPresented: $showUpgrade) {
             UpgradeView()
@@ -561,7 +559,6 @@ struct LostFoundDetailView: View {
                         isOnline: false,
                         isOwner: false
                     )
-                    showChat = true
                 }
             }
         } catch {

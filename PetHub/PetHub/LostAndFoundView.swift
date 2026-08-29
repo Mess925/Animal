@@ -1263,6 +1263,7 @@ struct AddLostFoundView: View {
 // MARK: - Lost Found Messages View
 
 struct LostFoundMessagesView: View {
+    @EnvironmentObject private var store: RoomStore
     @State private var conversations: [LFConversation] = []
     @State private var isLoading = true
 
@@ -1328,6 +1329,8 @@ struct LostFoundMessagesView: View {
                                         )
                                     ]
                                 )
+                                .onAppear { store.isInRoom = true }
+                                .onDisappear { store.isInRoom = false }
                             ) {
                                 HStack(spacing: 12) {
                                     ZStack {

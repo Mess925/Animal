@@ -191,6 +191,7 @@ struct MainTabView: View {
     @StateObject private var store = RoomStore()
     @ObservedObject var subscriptionManager: SubscriptionManager
     @State private var selectedTab: AppTab = .home
+    @State private var homeResetID = UUID()
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -198,6 +199,7 @@ struct MainTabView: View {
                 switch selectedTab {
                 case .home:
                     HomeView(selectedTab: $selectedTab)
+                        .id(homeResetID)
                         .environmentObject(store)
                         .environmentObject(subscriptionManager)
                 case .rooms:
@@ -215,7 +217,7 @@ struct MainTabView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             if !store.isInRoom {
-                FloatingTabBar(selectedTab: $selectedTab)
+                FloatingTabBar(selectedTab: $selectedTab, homeResetID: $homeResetID)
                     .padding(.horizontal, 24)
                     .padding(.bottom, 28)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -237,6 +239,7 @@ struct MainTabView: View {
 struct FloatingTabBar: View {
     @Environment(\.colorScheme) private var scheme
     @Binding var selectedTab: AppTab
+    @Binding var homeResetID: UUID
 
     var body: some View {
         HStack(spacing: 2) {
@@ -245,6 +248,11 @@ struct FloatingTabBar: View {
                 label: "Home",
                 tab: .home,
                 selected: $selectedTab
+            )
+            .simultaneousGesture(
+                TapGesture().onEnded {
+                    homeResetID = UUID()
+                }
             )
             TabBarItem(
                 icon: "pawprint.fill",
@@ -396,6 +404,11 @@ struct HomeView: View {
                                 )
                             }
                             .buttonStyle(.plain)
+                            .simultaneousGesture(
+                                TapGesture().onEnded {
+                                    store.isInRoom = true
+                                }
+                            )
                         }
                         .padding(.horizontal, PHTheme.pagePadding)
 
@@ -1647,7 +1660,6 @@ struct LostRoomCard: View {
             LostAndFoundView()
                 .environmentObject(subscriptionManager)
                 .navigationBarBackButtonHidden(true)
-                .toolbar(.hidden, for: .tabBar)
                 .onAppear { store.isInRoom = true }
                 .onDisappear { store.isInRoom = false }
         } label: {

@@ -1182,6 +1182,11 @@ struct ChangePasswordView: View {
 struct DeleteAccountView: View {
     @Environment(\.dismiss) private var dismiss
 
+    @AppStorage("isLoggedIn") private var isLoggedIn = false
+    @AppStorage("needsUserOnboarding") private var needsUserOnboarding = false
+    @AppStorage("isResettingPassword") private var isResettingPassword = false
+    @AppStorage("isSigningUpWithApple") private var isSigningUpWithApple = false
+
     @State private var confirmText = ""
     @State private var isDeleting = false
     @State private var errorMessage: String?
@@ -1315,7 +1320,12 @@ struct DeleteAccountView: View {
                 .rpc("delete_my_account")
                 .execute()
 
-            try? await supabase.auth.signOut()
+            try? await supabase.auth.signOut(scope: .local)
+
+            isResettingPassword = false
+            isSigningUpWithApple = false
+            needsUserOnboarding = false
+            isLoggedIn = false
         } catch {
             print("Delete account error:", error)
             errorMessage = String(describing: error)

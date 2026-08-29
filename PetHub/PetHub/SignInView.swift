@@ -126,6 +126,7 @@ struct SignInView: View {
         appleHandler.onSuccess = { profileExists in
             needsUserOnboarding = !profileExists
             isLoggedIn = true
+            Task { await NotificationManager.shared.requestPermission() }
         }
 
         appleHandler.onError = { message in
@@ -163,9 +164,11 @@ struct SignInView: View {
                 .single()
                 .execute()
                 .value
-
+ 
             needsUserOnboarding = !(profile.isOnboarded ?? false)
             isLoggedIn = true
+            
+            await NotificationManager.shared.requestPermission()
         } catch {
             authError = friendlyAuthError(error)
         }
