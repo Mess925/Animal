@@ -997,7 +997,7 @@ struct EditProfileView: View {
                 .from("photos")
                 .getPublicURL(path: fileName)
 
-            let urlString = publicURL.absoluteString
+            let urlString = publicURL.absoluteString + "?v=\(Int(Date().timeIntervalSince1970))"
 
             try await supabase
                 .from("profiles")
