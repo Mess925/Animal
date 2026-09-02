@@ -21,6 +21,7 @@ struct ChatView: View {
     let isLostFound: Bool
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
     @State private var realtimeTask: Task<Void, Never>? = nil
     @State private var realtimeChannel: RealtimeChannelV2? = nil
     @State private var messageText = ""
@@ -148,24 +149,17 @@ struct ChatView: View {
         }
         .task {
             await fetchMessages()
-
-            realtimeTask?.cancel()
-
-            realtimeTask = Task {
-                await subscribeToMessages()
-            }
+            restartRealtimeSubscription()
         }
         .onDisappear {
-            realtimeTask?.cancel()
-            realtimeTask = nil
-
-            if let channel = realtimeChannel {
-                Task {
-                    await channel.unsubscribe()
-                }
+            stopRealtimeSubscription()
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            guard newPhase == .active else { return }
+            Task {
+                await fetchMessages()
+                restartRealtimeSubscription()
             }
-
-            realtimeChannel = nil
         }
         .sheet(isPresented: $showPhotoPicker) {
             PHPickerView { image in
@@ -176,6 +170,27 @@ struct ChatView: View {
         .toolbar(.hidden, for: .navigationBar)
     }
     
+    private func restartRealtimeSubscription() {
+        stopRealtimeSubscription()
+
+        realtimeTask = Task {
+            await subscribeToMessages()
+        }
+    }
+
+    private func stopRealtimeSubscription() {
+        realtimeTask?.cancel()
+        realtimeTask = nil
+
+        if let channel = realtimeChannel {
+            Task {
+                await channel.unsubscribe()
+            }
+        }
+
+        realtimeChannel = nil
+    }
+
     private func subscribeToMessages() async {
         do {
             let channel: RealtimeChannelV2

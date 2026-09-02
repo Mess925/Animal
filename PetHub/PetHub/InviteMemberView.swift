@@ -142,18 +142,22 @@ struct InviteMemberView: View {
             let currentUser = try await supabase.auth.session.user
             let code = inviteCode.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
 
-            let users: [UserProfile] = try await supabase
-                .from("profiles")
-                .select()
-                .eq("invite_code", value: code)
+            struct InviteLookupResult: Codable {
+                let id: UUID
+                let name: String
+            }
+
+            let users: [InviteLookupResult] = try await supabase
+                .rpc("lookup_profile_by_invite_code", params: ["p_code": code])
                 .execute()
                 .value
 
-            guard let user = users.first, let userId = user.id else {
+            guard let user = users.first else {
                 errorMessage = "No user found with that invite code."
                 isLoading = false
                 return
             }
+            let userId = user.id
 
             if userId == currentUser.id {
                 errorMessage = "You cannot invite yourself."
