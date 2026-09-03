@@ -9,7 +9,7 @@ import SwiftUI
 struct CaptureAndPostView: View {
     @Environment(\.dismiss) private var dismiss
     var accent: Color
-    var onPost: (UIImage, String) -> Void
+    var onPost: (UIImage, String, UUID) -> Void
     var roomId: String
     @EnvironmentObject private var subscriptionManager: SubscriptionManager
     var onShowUpgrade: (() -> Void)? = nil
@@ -154,12 +154,12 @@ struct CaptureAndPostView: View {
                 .getPublicURL(path: path)
 
             // Save to photos table
-            let photoId = UUID().uuidString
+            let photoId = UUID()
 
             try await supabase
                 .from("photo_posts")
                 .insert([
-                    "id": photoId,
+                    "id": photoId.uuidString,
                     "room_id": roomId,
                     "image_url": url.absoluteString,
                     "caption": caption,
@@ -174,12 +174,12 @@ struct CaptureAndPostView: View {
                     "type": "photo_added",
                     "actor_id": user.id.uuidString,
                     "room_id": roomId,
-                    "photo_id": photoId,
+                    "photo_id": photoId.uuidString,
                     "body": "A new photo was added"
                 ])
                 .execute()
 
-            onPost(image, caption)
+            onPost(image, caption, photoId)
             dismiss()
         } catch {
             #if DEBUG

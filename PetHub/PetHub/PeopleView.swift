@@ -10,6 +10,7 @@ import SwiftUI
 
 struct PeopleView: View {
     let room: PetRoom
+    var pendingChatTarget: PendingChatTarget? = nil
     @State private var openThread: ChatDestination? = nil
     @State private var currentUserId: UUID? = nil
     @State private var members: [Member] = []
@@ -113,6 +114,7 @@ struct PeopleView: View {
                 await fetchMembers()
                 await fetchLastDMMessages()
             }
+            openPendingChatIfNeeded()
         }
         .sheet(item: $openThread, onDismiss: {
             Task {
@@ -146,6 +148,25 @@ struct PeopleView: View {
         }
     }
     
+    private func openPendingChatIfNeeded() {
+        guard let pendingChatTarget else { return }
+        switch pendingChatTarget {
+        case .group:
+            openThread = .group
+        case .dm(let otherUserId):
+            guard let member = members.first(where: { $0.id == otherUserId })
+            else { return }
+            openThread = .dm(
+                DMThread(
+                    id: member.id,
+                    participant: member,
+                    messages: [],
+                    unreadCount: 0
+                )
+            )
+        }
+    }
+
     private func fetchMembers() async {
         do {
             struct RoomMemberRow: Codable {

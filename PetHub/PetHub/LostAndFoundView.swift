@@ -614,6 +614,7 @@ struct LostAndFoundView: View {
                             "type": "possible_match",
                             "actor_id": currentUserId.uuidString,
                             "recipient_id": currentUserId.uuidString,
+                            "post_id": foundPost.id.uuidString,
                             "body": dedupeBody
                         ])
                         .execute()

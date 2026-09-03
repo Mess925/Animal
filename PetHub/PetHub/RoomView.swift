@@ -187,11 +187,29 @@ enum AppTab {
 
 // MARK: - Root App Shell
 
+// MARK: - Deep Link Resolution
+
+private enum ResolvedRoute: Identifiable {
+    case room(PetRoom, tab: RoomTab, chatTarget: PendingChatTarget?, photoId: UUID?)
+    case lostFound(LostFoundPost, chatSenderId: UUID?)
+
+    var id: String {
+        switch self {
+        case .room(let room, let tab, _, let photoId):
+            return "room-\(room.id.uuidString)-\(tab)-\(photoId?.uuidString ?? "none")"
+        case .lostFound(let post, let chatSenderId):
+            return "lf-\(post.id.uuidString)-\(chatSenderId?.uuidString ?? "none")"
+        }
+    }
+}
+
 struct MainTabView: View {
     @StateObject private var store = RoomStore()
     @ObservedObject var subscriptionManager: SubscriptionManager
+    @ObservedObject private var router = AppRouter.shared
     @State private var selectedTab: AppTab = .home
     @State private var homeResetID = UUID()
+    @State private var activeRoute: ResolvedRoute? = nil
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -230,7 +248,96 @@ struct MainTabView: View {
         .task {
             await store.fetchRooms()
         }
+        .onChange(of: router.pendingDestination) { _, destination in
+            guard let destination else { return }
+            Task { await resolve(destination) }
+        }
+        .fullScreenCover(item: $activeRoute) { route in
+            switch route {
+            case .room(let room, let tab, let chatTarget, let photoId):
+                RoomView(
+                    room: room,
+                    initialTab: tab,
+                    initialChatTarget: chatTarget,
+                    initialPhotoId: photoId
+                )
+                .environmentObject(store)
+                .environmentObject(subscriptionManager)
+            case .lostFound(let post, let chatSenderId):
+                LostFoundDetailView(post: post, initialChatSenderId: chatSenderId)
+                    .environmentObject(subscriptionManager)
+            }
+        }
         .ignoresSafeArea(edges: .bottom)
+    }
+
+    @MainActor
+    private func resolve(_ destination: AppDestination) async {
+        switch destination {
+        case .roomChat(let roomId):
+            guard let room = await room(id: roomId) else { return }
+            present(.room(room, tab: .chat, chatTarget: .group, photoId: nil))
+
+        case .dmChat(let roomId, let otherUserId):
+            guard let room = await room(id: roomId) else { return }
+            present(.room(room, tab: .chat, chatTarget: .dm(otherUserId: otherUserId), photoId: nil))
+
+        case .roomPhotos(let roomId):
+            guard let room = await room(id: roomId) else { return }
+            present(.room(room, tab: .photos, chatTarget: nil, photoId: nil))
+
+        case .photoDetail(let roomId, let photoId):
+            guard let room = await room(id: roomId) else { return }
+            present(.room(room, tab: .photos, chatTarget: nil, photoId: photoId))
+
+        case .roomHome(let roomId):
+            guard let room = await room(id: roomId) else { return }
+            present(.room(room, tab: .photos, chatTarget: nil, photoId: nil))
+
+        case .lostFoundChat(let postId, let otherUserId):
+            guard let post = await lostFoundPost(id: postId) else { return }
+            present(.lostFound(post, chatSenderId: otherUserId))
+
+        case .lostFoundPost(let postId):
+            guard let post = await lostFoundPost(id: postId) else { return }
+            present(.lostFound(post, chatSenderId: nil))
+
+        case .activityTab:
+            selectedTab = .activity
+            router.pendingDestination = nil
+        }
+    }
+
+    @MainActor
+    private func present(_ route: ResolvedRoute) {
+        activeRoute = route
+        router.pendingDestination = nil
+    }
+
+    private func room(id: UUID) async -> PetRoom? {
+        if let found = store.rooms.first(where: { $0.id == id }) {
+            return found
+        }
+        await store.fetchRooms()
+        return store.rooms.first(where: { $0.id == id })
+    }
+
+    private func lostFoundPost(id: UUID) async -> LostFoundPost? {
+        do {
+            let post: LostFoundPost = try await supabase
+                .from("lost_found")
+                .select()
+                .eq("id", value: id.uuidString)
+                .single()
+                .execute()
+                .value
+            return post
+        } catch {
+            #if DEBUG
+            print("MainTabView route resolve error:", error)
+            #endif
+            return nil
+        }
     }
 }
 

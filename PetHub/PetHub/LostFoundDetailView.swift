@@ -10,6 +10,7 @@ import Supabase
 struct LostFoundDetailView: View {
     let post: LostFoundPost
     var onPostUpdated: (() -> Void)? = nil
+    var initialChatSenderId: UUID? = nil
 
     @EnvironmentObject private var subscriptionManager: SubscriptionManager
     @Environment(\.dismiss) private var dismiss
@@ -98,6 +99,9 @@ struct LostFoundDetailView: View {
         .task {
             if let session = try? await supabase.auth.session {
                 currentUserId = session.user.id
+            }
+            if let initialChatSenderId {
+                await openChat(with: initialChatSenderId)
             }
         }
     }
@@ -506,6 +510,7 @@ struct LostFoundDetailView: View {
                     "type": "pet_found",
                     "actor_id": post.userId.uuidString,
                     "recipient_id": post.userId.uuidString,
+                    "post_id": post.id.uuidString,
                     "body": "Your \(post.animalType) has been reunited"
                 ])
                 .execute()
@@ -541,21 +546,25 @@ struct LostFoundDetailView: View {
     }
 
     private func fetchOwnerAndOpenChat() async {
+        await openChat(with: post.userId)
+    }
+
+    private func openChat(with userId: UUID) async {
         do {
             let profiles: [UserProfile] = try await supabase
                 .from("profiles")
                 .select()
-                .eq("id", value: post.userId.uuidString)
+                .eq("id", value: userId.uuidString)
                 .execute()
                 .value
 
-            if let owner = profiles.first {
+            if let profile = profiles.first {
                 await MainActor.run {
                     ownerMember = Member(
-                        id: post.userId,
-                        name: owner.name,
-                        initials: String(owner.name.prefix(1)),
-                        accentHex: owner.avatarAccentHex ?? "AA9DFF",
+                        id: userId,
+                        name: profile.name,
+                        initials: String(profile.name.prefix(1)),
+                        accentHex: profile.avatarAccentHex ?? "AA9DFF",
                         isOnline: false,
                         isOwner: false
                     )

@@ -27,6 +27,7 @@ struct SupabaseActivity: Codable, Identifiable {
     let recipientId: UUID?
     let roomId: UUID?
     let photoId: UUID?
+    let postId: UUID?
     let body: String?
     let createdAt: Date
 
@@ -37,6 +38,7 @@ struct SupabaseActivity: Codable, Identifiable {
         case recipientId = "recipient_id"
         case roomId = "room_id"
         case photoId = "photo_id"
+        case postId = "post_id"
         case body
         case createdAt = "created_at"
     }
@@ -67,14 +69,35 @@ struct RoomNotificationSetting: Codable {
 struct ActivityItem: Identifiable {
     let id: UUID
     let type: ActivityType
+    let actorId: UUID
     let actorName: String
     let actorAccentHex: String
+    let roomId: UUID?
     let roomName: String
     let roomIcon: String
     let roomAccentHex: String
+    let photoId: UUID?
+    let postId: UUID?
     let timestamp: Date
     var detail: String
     var roomAccent: Color { Color(hex: roomAccentHex) }
+
+    var destination: AppDestination? {
+        switch type {
+        case .roomJoined, .roomLeft:
+            guard let roomId else { return nil }
+            return .roomHome(roomId: roomId)
+        case .photoAdded:
+            guard let roomId else { return nil }
+            return .roomPhotos(roomId: roomId)
+        case .photoLiked, .photoCommented:
+            guard let roomId, let photoId else { return nil }
+            return .photoDetail(roomId: roomId, photoId: photoId)
+        case .possibleMatch, .petFound:
+            guard let postId else { return nil }
+            return .lostFoundPost(postId: postId)
+        }
+    }
 }
 
 // MARK: - ActivityView
@@ -288,7 +311,9 @@ struct ActivityView: View {
                     activityType = .photoCommented
 
                 case "possible_match", "found_pet_match":
-                    detail = activity.body ?? "Possible match found for your lost pet"
+                    // `body` on this type is a dedupe key (contains raw post ids),
+                    // not display text — always show the friendly message.
+                    detail = "Possible match found for your lost pet"
                     activityType = .possibleMatch
 
                 case "pet_found", "found_your_pet":
@@ -303,11 +328,15 @@ struct ActivityView: View {
                     ActivityItem(
                         id: activity.id,
                         type: activityType,
+                        actorId: activity.actorId,
                         actorName: actorName,
                         actorAccentHex: actorAccent,
+                        roomId: activity.roomId,
                         roomName: roomName,
                         roomIcon: roomIcon,
                         roomAccentHex: roomAccentHex,
+                        photoId: activity.photoId,
+                        postId: activity.postId,
                         timestamp: activity.createdAt,
                         detail: detail
                     )
@@ -666,9 +695,20 @@ struct ActivityRow: View {
             }
 
             Spacer()
+
+            if item.destination != nil {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(PHTheme.placeholder)
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            guard let destination = item.destination else { return }
+            AppRouter.shared.route(to: destination)
+        }
     }
 
     private var badgeIcon: String {

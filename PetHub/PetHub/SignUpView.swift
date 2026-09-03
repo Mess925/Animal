@@ -203,7 +203,12 @@ struct SignUpView: View {
             isSigningUpWithApple = false
 
             if profileExists {
-                Task { try? await supabase.auth.signOut() }
+                Task {
+                    if let userId = try? await supabase.auth.session.user.id {
+                        await NotificationManager.shared.clearTokenForSignOut(userId: userId)
+                    }
+                    try? await supabase.auth.signOut()
+                }
                 authError = "This Apple account already exists. Please sign in instead."
                 return
             }

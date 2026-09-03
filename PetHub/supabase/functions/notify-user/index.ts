@@ -59,12 +59,31 @@ async function createJWT() {
   return `${unsignedToken}.${base64url(sigBytes.buffer)}`
 }
 
+// Apple rate-limits how often a new provider auth token may be minted
+// (roughly once per 20 minutes) and rejects pushes with 429
+// TooManyProviderTokenUpdates if you generate one per request. Tokens are
+// valid up to an hour, so cache and reuse one across invocations for as
+// long as the function instance stays warm.
+let cachedJWT: { token: string; createdAt: number } | null = null
+const JWT_TTL_MS = 55 * 60 * 1000
+
+async function getApnsJWT(): Promise<string> {
+  const now = Date.now()
+  if (cachedJWT && now - cachedJWT.createdAt < JWT_TTL_MS) {
+    return cachedJWT.token
+  }
+  const token = await createJWT()
+  cachedJWT = { token, createdAt: now }
+  return token
+}
+
 async function sendApnsPush(params: {
   token: string
   title: string
   body: string
+  data?: Record<string, unknown>
 }) {
-  const jwt = await createJWT()
+  const jwt = await getApnsJWT()
   const bundleId = Deno.env.get("APNS_BUNDLE_ID")!
   const apnsEnvironment = Deno.env.get("APNS_ENVIRONMENT") ?? "sandbox"
 
@@ -89,7 +108,10 @@ async function sendApnsPush(params: {
           body: params.body
         },
         sound: "default"
-      }
+      },
+      // Custom top-level keys land in the notification's userInfo on the
+      // client, which is how NotificationManager routes a tap to a screen.
+      ...(params.data ?? {})
     })
   })
 
@@ -119,7 +141,15 @@ serve(async (req) => {
       internalSecret != null &&
       req.headers.get("X-Internal-Notify-Secret") === internalSecret
 
-    const { user_id, title, body } = await req.json()
+    const { user_id, title, body, data } = await req.json()
+
+    console.log("notify-user: incoming", {
+      user_id,
+      title,
+      data,
+      requestedByInternalService,
+      hasAuthHeader: authHeader.length > 0
+    })
 
     if (!user_id) {
       return Response.json({ error: "Missing user_id" }, { status: 400 })
@@ -127,6 +157,7 @@ serve(async (req) => {
 
     if (!requestedByInternalService) {
       if (!authHeader.startsWith("Bearer ")) {
+        console.log("notify-user: rejected, missing auth token")
         return Response.json({ error: "Missing auth token" }, { status: 401 })
       }
 
@@ -137,10 +168,12 @@ serve(async (req) => {
       const { data: { user }, error: authError } = await authedClient.auth.getUser()
 
       if (authError || !user) {
+        console.log("notify-user: rejected, invalid auth token", authError?.message)
         return Response.json({ error: "Invalid auth token" }, { status: 401 })
       }
 
       if (user.id !== user_id) {
+        console.log("notify-user: rejected, user mismatch", user.id, user_id)
         return Response.json(
           { error: "Not authorized to notify this user" },
           { status: 403 }
@@ -156,11 +189,14 @@ serve(async (req) => {
       .eq("user_id", user_id)
 
     if (error) {
+      console.error("notify-user: push_tokens lookup failed", error.message)
       return Response.json(
         { success: false, error: error.message },
         { status: 500 }
       )
     }
+
+    console.log(`notify-user: found ${tokens?.length ?? 0} token(s) for user ${user_id}`)
 
     if (!tokens || tokens.length === 0) {
       return Response.json({
@@ -175,9 +211,11 @@ serve(async (req) => {
       const result = await sendApnsPush({
         token: row.token,
         title: title ?? "PetHub",
-        body: body ?? "You have a new update"
+        body: body ?? "You have a new update",
+        data
       })
 
+      console.log("notify-user: apns result", result)
       results.push(result)
     }
 
@@ -188,6 +226,7 @@ serve(async (req) => {
       results
     })
   } catch (error) {
+    console.error("notify-user: unhandled error", String(error))
     return Response.json(
       {
         success: false,

@@ -267,6 +267,9 @@ struct ProfileView: View {
             Button("Log Out", role: .destructive) {
                 Task {
                     do {
+                        if let userId = try? await supabase.auth.session.user.id {
+                            await NotificationManager.shared.clearTokenForSignOut(userId: userId)
+                        }
                         try await supabase.auth.signOut()
                     } catch {
                         #if DEBUG
@@ -1170,6 +1173,9 @@ struct ChangePasswordView: View {
             isResettingPassword = false
             dismiss()
             onDismissAll?()
+            if let userId = try? await supabase.auth.session.user.id {
+                await NotificationManager.shared.clearTokenForSignOut(userId: userId)
+            }
             try await supabase.auth.signOut()
         } catch {
             isSaving = false

@@ -15,6 +15,8 @@ enum RoomTab { case photos, chat, settings }
 struct RoomView: View {
     let room: PetRoom
     var initialTab: RoomTab = .photos
+    var initialChatTarget: PendingChatTarget? = nil
+    var initialPhotoId: UUID? = nil
     @State private var selectedTab: RoomTab
     @State private var dragOffset: CGFloat = 0
     @Environment(\.dismiss) private var dismiss
@@ -22,9 +24,16 @@ struct RoomView: View {
     @EnvironmentObject private var subscriptionManager: SubscriptionManager
     @State private var currentRoom: PetRoom
 
-    init(room: PetRoom, initialTab: RoomTab = .photos) {
+    init(
+        room: PetRoom,
+        initialTab: RoomTab = .photos,
+        initialChatTarget: PendingChatTarget? = nil,
+        initialPhotoId: UUID? = nil
+    ) {
         self.room = room
         self.initialTab = initialTab
+        self.initialChatTarget = initialChatTarget
+        self.initialPhotoId = initialPhotoId
         _selectedTab = State(initialValue: initialTab)
         _currentRoom = State(initialValue: room)
     }
@@ -47,9 +56,9 @@ struct RoomView: View {
                 ZStack {
                     switch selectedTab {
                     case .photos:
-                        GalleryView(room: currentRoom)
+                        GalleryView(room: currentRoom, initialPhotoId: initialPhotoId)
                     case .chat:
-                        PeopleView(room: currentRoom)
+                        PeopleView(room: currentRoom, pendingChatTarget: initialChatTarget)
                     case .settings:
                         RoomSettingsView(room: currentRoom).environmentObject(store)
                     }

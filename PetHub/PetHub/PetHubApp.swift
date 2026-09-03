@@ -85,6 +85,9 @@ struct PetHubApp: App {
 
         if !hasSeenOnboarding {
             do {
+                if let userId = try? await supabase.auth.session.user.id {
+                    await NotificationManager.shared.clearTokenForSignOut(userId: userId)
+                }
                 try await supabase.auth.signOut()
             } catch {
             #if DEBUG

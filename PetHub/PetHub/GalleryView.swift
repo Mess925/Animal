@@ -3,9 +3,35 @@
 //  PetHub
 //
 
+import Photos
 import PhotosUI
 import Supabase
 import SwiftUI
+
+// MARK: - Save to Photos
+
+enum PhotoSaveError: LocalizedError {
+    case accessDenied
+
+    var errorDescription: String? {
+        switch self {
+        case .accessDenied:
+            return "PetHub needs access to your photo library. Enable it in Settings."
+        }
+    }
+}
+
+@discardableResult
+func savePhotoToLibrary(_ image: UIImage) async throws -> Bool {
+    let status = await PHPhotoLibrary.requestAuthorization(for: .addOnly)
+    guard status == .authorized || status == .limited else {
+        throw PhotoSaveError.accessDenied
+    }
+    try await PHPhotoLibrary.shared().performChanges {
+        PHAssetChangeRequest.creationRequestForAsset(from: image)
+    }
+    return true
+}
 
 // MARK: - Photo Like Model
 
@@ -43,6 +69,7 @@ struct PhotoComment: Codable, Identifiable {
 
 struct GalleryView: View {
     let room: PetRoom
+    var initialPhotoId: UUID? = nil
     @State private var selectedPhoto: PhotoPost? = nil
     @State private var showCamera = false
     @State private var photos: [PhotoPost] = []
@@ -51,8 +78,9 @@ struct GalleryView: View {
 
     let columns = Array(repeating: GridItem(.flexible(), spacing: 2), count: 3)
 
-    init(room: PetRoom) {
+    init(room: PetRoom, initialPhotoId: UUID? = nil) {
         self.room = room
+        self.initialPhotoId = initialPhotoId
         _photos = State(initialValue: room.photos)
     }
 
@@ -116,6 +144,9 @@ struct GalleryView: View {
         }
         .task {
             await fetchPhotos()
+            if let initialPhotoId {
+                selectedPhoto = photos.first { $0.id == initialPhotoId }
+            }
         }
         .sheet(isPresented: $showUpgradeSheet) { UpgradeView() }
         .sheet(item: $selectedPhoto) { photo in
@@ -126,9 +157,9 @@ struct GalleryView: View {
         .fullScreenCover(isPresented: $showCamera) {
             CaptureAndPostView(
                 accent: room.accent,
-                onPost: { image, caption in
+                onPost: { image, caption, photoId in
                     let newPhoto = PhotoPost(
-                        id: UUID(),
+                        id: photoId,
                         image: image,
                         emoji: "📸",
                         backgroundHex: room.accentHex,
@@ -139,7 +170,11 @@ struct GalleryView: View {
                         comments: [],
                         isLiked: false
                     )
-                    withAnimation { photos.insert(newPhoto, at: 0) }
+                    withAnimation {
+                        photos.removeAll { $0.id == newPhoto.id }
+                        photos.insert(newPhoto, at: 0)
+                        photos.sort { $0.timestamp > $1.timestamp }
+                    }
                 },
                 roomId: room.id.uuidString,
                 onShowUpgrade: { showUpgradeSheet = true }
@@ -294,6 +329,13 @@ struct PhotoCell: View {
             await loadImage()
             await fetchCounts()
         }
+        .contextMenu {
+            Button {
+                Task { await saveToLibrary() }
+            } label: {
+                Label("Save Photo", systemImage: "square.and.arrow.down")
+            }
+        }
     }
 
     private func loadImage() async {
@@ -302,6 +344,18 @@ struct PhotoCell: View {
         guard let (data, _) = try? await URLSession.shared.data(from: url)
         else { return }
         loadedImage = UIImage(data: data)
+    }
+
+    private func saveToLibrary() async {
+        if loadedImage == nil { await loadImage() }
+        guard let image = loadedImage ?? photo.image else { return }
+        let feedback = UINotificationFeedbackGenerator()
+        do {
+            try await savePhotoToLibrary(image)
+            await MainActor.run { feedback.notificationOccurred(.success) }
+        } catch {
+            await MainActor.run { feedback.notificationOccurred(.error) }
+        }
     }
 
     private func fetchCounts() async {
@@ -350,6 +404,9 @@ struct PhotoDetailView: View {
     @State private var isLiked = false
     @State private var likeCount = 0
     @State private var commentsWithNames: [CommentWithName] = []
+    @State private var isSaving = false
+    @State private var showSavedBanner = false
+    @State private var saveErrorMessage: String? = nil
 
     var body: some View {
         ZStack {
@@ -391,6 +448,15 @@ struct PhotoDetailView: View {
                                 .foregroundStyle(PHTheme.subtext)
                         }
                         Spacer()
+                        Button {
+                            Task { await savePhoto() }
+                        } label: {
+                            Image(systemName: "square.and.arrow.down")
+                                .font(.system(size: 17))
+                                .foregroundStyle(PHTheme.subtext)
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(isSaving)
                         Button {
                             Task { await toggleLike() }
                         } label: {
@@ -545,11 +611,34 @@ struct PhotoDetailView: View {
                 )
             }
         }
+        .overlay(alignment: .top) {
+                if showSavedBanner {
+                    Label("Saved to Photos", systemImage: "checkmark.circle.fill")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background(Color.black.opacity(0.8), in: Capsule())
+                        .padding(.top, 8)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
+            }
         .task {
             await loadImage()
             await fetchLikesAndComments()
         }
         .animation(.easeInOut(duration: 0.15), value: commentText.isEmpty)
+        .alert(
+            "Couldn't Save Photo",
+            isPresented: Binding(
+                get: { saveErrorMessage != nil },
+                set: { if !$0 { saveErrorMessage = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(saveErrorMessage ?? "")
+        }
     }
 
     private func loadImage() async {
@@ -612,6 +701,28 @@ struct PhotoDetailView: View {
             #if DEBUG
             print("GalleryView.swift:633 error:", error)
             #endif
+        }
+    }
+
+    private func savePhoto() async {
+        if loadedImage == nil { await loadImage() }
+        guard let image = loadedImage ?? photo.image else { return }
+        isSaving = true
+        defer { isSaving = false }
+        do {
+            try await savePhotoToLibrary(image)
+            await MainActor.run {
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
+                withAnimation { showSavedBanner = true }
+            }
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            await MainActor.run {
+                withAnimation { showSavedBanner = false }
+            }
+        } catch {
+            await MainActor.run {
+                saveErrorMessage = error.localizedDescription
+            }
         }
     }
 

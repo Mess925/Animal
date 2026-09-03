@@ -17,12 +17,25 @@ create extension if not exists pg_net with schema extensions;
 
 create schema if not exists private;
 
+-- Lets an activity point at the lost & found post it's about (possible
+-- match / pet found), the same way it already points at a room or photo.
+-- Needed so a tap on the activity (or its push notification) can open the
+-- right post instead of just showing a generic message.
+alter table public.activities
+  add column if not exists post_id uuid references public.lost_found(id) on delete set null;
+
 -- Shared secret + anon key used to call the notify-user edge function.
 -- Must match the INTERNAL_NOTIFY_SECRET secret set on the edge function.
+--
+-- p_data carries the routing info the app needs to jump straight to the
+-- relevant screen when the notification is tapped (see AppDestination in
+-- AppRouter.swift for the shape each `type` expects). It rides alongside
+-- `aps` as custom top-level keys in the APNs payload.
 create or replace function private.notify_user(
   p_user_id uuid,
   p_title text,
-  p_body text
+  p_body text,
+  p_data jsonb default '{}'::jsonb
 ) returns void
 language plpgsql
 security definer
@@ -38,12 +51,13 @@ begin
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
       'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0Z3Jja2phanpjZXBpYm5id25jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyOTczODQsImV4cCI6MjA5NTg3MzM4NH0.MNtrJMjoWjE1TpcS7HLl1zcG2M_ciY-Rvygf7zm-Njs',
-      'X-Internal-Notify-Secret', '__INTERNAL_NOTIFY_SECRET__'
+      'X-Internal-Notify-Secret', ' 74660b67002539e807739f4e65b1508a2aa0f789abc5b53112a1435790d2367d'
     ),
     body := jsonb_build_object(
       'user_id', p_user_id,
       'title', coalesce(p_title, 'PetHub'),
-      'body', coalesce(p_body, 'You have a new update')
+      'body', coalesce(p_body, 'You have a new update'),
+      'data', coalesce(p_data, '{}'::jsonb)
     ),
     timeout_milliseconds := 5000
   );
@@ -116,7 +130,8 @@ begin
       perform private.notify_user(
         v_member.user_id,
         v_sender,
-        left(coalesce(new.body, 'Sent a photo'), 150)
+        left(coalesce(new.body, 'Sent a photo'), 150),
+        jsonb_build_object('type', 'room_message', 'room_id', new.room_id)
       );
     end if;
   end loop;
@@ -144,7 +159,12 @@ begin
     perform private.notify_user(
       new.recipient_id,
       private.display_name(new.sender_id),
-      left(coalesce(new.body, 'Sent a photo'), 150)
+      left(coalesce(new.body, 'Sent a photo'), 150),
+      jsonb_build_object(
+        'type', 'dm_message',
+        'room_id', new.room_id,
+        'sender_id', new.sender_id
+      )
     );
   end if;
   return new;
@@ -170,7 +190,12 @@ begin
   perform private.notify_user(
     new.recipient_id,
     private.display_name(new.sender_id),
-    left(coalesce(new.body, 'Sent a photo'), 150)
+    left(coalesce(new.body, 'Sent a photo'), 150),
+    jsonb_build_object(
+      'type', 'lost_found_message',
+      'post_id', new.post_id,
+      'sender_id', new.sender_id
+    )
   );
   return new;
 end;
@@ -196,10 +221,23 @@ begin
   v_actor := private.display_name(new.actor_id);
 
   if new.type = 'room_invite' and new.recipient_id is not null then
-    perform private.notify_user(new.recipient_id, v_actor, coalesce(new.body, 'You were invited to a room'));
+    perform private.notify_user(
+      new.recipient_id,
+      v_actor,
+      coalesce(new.body, 'You were invited to a room'),
+      jsonb_build_object('type', 'room_invite', 'room_id', new.room_id)
+    );
 
   elsif new.type in ('possible_match', 'pet_found') and new.recipient_id is not null then
-    perform private.notify_user(new.recipient_id, 'PetHub', coalesce(new.body, 'Update on your lost & found post'));
+    perform private.notify_user(
+      new.recipient_id,
+      'PetHub',
+      case when new.type = 'possible_match'
+        then 'Possible match found for your lost pet'
+        else coalesce(new.body, 'Update on your lost & found post')
+      end,
+      jsonb_build_object('type', new.type, 'post_id', new.post_id)
+    );
 
   elsif new.type = 'photo_added' and new.room_id is not null then
     for v_member in
@@ -207,7 +245,12 @@ begin
       where room_id = new.room_id and user_id <> new.actor_id
     loop
       if private.room_pref(v_member.user_id, new.room_id, 'photos') then
-        perform private.notify_user(v_member.user_id, v_actor, coalesce(new.body, 'Added a new photo'));
+        perform private.notify_user(
+          v_member.user_id,
+          v_actor,
+          coalesce(new.body, 'Added a new photo'),
+          jsonb_build_object('type', 'photo_added', 'room_id', new.room_id)
+        );
       end if;
     end loop;
 
@@ -219,7 +262,8 @@ begin
       perform private.notify_user(
         v_owner,
         v_actor,
-        case when new.type = 'like' then 'Liked your photo' else coalesce(new.body, 'Commented on your photo') end
+        case when new.type = 'like' then 'Liked your photo' else coalesce(new.body, 'Commented on your photo') end,
+        jsonb_build_object('type', new.type, 'room_id', new.room_id, 'photo_id', new.photo_id)
       );
     end if;
   end if;
