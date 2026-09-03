@@ -16,7 +16,7 @@ struct WelcomeView: View {
                         .padding(.bottom, 30)
 
                     VStack(spacing: 12) {
-                        Text("PetHub")
+                        Text("Peculiar")
                             .font(.system(size: 12, weight: .black, design: .rounded))
                             .tracking(2.4)
                             .foregroundStyle(PHTheme.subtext)
@@ -86,7 +86,7 @@ struct WelcomeView: View {
             VStack(spacing: 8) {
                 Text("🐾")
                     .font(.system(size: 78))
-                Text("PetHub")
+                Text("Peculiar")
                     .font(.system(size: 20, weight: .black, design: .rounded))
                     .foregroundStyle(PHTheme.text)
             }

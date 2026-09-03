@@ -169,7 +169,7 @@ struct AppLoadingView: View {
                         .foregroundStyle(PHTheme.accent)
                 }
 
-                Text("PetHub")
+                Text("Peculiar")
                     .font(.system(size: 26, weight: .bold))
                     .foregroundStyle(PHTheme.text)
 

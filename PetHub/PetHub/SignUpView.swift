@@ -45,7 +45,7 @@ struct SignUpView: View {
                 VStack(alignment: .leading, spacing: 22) {
                     AuthHeroCard(
                         eyebrow: "NEW HERE?",
-                        title: "Create your PetHub account",
+                        title: "Create your Peculiar account",
                         subtitle: "Start with your profile, then set up your first pet room.",
                         icon: "person.crop.circle.badge.plus"
                     )

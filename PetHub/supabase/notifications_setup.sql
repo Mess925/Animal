@@ -55,7 +55,7 @@ begin
     ),
     body := jsonb_build_object(
       'user_id', p_user_id,
-      'title', coalesce(p_title, 'PetHub'),
+      'title', coalesce(p_title, 'Peculiar'),
       'body', coalesce(p_body, 'You have a new update'),
       'data', coalesce(p_data, '{}'::jsonb)
     ),
@@ -105,7 +105,7 @@ create or replace function private.display_name(p_user_id uuid) returns text
 language sql
 stable
 as $$
-  select coalesce(nullif(name, ''), nullif(username, ''), 'PetHub')
+  select coalesce(nullif(name, ''), nullif(username, ''), 'Peculiar')
   from public.profiles
   where id = p_user_id;
 $$;
@@ -231,7 +231,7 @@ begin
   elsif new.type in ('possible_match', 'pet_found') and new.recipient_id is not null then
     perform private.notify_user(
       new.recipient_id,
-      'PetHub',
+      'Peculiar',
       case when new.type = 'possible_match'
         then 'Possible match found for your lost pet'
         else coalesce(new.body, 'Update on your lost & found post')

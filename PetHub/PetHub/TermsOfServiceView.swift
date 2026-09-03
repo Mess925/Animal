@@ -21,19 +21,19 @@ struct TermsOfServiceView: View {
 
                     Text(
                         """
-                        Welcome to PetHub.
+                        Welcome to Peculiar.
 
-                        By using PetHub, you agree to:
+                        By using Peculiar, you agree to:
 
                         • Provide accurate information.
-                        • Use PetHub lawfully and respectfully.
+                        • Use Peculiar lawfully and respectfully.
                         • Not post misleading lost or found pet reports.
                         • Not harass, abuse, or impersonate others.
                         • Be responsible for content you upload.
 
                         Subscriptions are managed through Apple and may be cancelled through your Apple account settings.
 
-                        PetHub provides tools to help connect pet owners and community members, but cannot guarantee successful pet recovery.
+                        Peculiar provides tools to help connect pet owners and community members, but cannot guarantee successful pet recovery.
 
                         Accounts may be deleted at any time through the Delete Account feature.
 

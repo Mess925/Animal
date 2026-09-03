@@ -210,7 +210,7 @@ serve(async (req) => {
     for (const row of tokens) {
       const result = await sendApnsPush({
         token: row.token,
-        title: title ?? "PetHub",
+        title: title ?? "Peculiar",
         body: body ?? "You have a new update",
         data
       })
