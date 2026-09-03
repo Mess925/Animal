@@ -51,7 +51,7 @@ begin
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
       'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0Z3Jja2phanpjZXBpYm5id25jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyOTczODQsImV4cCI6MjA5NTg3MzM4NH0.MNtrJMjoWjE1TpcS7HLl1zcG2M_ciY-Rvygf7zm-Njs',
-      'X-Internal-Notify-Secret', ' 74660b67002539e807739f4e65b1508a2aa0f789abc5b53112a1435790d2367d'
+      'X-Internal-Notify-Secret', '621dec9c07335012317b6bdddf64a05d8cfc0ca34e2290f63fac8f424a8e2b15'
     ),
     body := jsonb_build_object(
       'user_id', p_user_id,
